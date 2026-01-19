@@ -112,9 +112,9 @@ const Sidebar = () => {
                   KYRO
                 </span>
                 <div className="ml-2 flex items-center bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.8)] mr-1.5" />
-                  <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
-                    ver. 2.1
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(var(--primary),1)] mr-1.5" />
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                    ver. 2.35
                   </span>
                 </div>
               </motion.div>
