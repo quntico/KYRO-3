@@ -258,25 +258,16 @@ const Leads = () => {
   }, [filteredLeads, getNextStep]);
 
   const exportExcelTemplate = useCallback(() => {
-    const headers = ["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"];
-    const csvContent = [
-      headers.join(","),
-      "" // Fila vacía para ejemplo o ingreso directo
-    ].join("\n");
+    const headers = [["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"]];
+    const ws = XLSX.utils.aoa_to_sheet(headers);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plantilla Leads");
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "plantilla-importacion-leads.csv");
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    XLSX.writeFile(wb, "plantilla-importacion-leads.xlsx");
 
     toast({
       title: "✅ Plantilla Generada",
-      description: "Se ha descargado la plantilla Excel para importar prospectos."
+      description: "Se ha descargado la plantilla Excel (.xlsx) para importar prospectos."
     });
   }, []);
 
@@ -302,19 +293,33 @@ const Leads = () => {
           return;
         }
 
-        // Mapear filas (saltando encabezado en la posición 0)
+        // Obtener encabezados de la primera fila
+        const headers = jsonData[0].map(h => String(h).toLowerCase().trim());
+
+        // Helper para encontrar índice por nombre
+        const getIdx = (names) => headers.findIndex(h => names.some(n => h.includes(n.toLowerCase())));
+
+        const colIdx = {
+          name: getIdx(['empresa', 'compañía', 'nombre de empresa', 'name', 'company']),
+          contact: getIdx(['contacto', 'persona', 'contact', 'person', 'nombre']),
+          position: getIdx(['cargo', 'puesto', 'position', 'role']),
+          email: getIdx(['email', 'correo', 'e-mail']),
+          phone: getIdx(['teléfono', 'telefono', 'phone', 'celular', 'whatsapp']),
+          notes: getIdx(['notas', 'notas adicionales', 'notes', 'comentarios'])
+        };
+
         const leadsToInsert = jsonData.slice(1).map(row => {
-          // Si no hay empresa ni contacto, saltar
-          if (!row[0] && !row[1]) return null;
+          const getName = () => row[colIdx.name] || row[colIdx.contact] || null;
+          if (!getName()) return null;
 
           return {
             user_id: user.id,
-            name: String(row[0] || 'Empresa sin nombre'),
-            contact: String(row[1] || 'Sin contacto'),
-            position: String(row[2] || ''),
-            email: String(row[3] || ''),
-            phone: String(row[4] || ''),
-            notes: String(row[5] || ''),
+            name: String(row[colIdx.name] || 'Empresa sin nombre'),
+            contact: String(row[colIdx.contact] || 'Sin contacto'),
+            position: String(row[colIdx.position] || ''),
+            email: String(row[colIdx.email] || ''),
+            phone: String(row[colIdx.phone] || ''),
+            notes: String(row[colIdx.notes] || ''),
             status: 'new',
             score: 50,
             source: 'Excel Import',
