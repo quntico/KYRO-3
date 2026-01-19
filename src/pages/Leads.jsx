@@ -21,7 +21,7 @@ import { useData } from '@/contexts/DataContext';
 
 const Leads = () => {
   const { user } = useAuth();
-  const { leads, loading, updateLead, removeLead, addLead, addTask, updateTaskByLeadId } = useData();
+  const { leads, loading, updateLead, removeLead, addLead, addTask, updateTaskByLeadId, fetchData } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [dialogState, setDialogState] = useState({
