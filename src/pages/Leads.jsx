@@ -353,7 +353,11 @@ const Leads = () => {
         });
       } catch (err) {
         console.error("Error importing leads:", err);
-        toast({ title: "Error de Importación", description: "Hubo un problema al procesar el archivo. Asegúrate de que el formato sea correcto.", variant: "destructive" });
+        toast({
+          title: "Error de Importación",
+          description: `Detalle: ${err.message || 'Error desconocido al procesar el archivo.'}`,
+          variant: "destructive"
+        });
       } finally {
         event.target.value = '';
       }
