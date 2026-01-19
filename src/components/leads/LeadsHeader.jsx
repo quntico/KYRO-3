@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Filter, FileDown, DollarSign } from 'lucide-react';
+import { Search, Plus, Filter, FileDown, DollarSign, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 
-const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedStatus, leads, onNewLead, onExportPDF, onExportExcel, totalSales }) => {
+const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedStatus, leads, onNewLead, onExportPDF, onExportExcel, onImportExcel, totalSales }) => {
   const { theme } = useTheme();
+  const fileInputRef = React.useRef(null);
+
   const statusOptions = [
     { value: 'all', label: 'Todos' },
     { value: 'new', label: 'Nuevos' },
@@ -39,6 +41,22 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
               <p className={`font-bold text-lg ${theme === 'futuristic' ? 'text-glow' : ''}`}>${totalSales.toLocaleString()}</p>
             </div>
           </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={onImportExcel}
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className={theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}
+            title="Sube tu archivo Excel/CSV con la lista de leads"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Importar Excel
+          </Button>
           <Button
             variant="outline"
             onClick={onExportExcel}
@@ -92,8 +110,8 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
             key={option.value}
             onClick={() => setSelectedStatus(option.value)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${selectedStatus === option.value
-                ? 'bg-card text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             {option.label} ({getStatusCount(option.value)})

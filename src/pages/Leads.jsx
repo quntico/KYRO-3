@@ -279,6 +279,81 @@ const Leads = () => {
     });
   }, []);
 
+  const handleImportExcel = useCallback(async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target.result;
+        // Manejar el BOM si existe y normalizar saltos de línea
+        const content = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const lines = content.split('\n').filter(line => line.trim() !== '');
+
+        if (lines.length <= 1) {
+          toast({ title: "Archivo vacío", description: "El archivo no contiene datos para importar.", variant: "destructive" });
+          return;
+        }
+
+        // Saltar encabezados
+        const leadsToInsert = lines.slice(1).map(line => {
+          // Manejar comas dentro de comillas si fuera necesario, pero por ahora split simple
+          const cells = line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
+
+          if (!cells[0] && !cells[1]) return null; // Saltar líneas vacías de verdad
+
+          return {
+            user_id: user.id,
+            name: cells[0] || 'Empresa sin nombre',
+            contact: cells[1] || 'Sin contacto',
+            position: cells[2] || '',
+            email: cells[3] || '',
+            phone: cells[4] || '',
+            notes: cells[5] || '',
+            status: 'new',
+            score: 50,
+            source: 'Excel Import',
+            last_activity: new Date().toISOString(),
+            machines: [],
+            quotations: [],
+            activity_status: {
+              quotationSent: { checked: false, date: null },
+              quotationReview: { checked: false, date: null },
+              appointment: { checked: false, date: null },
+              zoom: { checked: false, date: null },
+              closing: { checked: false, date: null },
+            },
+            next_step: { type: 'Enviar Cotización', date: null }
+          };
+        }).filter(Boolean);
+
+        if (leadsToInsert.length === 0) {
+          toast({ title: "Sin datos válidos", description: "No se encontraron prospectos válidos para importar.", variant: "destructive" });
+          return;
+        }
+
+        const { error } = await supabase.from('leads').insert(leadsToInsert);
+
+        if (error) {
+          throw error;
+        }
+
+        await fetchData(); // Recargar todos los datos para ver los nuevos leads
+        toast({
+          title: "✅ Importación Exitosa",
+          description: `Se han importado ${leadsToInsert.length} prospectos exitosamente.`
+        });
+      } catch (err) {
+        console.error("Error importing leads:", err);
+        toast({ title: "Error de Importación", description: err.message, variant: "destructive" });
+      } finally {
+        event.target.value = ''; // Limpiar input para permitir subir el mismo archivo
+      }
+    };
+    reader.readAsText(file);
+  }, [user, supabase, fetchData]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -303,6 +378,7 @@ const Leads = () => {
           onNewLead={() => openDialog('new')}
           onExportPDF={exportToPDF}
           onExportExcel={exportExcelTemplate}
+          onImportExcel={handleImportExcel}
           totalSales={totalPossibleSales}
         />
 
