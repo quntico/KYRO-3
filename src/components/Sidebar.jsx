@@ -1,12 +1,12 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Target, 
-  HeartHandshake as Handshake, 
-  BarChart2, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Target,
+  HeartHandshake as Handshake,
+  BarChart2,
+  Settings,
   Command as KyroRune,
   ListChecks,
   BookUser,
@@ -37,17 +37,16 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => (
     to={to}
     onClick={onClick}
     className={({ isActive }) =>
-      `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-        isActive
-          ? 'bg-primary/10 text-primary shadow-inner'
-          : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
+      `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
+        ? 'bg-primary/10 text-primary shadow-inner'
+        : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
       } ${isCollapsed ? 'justify-center' : ''}`
     }
   >
     <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 flex-shrink-0" />
     <AnimatePresence>
       {!isCollapsed && (
-        <motion.span 
+        <motion.span
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: 'auto' }}
           exit={{ opacity: 0, width: 0 }}
@@ -86,14 +85,14 @@ const Sidebar = () => {
   };
 
   const handleItemClick = () => {
-    if(isMobileOpen) {
+    if (isMobileOpen) {
       toggleMobileSidebar();
     }
   }
 
   return (
     <>
-      <motion.aside 
+      <motion.aside
         className="hidden md:flex flex-col bg-card border-r border-border h-screen sticky top-0"
         animate={{ width: isCollapsed ? '5rem' : '16rem' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -102,15 +101,23 @@ const Sidebar = () => {
           <KyroRune className={`w-8 h-8 text-primary transition-all duration-300`} />
           <AnimatePresence>
             {!isCollapsed && (
-              <motion.span 
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2, delay: 0.1 }}
-                className="ml-3 text-2xl font-bold text-foreground whitespace-nowrap"
+                className="flex items-center ml-3"
               >
-                KYRO
-              </motion.span>
+                <span className="text-2xl font-bold text-foreground whitespace-nowrap">
+                  KYRO
+                </span>
+                <div className="ml-2 flex items-center bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.8)] mr-1.5" />
+                  <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                    ver. 2.1
+                  </span>
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
@@ -128,7 +135,7 @@ const Sidebar = () => {
             <LogOut className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 flex-shrink-0" />
             <AnimatePresence>
               {!isCollapsed && (
-                <motion.span 
+                <motion.span
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
                   exit={{ opacity: 0, width: 0 }}
@@ -162,20 +169,20 @@ const Sidebar = () => {
               className="fixed top-0 left-0 h-full w-64 bg-card border-r border-border z-50 flex flex-col md:hidden"
             >
               <div className="flex items-center justify-center h-16 border-b border-border px-4">
-                 <KyroRune className={`w-8 h-8 text-primary`} />
+                <KyroRune className={`w-8 h-8 text-primary`} />
               </div>
               <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
                 {navItems.map((item) => (
-                  <NavItem key={item.to} {...item} isCollapsed={false} onClick={handleItemClick}/>
+                  <NavItem key={item.to} {...item} isCollapsed={false} onClick={handleItemClick} />
                 ))}
               </nav>
               <div className="p-4 border-t border-border">
-                <NavItem to="/settings" icon={Settings} label="Ajustes" isCollapsed={false} onClick={handleItemClick}/>
+                <NavItem to="/settings" icon={Settings} label="Ajustes" isCollapsed={false} onClick={handleItemClick} />
                 <button
                   onClick={handleSignOut}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 group w-full mt-2 text-red-500 hover:bg-red-500/10"
                 >
-                  <LogOut className="w-5 h-5"/>
+                  <LogOut className="w-5 h-5" />
                   <span className="font-medium">Cerrar Sesión</span>
                 </button>
               </div>
