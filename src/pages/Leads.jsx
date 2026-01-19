@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
+import * as XLSX from 'xlsx';
 
 const Leads = () => {
   const { user } = useAuth();
@@ -286,31 +287,34 @@ const Leads = () => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const text = e.target.result;
-        // Manejar el BOM si existe y normalizar saltos de línea
-        const content = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const lines = content.split('\n').filter(line => line.trim() !== '');
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
 
-        if (lines.length <= 1) {
+        // Obtener la primera hoja
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+
+        // Convertir a JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (jsonData.length <= 1) {
           toast({ title: "Archivo vacío", description: "El archivo no contiene datos para importar.", variant: "destructive" });
           return;
         }
 
-        // Saltar encabezados
-        const leadsToInsert = lines.slice(1).map(line => {
-          // Manejar comas dentro de comillas si fuera necesario, pero por ahora split simple
-          const cells = line.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''));
-
-          if (!cells[0] && !cells[1]) return null; // Saltar líneas vacías de verdad
+        // Mapear filas (saltando encabezado en la posición 0)
+        const leadsToInsert = jsonData.slice(1).map(row => {
+          // Si no hay empresa ni contacto, saltar
+          if (!row[0] && !row[1]) return null;
 
           return {
             user_id: user.id,
-            name: cells[0] || 'Empresa sin nombre',
-            contact: cells[1] || 'Sin contacto',
-            position: cells[2] || '',
-            email: cells[3] || '',
-            phone: cells[4] || '',
-            notes: cells[5] || '',
+            name: String(row[0] || 'Empresa sin nombre'),
+            contact: String(row[1] || 'Sin contacto'),
+            position: String(row[2] || ''),
+            email: String(row[3] || ''),
+            phone: String(row[4] || ''),
+            notes: String(row[5] || ''),
             status: 'new',
             score: 50,
             source: 'Excel Import',
@@ -335,23 +339,21 @@ const Leads = () => {
 
         const { error } = await supabase.from('leads').insert(leadsToInsert);
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        await fetchData(); // Recargar todos los datos para ver los nuevos leads
+        await fetchData();
         toast({
           title: "✅ Importación Exitosa",
           description: `Se han importado ${leadsToInsert.length} prospectos exitosamente.`
         });
       } catch (err) {
         console.error("Error importing leads:", err);
-        toast({ title: "Error de Importación", description: err.message, variant: "destructive" });
+        toast({ title: "Error de Importación", description: "Hubo un problema al procesar el archivo. Asegúrate de que el formato sea correcto.", variant: "destructive" });
       } finally {
-        event.target.value = ''; // Limpiar input para permitir subir el mismo archivo
+        event.target.value = '';
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   }, [user, supabase, fetchData]);
 
   if (loading) {
