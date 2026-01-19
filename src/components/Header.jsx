@@ -72,7 +72,7 @@ const Header = () => {
       </div>
 
       <div className="md:hidden flex-1 flex justify-center">
-         <button onClick={toggleMobileSidebar} className="p-2 text-muted-foreground hover:text-primary">
+        <button onClick={toggleMobileSidebar} className="p-2 text-muted-foreground hover:text-primary">
           <KyroRune className="h-8 w-8 text-primary" />
         </button>
       </div>
@@ -99,7 +99,14 @@ const Header = () => {
           </motion.div>
         </form>
       </div>
-       <div className="w-8 md:w-16 hidden md:block"></div>
+      <div className="flex items-center">
+        <div className="flex items-center space-x-2 px-3 py-1 bg-primary/5 rounded-full border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)] animate-in fade-in zoom-in duration-500">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(var(--primary),1)]" />
+          <span className="text-[11px] font-bold text-primary uppercase tracking-widest whitespace-nowrap">
+            ver. 2.35
+          </span>
+        </div>
+      </div>
     </header>
   );
 };

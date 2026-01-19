@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  Users, 
-  Target, 
+import {
+  TrendingUp,
+  Users,
+  Target,
   DollarSign,
   Calendar,
   Bell,
@@ -82,9 +82,15 @@ const Dashboard = () => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                ¡Bienvenido de vuelta! 👋
-              </h1>
+              <div className="flex items-center gap-4 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">
+                  ¡Bienvenido de vuelta! 👋
+                </h1>
+                <div className="flex items-center space-x-2 px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20 animate-pulse">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),1)]" />
+                  <span className="text-[10px] font-bold text-primary tracking-tighter">V. 2.35</span>
+                </div>
+              </div>
               <p className="text-gray-600">
                 Aquí tienes un resumen de tu actividad comercial
               </p>
@@ -114,7 +120,7 @@ const Dashboard = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             const TrendIcon = stat.trend === 'up' ? ArrowUpRight : ArrowDownRight;
-            
+
             return (
               <motion.div
                 key={stat.title}
@@ -127,9 +133,8 @@ const Dashboard = () => {
                   <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <div className={`flex items-center space-x-1 text-sm font-medium ${
-                    stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <div className={`flex items-center space-x-1 text-sm font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     <TrendIcon className="w-4 h-4" />
                     <span>{stat.change}</span>
                   </div>
@@ -158,7 +163,7 @@ const Dashboard = () => {
                 Ver todo
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               {recentActivities.map((activity, index) => (
                 <motion.div
@@ -168,16 +173,15 @@ const Dashboard = () => {
                   transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors"
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    activity.type === 'deal' ? 'bg-green-100 text-green-600' :
-                    activity.type === 'lead' ? 'bg-blue-100 text-blue-600' :
-                    activity.type === 'meeting' ? 'bg-purple-100 text-purple-600' :
-                    'bg-orange-100 text-orange-600'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activity.type === 'deal' ? 'bg-green-100 text-green-600' :
+                      activity.type === 'lead' ? 'bg-blue-100 text-blue-600' :
+                        activity.type === 'meeting' ? 'bg-purple-100 text-purple-600' :
+                          'bg-orange-100 text-orange-600'
+                    }`}>
                     {activity.type === 'deal' ? <DollarSign className="w-5 h-5" /> :
-                     activity.type === 'lead' ? <Target className="w-5 h-5" /> :
-                     activity.type === 'meeting' ? <Calendar className="w-5 h-5" /> :
-                     <Users className="w-5 h-5" />}
+                      activity.type === 'lead' ? <Target className="w-5 h-5" /> :
+                        activity.type === 'meeting' ? <Calendar className="w-5 h-5" /> :
+                          <Users className="w-5 h-5" />}
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{activity.title}</p>
@@ -204,7 +208,7 @@ const Dashboard = () => {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               {upcomingTasks.map((task, index) => (
                 <motion.div
@@ -216,11 +220,10 @@ const Dashboard = () => {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-medium text-gray-900 text-sm">{task.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      task.priority === 'high' ? 'bg-red-100 text-red-600' :
-                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-green-100 text-green-600'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.priority === 'high' ? 'bg-red-100 text-red-600' :
+                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                          'bg-green-100 text-green-600'
+                      }`}>
                       {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Media' : 'Baja'}
                     </span>
                   </div>

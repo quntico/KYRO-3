@@ -30,7 +30,13 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
     >
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className={`text-3xl font-bold mb-2 ${theme === 'futuristic' ? 'text-glow' : ''}`}>Prospectos</h1>
+          <div className="flex items-center gap-3">
+            <h1 className={`text-3xl font-bold mb-2 ${theme === 'futuristic' ? 'text-glow' : ''}`}>Prospectos</h1>
+            <div className="flex items-center space-x-2 px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20 animate-pulse mb-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),1)]" />
+              <span className="text-[10px] font-bold text-primary tracking-tighter">V. 2.35</span>
+            </div>
+          </div>
           <p className="text-muted-foreground">Gestiona y convierte tus oportunidades de negocio</p>
         </div>
         <div className="flex items-center space-x-2">
