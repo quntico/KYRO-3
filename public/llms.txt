@@ -1,0 +1,13 @@
+## Pages
+- [Agenda Semanal - KYRO](/todo): Gestiona tus tareas con una vista semanal en KYRO CRM.
+- [Ajustes - KYRO](/settings): Personaliza tu experiencia en KYRO CRM.
+- [Analytics - KYROS](/analytics): Analiza el rendimiento de tu equipo de ventas y métricas clave en KYROS CRM.
+- [Clientes - KYRO](/clients): Gestiona tu base de clientes activos en KYRO CRM.
+- [Contactos - KYRO](/contacts): Gestiona tu red de contactos profesionales en KYRO CRM.
+- [Dashboard - KYRO](/dashboard): Panel de control principal de KYRO CRM con resumen de ventas, leads y tareas.
+- [Logística - KYRO](/logistics): Gestiona la logística de entrega de productos a tus clientes en KYRO CRM.
+- [Noticias - KYRO](/news): Manténgase informado con las últimas noticias de negocios y finanzas.
+- [Onboarding de Clientes - KYRO](/clientonboarding): Gestiona el proceso de onboarding de nuevos clientes en KYRO CRM.
+- [Prospectos - KYRO](/leads): Gestiona y convierte tus oportunidades de negocio en KYRO CRM.
+- [Resultados de búsqueda para ""](/search): No description available
+- [Ventas - KYRO](/deals): Visualiza y gestiona tu pipeline de ventas en KYRO CRM.
