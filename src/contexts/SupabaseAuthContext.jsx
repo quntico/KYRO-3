@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const getSession = async () => {
       // Bypass Auth: Mock user for development
       const mockUser = {
-        id: 'dev-user-id',
+        id: '00000000-0000-0000-0000-000000000000',
         email: 'dev@kyro.test',
         user_metadata: { full_name: 'Developer' }
       };
