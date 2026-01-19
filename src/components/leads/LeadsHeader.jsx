@@ -4,7 +4,7 @@ import { Search, Plus, Filter, FileDown, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 
-const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedStatus, leads, onNewLead, onExportPDF, totalSales }) => {
+const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedStatus, leads, onNewLead, onExportPDF, onExportExcel, totalSales }) => {
   const { theme } = useTheme();
   const statusOptions = [
     { value: 'all', label: 'Todos' },
@@ -41,11 +41,20 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
           </div>
           <Button
             variant="outline"
+            onClick={onExportExcel}
+            className={theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}
+            title="Descargar plantilla para importar leads"
+          >
+            <FileDown className="w-4 h-4 mr-2" />
+            Plantilla Excel
+          </Button>
+          <Button
+            variant="outline"
             onClick={onExportPDF}
             className={theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}
           >
             <FileDown className="w-4 h-4 mr-2" />
-            Exportar
+            Exportar PDF
           </Button>
           <Button
             className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-primary to-accent text-primary-foreground' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'}
@@ -82,11 +91,10 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
           <button
             key={option.value}
             onClick={() => setSelectedStatus(option.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-              selectedStatus === option.value
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${selectedStatus === option.value
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
           >
             {option.label} ({getStatusCount(option.value)})
           </button>
