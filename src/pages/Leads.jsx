@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { Target, Plus } from 'lucide-react';
@@ -7,22 +7,26 @@ import { toast } from '@/components/ui/use-toast';
 import LeadsHeader from '@/components/leads/LeadsHeader';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadsTable from '@/components/leads/LeadsTable';
+import LeadsKanban from '@/components/leads/LeadsKanban';
 import ViewLeadDialog from '@/components/leads/ViewLeadDialog';
 import EditLeadDialog from '@/components/leads/EditLeadDialog';
 import DeleteLeadDialog from '@/components/leads/DeleteLeadDialog';
 import NewLeadDialog from '@/components/leads/NewLeadDialog';
 import FollowUpDialog from '@/components/leads/FollowUpDialog';
+import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useTheme } from '@/contexts/ThemeContext.jsx';
 import * as XLSX from 'xlsx';
 
 const Leads = () => {
   const { user } = useAuth();
-  const { leads, loading, updateLead, removeLead, addLead, addTask, updateTaskByLeadId, fetchData } = useData();
+  const { theme } = useTheme();
+  const { leads, loading, updateLead, removeLead, addLead, addDeal, addTask, updateTaskByLeadId, fetchData } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [dialogState, setDialogState] = useState({
@@ -31,39 +35,70 @@ const Leads = () => {
     delete: false,
     followUp: false,
     new: false,
+    conversation: false,
   });
+  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'kanban'
   const [selectedLead, setSelectedLead] = useState(null);
   const [followUpAction, setFollowUpAction] = useState(null);
+  const [initialPdf, setInitialPdf] = useState(null);
   const navigate = useNavigate();
 
+
+
   const filteredLeads = useMemo(() => {
-    return leads.map(lead => {
-      const totalValue = (lead.machines || []).reduce((sum, machine) => sum + (Number(machine.price) || 0), 0);
-      const totalCommission = (lead.machines || []).reduce((sum, machine) => sum + (Number(machine.commission) || 0), 0);
+    if (!Array.isArray(leads)) return [];
+
+    return leads.filter(l => l && typeof l === 'object').map(lead => {
+      const totalValue = (lead.machines || []).reduce((sum, m) => sum + (Number(m?.price) || 0), 0);
+      const totalCommission = (lead.machines || []).reduce((sum, m) => sum + (Number(m?.commission) || 0), 0);
       return { ...lead, value: totalValue, commission: totalCommission };
     }).filter(lead => {
-      const matchesSearch = (lead.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (lead.contact?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (lead.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      const search = searchTerm.toLowerCase();
+      const matchesSearch =
+        (lead.name?.toLowerCase() || '').includes(search) ||
+        (lead.contact?.toLowerCase() || '').includes(search) ||
+        (lead.email?.toLowerCase() || '').includes(search);
       const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
       return matchesSearch && matchesStatus;
-    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }).sort((a, b) => {
+      try {
+        const dateB = b?.created_at ? new Date(b.created_at).getTime() : 0;
+        const dateA = a?.created_at ? new Date(a.created_at).getTime() : 0;
+        return dateB - dateA;
+      } catch (e) {
+        return 0;
+      }
+    });
   }, [leads, searchTerm, selectedStatus]);
 
   const totalPossibleSales = useMemo(() => {
     return filteredLeads.reduce((sum, lead) => sum + lead.value, 0);
   }, [filteredLeads]);
 
-  const openDialog = useCallback((type, lead = null, action = null) => {
+  const totalPossibleUtilities = useMemo(() => {
+    return filteredLeads.reduce((sum, lead) => sum + (lead.commission || 0), 0);
+  }, [filteredLeads]);
+
+  const openDialog = useCallback((type, lead = null, actionOrPdf = null) => {
     setSelectedLead(lead);
-    if (type === 'followUp') setFollowUpAction(action);
-    setDialogState(prev => ({ ...prev, [type]: true }));
+    if (type === 'followUp') setFollowUpAction(actionOrPdf);
+    if (type === 'view') setInitialPdf(actionOrPdf);
+
+    // Si abrimos la bitácora desde la ficha, cerramos la ficha y abrimos la bitácora con un micro-delay
+    setDialogState(prev => {
+      if (type === 'conversation' && prev.view) {
+        setTimeout(() => setDialogState(s => ({ ...s, view: false, conversation: true })), 10);
+        return prev;
+      }
+      return { ...prev, [type]: true };
+    });
   }, []);
 
   const closeDialogs = useCallback(() => {
-    setDialogState({ view: false, edit: false, delete: false, followUp: false, new: false });
+    setDialogState({ view: false, edit: false, delete: false, followUp: false, new: false, conversation: false });
     setSelectedLead(null);
     setFollowUpAction(null);
+    setInitialPdf(null);
   }, []);
 
   const handleScheduleFollowUp = useCallback(async (lead, actionType, due) => {
@@ -108,43 +143,39 @@ const Leads = () => {
   }, [closeDialogs, user, updateLead, updateTaskByLeadId]);
 
   const handleConvertToDeal = useCallback(async (leadToConvert) => {
-    const totalValue = (leadToConvert.machines || []).reduce((sum, machine) => sum + (Number(machine.price) || 0), 0);
-    const machineProjects = (leadToConvert.machines || []).map(m => m.name).join(', ');
+    const totalValue = (leadToConvert.machines || []).reduce((sum, machine) => sum + (Number(machine?.price) || 0), 0);
+    const machineProjects = (leadToConvert.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
 
     const newDeal = {
-      user_id: user.id,
       title: `Venta - ${leadToConvert.name}`,
       client: leadToConvert.name,
       contact: leadToConvert.contact,
       contact_email: leadToConvert.email,
       contact_phone: leadToConvert.phone,
       value: totalValue,
-      stage: 'discovery',
-      probability: 40,
-      close_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+      stage: 'anticipo',
+      probability: 100,
+      close_date: new Date().toISOString().split('T')[0],
       last_activity: new Date().toISOString(),
       description: `Venta generada desde el prospecto: ${leadToConvert.name}. Proyectos: ${machineProjects || 'No especificado'}`,
       quotations: leadToConvert.quotations || [],
       machines: leadToConvert.machines || [],
+      notes: leadToConvert.notes || '[]',
+      closing_status: {},
     };
 
-    const { error: dealError } = await supabase.from('deals').insert(newDeal);
-    if (dealError) {
-      toast({ title: "Error al convertir a venta", description: dealError.message, variant: "destructive" });
+    const insertedDeal = await addDeal(newDeal);
+    if (!insertedDeal) {
+      toast({ title: "Error al convertir a venta", description: "Ocurrió un problema al crear la venta en la base de datos.", variant: "destructive" });
       return;
     }
 
-    const { error: deleteError } = await supabase.from('leads').delete().eq('id', leadToConvert.id);
-    if (deleteError) {
-      toast({ title: "Error al eliminar prospecto", description: deleteError.message, variant: "destructive" });
-    } else {
-      removeLead(leadToConvert.id);
-      toast({
-        title: "¡Prospecto convertido a Venta!",
-        description: `"${leadToConvert.name}" ahora está en tu pipeline de ventas.`,
-      });
-      navigate('/deals');
-    }
+    await removeLead(leadToConvert.id);
+    toast({
+      title: "¡Prospecto convertido a Venta!",
+      description: `"${leadToConvert.name}" ahora está en tu pipeline de ventas.`,
+    });
+    navigate('/deals');
   }, [user, removeLead, navigate]);
 
   const handleCreateLead = useCallback(async (newLeadData) => {
@@ -173,15 +204,14 @@ const Leads = () => {
       next_step: { type: 'Enviar Cotización', date: null }
     };
 
-    const { data, error } = await supabase.from('leads').insert(leadToAdd).select().single();
+    const createdLead = await addLead(leadToAdd);
 
-    if (error) {
-      toast({ variant: "destructive", title: "Error al crear prospecto", description: error.message });
+    if (!createdLead) {
+      toast({ variant: "destructive", title: "Error al crear prospecto", description: "No se pudo conectar con el servidor." });
       return;
     }
 
-    addLead(data);
-    toast({ title: "¡Prospecto Creado!", description: `Se ha añadido "${data.name}" a tus prospectos.` });
+    toast({ title: "¡Prospecto Creado!", description: `Se ha añadido "${createdLead.name}" a tus prospectos.` });
     closeDialogs();
   }, [user, addLead, closeDialogs]);
 
@@ -224,23 +254,61 @@ const Leads = () => {
 
   const exportToPDF = useCallback(() => {
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text('Reporte de Prospectos - KYRO', 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
+    const colors = {
+      nova: { primary: [255, 204, 0], accent: [255, 255, 255], bg: [26, 26, 26] },
+      futuristic: { primary: [13, 242, 242], accent: [242, 13, 242], bg: [20, 25, 35] },
+      play: { primary: [238, 68, 68], accent: [255, 255, 255], bg: [15, 15, 15] },
+      dark: { primary: [59, 130, 246], accent: [255, 255, 255], bg: [15, 23, 42] },
+      light: { primary: [59, 130, 246], accent: [255, 255, 255], bg: [255, 255, 255] }
+    };
+    const activeColors = colors[theme] || colors.light;
+    const headerBg = [30, 30, 30]; // Dark gray as requested
 
-    const tableColumn = ["Cliente", "Contacto", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
+    // Header Rect
+    doc.setFillColor(...headerBg);
+    doc.rect(0, 0, 210, 25, 'F');
+
+    // Logo Symol (Command icon fake)
+    doc.setDrawColor(...activeColors.primary);
+    doc.setLineWidth(0.8);
+    // Draw 4 circles for the Command symbol
+    const cx = 14, cy = 12.5, r = 1.5, offset = 2.5;
+    doc.circle(cx - offset, cy - offset, r);
+    doc.circle(cx + offset, cy - offset, r);
+    doc.circle(cx - offset, cy + offset, r);
+    doc.circle(cx + offset, cy + offset, r);
+    // Connecting lines
+    doc.line(cx - offset, cy - offset + r, cx - offset, cy + offset - r);
+    doc.line(cx + offset, cy - offset + r, cx + offset, cy + offset - r);
+    doc.line(cx - offset + r, cy - offset, cx + offset - r, cy - offset);
+    doc.line(cx - offset + r, cy + offset, cx + offset - r, cy + offset);
+
+    // Logo Text
+    doc.setTextColor(...activeColors.primary);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KYRO', 24, 15);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.text('REPORTE DE PROSPECTOS', 80, 15);
+
+    doc.setFontSize(9);
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 165, 15);
+
+    const tableColumn = ["#", "Cliente", "Contacto", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
     const tableRows = [];
 
-    filteredLeads.forEach(lead => {
-      const machineProjects = (lead.machines || []).map(m => m.name).join(', ');
+    filteredLeads.forEach((lead, index) => {
+      const machineProjects = (lead.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
       const leadData = [
+        index + 1,
         lead.name,
         lead.contact,
         machineProjects || 'N/A',
         getNextStep(lead),
-        lead.value.toLocaleString(),
+        `$${lead.value.toLocaleString()}`,
       ];
       tableRows.push(leadData);
     });
@@ -248,14 +316,51 @@ const Leads = () => {
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
-      startY: 35,
+      startY: 30,
       theme: 'grid',
-      headStyles: { fillColor: [22, 160, 133] },
+      headStyles: {
+        fillColor: activeColors.primary,
+        textColor: theme === 'nova' ? [0, 0, 0] : [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { top: 30 },
     });
 
-    doc.save('reporte-prospectos-kyro.pdf');
-    toast({ title: "¡Exportación Exitosa!", description: "Tu reporte de prospectos ha sido generado en PDF." });
-  }, [filteredLeads, getNextStep]);
+    const finalY = doc.lastAutoTable.finalY + 15;
+    const TC = 17.50;
+    const totalSalesMXN = totalPossibleSales * TC;
+    const totalUtilitiesMXN = totalPossibleUtilities * TC;
+
+    // Summary Section
+    doc.setFillColor(...activeColors.primary);
+    doc.rect(105, finalY - 5, 95, 52, 'F'); // Expanded height for better framing
+
+    doc.setTextColor(theme === 'nova' ? 0 : 255);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RESUMEN FINANCIERO (USD/MXN)', 110, finalY + 2);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`TC 17.50`, 110, finalY + 8);
+
+    doc.setFontSize(11); // Larger font for Sales
+    doc.setFont('helvetica', 'bold'); // Bold for Sales
+    doc.text(`VENTAS TOTALES:`, 110, finalY + 16);
+    doc.text(`- USD: $${totalPossibleSales.toLocaleString()}`, 115, finalY + 22);
+    doc.text(`- MXN: ${totalSalesMXN.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}`, 115, finalY + 28);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Utilidad Estimada:`, 110, finalY + 36);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`- USD: $${totalPossibleUtilities.toLocaleString()}`, 115, finalY + 41);
+    doc.text(`- MXN: ${totalUtilitiesMXN.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}`, 115, finalY + 46);
+
+    doc.save(`reporte-prospectos-${new Date().toISOString().split('T')[0]}.pdf`);
+    toast({ title: "¡Exportación Exitosa!", description: "Reporte generado con conversión a MXN (TC: 17.50)." });
+  }, [filteredLeads, getNextStep, theme, totalPossibleSales, totalPossibleUtilities]);
 
   const exportExcelTemplate = useCallback(() => {
     const headers = [["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"]];
@@ -365,7 +470,16 @@ const Leads = () => {
     reader.readAsArrayBuffer(file);
   }, [user, supabase, fetchData]);
 
-  if (loading) {
+  React.useEffect(() => {
+    const handleOpenEdit = (e) => {
+      const lead = e.detail;
+      openDialog('edit', lead);
+    };
+    window.addEventListener('open-edit-lead', handleOpenEdit);
+    return () => window.removeEventListener('open-edit-lead', handleOpenEdit);
+  }, [openDialog]);
+
+  if (loading && (!leads || leads.length === 0)) {
     return (
       <div className="flex items-center justify-center h-full">
         <Target className="w-16 h-16 text-primary animate-spin" />
@@ -391,24 +505,49 @@ const Leads = () => {
           onExportExcel={exportExcelTemplate}
           onImportExcel={handleImportExcel}
           totalSales={totalPossibleSales}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredLeads.map((lead, index) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              index={index}
-              onView={() => openDialog('view', lead)}
-              onEdit={() => openDialog('edit', lead)}
-              onDelete={() => openDialog('delete', lead)}
-              onStatusChange={handleStatusChange}
-              onConvertToDeal={handleConvertToDeal}
-              onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
-              onNextStepChange={handleNextStepChange}
-            />
-          ))}
-        </div>
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredLeads.map((lead, index) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                index={index}
+                onView={(pdf = null) => openDialog('view', lead, pdf)}
+                onEdit={() => openDialog('edit', lead)}
+                onDelete={() => openDialog('delete', lead)}
+                onStatusChange={handleStatusChange}
+                onConvertToDeal={handleConvertToDeal}
+                onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
+                onNextStepChange={handleNextStepChange}
+                onOpenConversation={(lead) => openDialog('conversation', lead)}
+              />
+            ))}
+          </div>
+        )}
+
+        {viewMode === 'list' && (
+          <LeadsTable
+            leads={filteredLeads}
+            onView={(lead) => openDialog('view', lead)}
+            onEdit={(lead) => openDialog('edit', lead)}
+            onDelete={(lead) => openDialog('delete', lead)}
+            onOpenConversation={(lead) => openDialog('conversation', lead)}
+            onConvertToDeal={handleConvertToDeal}
+            onStatusChange={handleStatusChange}
+          />
+        )}
+
+        {viewMode === 'kanban' && (
+          <LeadsKanban
+            leads={filteredLeads}
+            onView={(lead) => openDialog('view', lead)}
+            onOpenConversation={(lead) => openDialog('conversation', lead)}
+          />
+        )}
 
         {filteredLeads.length === 0 && !loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
@@ -423,14 +562,17 @@ const Leads = () => {
           </motion.div>
         )}
 
-        {filteredLeads.length > 0 && <LeadsTable leads={filteredLeads} />}
+        {/* LeadsTable removed from here as it is now controlled by viewMode */}
       </div>
 
       <ViewLeadDialog
+        key={selectedLead?.id || 'none'}
         isOpen={dialogState.view}
         setIsOpen={(isOpen) => setDialogState(prev => ({ ...prev, view: isOpen }))}
         lead={selectedLead}
+        initialPdf={initialPdf}
         onUpdate={updateLead}
+        onOpenConversation={(lead) => openDialog('conversation', lead)}
       />
       <EditLeadDialog
         isOpen={dialogState.edit}
@@ -456,6 +598,12 @@ const Leads = () => {
         actionType={followUpAction}
         onSchedule={handleScheduleFollowUp}
         onUpdate={updateLeadAndLastActivity}
+      />
+      <LeadConversationDialog
+        isOpen={dialogState.conversation}
+        onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, conversation: isOpen }))}
+        lead={selectedLead}
+        onSave={updateLeadAndLastActivity}
       />
     </div>
   );

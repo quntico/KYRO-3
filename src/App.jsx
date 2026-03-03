@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import Sidebar from '@/components/Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext.jsx';
@@ -8,11 +9,12 @@ import Header from '@/components/Header';
 import { Command as KyroRune } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
-import { DataProvider } from '@/contexts/DataContext';
-import { SettingsProvider } from '@/contexts/SettingsContext';
+import { useData } from '@/contexts/DataContext';
 
-const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-const Leads = React.lazy(() => import('@/pages/Leads'));
+import Dashboard from '@/pages/Dashboard';
+import Leads from '@/pages/Leads';
+// const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+// const Leads = React.lazy(() => import('@/pages/Leads'));
 const Deals = React.lazy(() => import('@/pages/Deals'));
 const Analytics = React.lazy(() => import('@/pages/Analytics'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
@@ -26,10 +28,22 @@ const Search = React.lazy(() => import('@/pages/Search'));
 const Login = React.lazy(() => import('@/pages/Login'));
 const SignUp = React.lazy(() => import('@/pages/SignUp'));
 const ContactsPage = React.lazy(() => import('@/pages/Contacts'));
+const SystemSettings = React.lazy(() => import('@/pages/SystemSettings'));
 
 const Fallback = () => (
-  <div className="flex items-center justify-center w-full h-full bg-background">
-    <KyroRune className="w-16 h-16 animate-spin text-primary" />
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-black z-[9999]" style={{ backgroundColor: '#000' }}>
+    <div className="flex flex-col items-center gap-4">
+      <KyroRune className="w-12 h-12 text-primary animate-spin" />
+      <p className="text-primary font-bold tracking-widest uppercase text-[10px] animate-pulse">
+        Iniciando KYRO Nova
+      </p>
+    </div>
+  </div>
+);
+
+const ViewFallback = () => (
+  <div className="flex-1 flex items-center justify-center h-full min-h-[200px]">
+    <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
@@ -43,47 +57,65 @@ const ProtectedRoute = ({ children }) => {
   // Bypass Auth: Always return children
   return children;
 };
-
 const AppContent = () => {
   const { isCollapsed } = useSidebar();
+  const { user } = useAuth();
+  const { loading: dataLoading } = useData();
+  const [showSplash, setShowSplash] = React.useState(true);
 
-  const routes = (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/leads" element={<Leads />} />
-      <Route path="/deals" element={<Deals />} />
-      <Route path="/contacts" element={<ContactsPage />} />
-      <Route path="/analytics" element={<Analytics />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/client-onboarding" element={<ClientOnboarding />} />
-      <Route path="/clients" element={<Clients />} />
-      <Route path="/logistics" element={<Logistics />} />
-      <Route path="/todo" element={<ToDo />} />
-      <Route path="/directory" element={<Directory />} />
-      <Route path="/news" element={<News />} />
-      <Route path="/search" element={<Search />} />
-    </Routes>
-  );
+  React.useEffect(() => {
+    // Bypass de seguridad: El splash screen solo durará 1 segundo máximo
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  const hasCache = !!localStorage.getItem(`kyro-leads-${user?.id}`);
+  const isLoading = dataLoading && !hasCache && showSplash;
+
+  if (isLoading) {
+    return <Fallback />;
+  }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-[100dvh] w-full bg-background text-foreground transition-colors duration-300 overflow-hidden select-none">
       <Sidebar />
-      <main className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 md:ml-20 ${isCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+      <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 md:pl-20 overflow-hidden relative">
         <Header />
-        <div className="flex-1 overflow-y-auto scrollbar-hide pb-16 md:pb-0">
-          <Suspense fallback={<Fallback />}>
-            {routes}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-24 md:pb-0">
+          <Suspense fallback={<ViewFallback />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="deals" element={<Deals />} />
+              <Route path="contacts" element={<ContactsPage />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="onboarding" element={<ClientOnboarding />} />
+              <Route path="clients" element={<Clients />} />
+              <Route path="logistics" element={<Logistics />} />
+              <Route path="industrial-logistics" element={<Logistics />} />
+              <Route path="todo" element={<ToDo />} />
+              <Route path="directory" element={<Directory />} />
+              <Route path="news" element={<News />} />
+              <Route path="search" element={<Search />} />
+              <Route path="system-settings" element={<SystemSettings />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
+            </Routes>
           </Suspense>
         </div>
       </main>
-      <MobileNav />
+      <MobileNav className="md:hidden" />
     </div>
   );
 };
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   return (
     <ThemeProvider>
@@ -97,10 +129,18 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
-              {/* Bypass Auth: Access AppContent if not loading, or redirect if no user (but we mock user now) */}
-              <Route path="/*" element={
-                loading ? <Fallback /> : <AppContent />
-              } />
+              <Route
+                path="/*"
+                element={
+                  authLoading ? (
+                    <Fallback />
+                  ) : user ? (
+                    <AppContent />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
             </Routes>
           </SidebarProvider>
         </Suspense>

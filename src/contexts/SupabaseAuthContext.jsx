@@ -9,21 +9,17 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      // Bypass Auth: Mock user for development
-      const mockUser = {
-        id: '00000000-0000-0000-0000-000000000000',
-        email: 'dev@kyro.test',
-        user_metadata: { full_name: 'Developer' }
-      };
-      const mockSession = { user: mockUser, access_token: 'mock-token' };
-
-      setSession(mockSession);
-      setUser(mockUser);
-      setLoading(false);
+    // Bypass Auth: Mock user for development immediately
+    const mockUser = {
+      id: '882f8e4e-9124-4334-849b-44c25ca2aed3',
+      email: 'dev@kyro.test',
+      user_metadata: { full_name: 'Developer' }
     };
+    const mockSession = { user: mockUser, access_token: 'mock-token' };
 
-    getSession();
+    setSession(mockSession);
+    setUser(mockUser);
+    setLoading(false);
 
     // We still listen for changes but the initial state is mocked
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -32,7 +28,7 @@ export const AuthProvider = ({ children }) => {
           setSession(session);
           setUser(session?.user ?? null);
         }
-        setLoading(false);
+        // No need to set loading to false here again as it's already done
       }
     );
 

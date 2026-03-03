@@ -1,53 +1,68 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-    import usePersistentState from '@/hooks/usePersistentState.js';
 
-    const ThemeContext = createContext();
+const ThemeContext = createContext();
 
-    export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => useContext(ThemeContext);
 
-    const defaultThemeSettings = {
-      futuristicGlowIntensity: 0.5,
-    };
+const defaultThemeSettings = {
+  futuristicGlowIntensity: 0.5,
+};
 
-    export const ThemeProvider = ({ children }) => {
-      const [theme, setTheme] = usePersistentState('kyro-theme', 'light');
-      const [themeSettings, setThemeSettings] = usePersistentState('kyro-theme-settings', defaultThemeSettings);
+export const ThemeProvider = ({ children }) => {
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('kyro-theme');
+    const savedVersion = localStorage.getItem('kyro-version');
 
-      const toggleTheme = () => {
-        setTheme(prevTheme => {
-          if (prevTheme === 'light') return 'dark';
-          if (prevTheme === 'dark') return 'futuristic';
-          if (prevTheme === 'futuristic') return 'play';
-          return 'light';
-        });
-      };
+    if (savedVersion !== '4.0.0') {
+      localStorage.setItem('kyro-version', '4.0.0');
+      localStorage.setItem('kyro-theme', JSON.stringify('nova'));
+      return 'nova';
+    }
 
-      const changeTheme = (newTheme) => {
-        if (['light', 'dark', 'futuristic', 'play'].includes(newTheme)) {
-          setTheme(newTheme);
-        }
-      };
+    return saved ? JSON.parse(saved) : 'nova';
+  });
+  const [themeSettings, setThemeSettings] = useState(() => {
+    const saved = localStorage.getItem('kyro-theme-settings');
+    return saved ? JSON.parse(saved) : defaultThemeSettings;
+  });
 
-      const updateThemeSettings = (newSettings) => {
-        setThemeSettings(prevSettings => ({ ...prevSettings, ...newSettings }));
-      };
-      
-      useEffect(() => {
-        const root = window.document.documentElement;
-        root.classList.remove('light', 'dark', 'futuristic', 'play');
-        root.classList.add(theme);
-        
-        if (theme === 'futuristic' || theme === 'play') {
-          root.style.setProperty('--glow-intensity', themeSettings.futuristicGlowIntensity);
-        } else {
-          root.style.removeProperty('--glow-intensity');
-        }
+  const changeTheme = (newTheme) => {
+    if (['light', 'dark', 'futuristic', 'play', 'nova'].includes(newTheme)) {
+      setTheme(newTheme);
+    }
+  };
 
-      }, [theme, themeSettings]);
+  const updateThemeSettings = (newSettings) => {
+    setThemeSettings(prevSettings => ({ ...prevSettings, ...newSettings }));
+  };
 
-      return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, changeTheme, themeSettings, updateThemeSettings }}>
-          {children}
-        </ThemeContext.Provider>
-      );
-    };
+  const saveThemeSettings = () => {
+    localStorage.setItem('kyro-theme', JSON.stringify(theme));
+    localStorage.setItem('kyro-theme-settings', JSON.stringify(themeSettings));
+  };
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark', 'futuristic', 'play', 'nova');
+    root.classList.add(theme);
+
+    if (theme === 'futuristic' || theme === 'play' || theme === 'nova') {
+      root.style.setProperty('--glow-intensity', themeSettings.futuristicGlowIntensity);
+    } else {
+      root.style.removeProperty('--glow-intensity');
+    }
+
+  }, [theme, themeSettings]);
+
+  return (
+    <ThemeContext.Provider value={{
+      theme,
+      changeTheme,
+      themeSettings,
+      updateThemeSettings,
+      saveThemeSettings
+    }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};

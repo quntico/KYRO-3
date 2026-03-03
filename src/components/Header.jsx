@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Settings, BrainCircuit, Bot, Sparkles, PanelLeft, Command as KyroRune } from 'lucide-react';
+import { Search, Settings, Bot, Sparkles, PanelLeft, Command as KyroRune } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useSidebar } from '@/contexts/SidebarContext';
 
+
 const SearchEngineSelector = () => {
   const { toast } = useToast();
   const engines = [
-    { name: 'GPT', icon: BrainCircuit },
+    { name: 'GPT', icon: Sparkles },
     { name: 'Gemini', icon: Sparkles },
     { name: 'DeepSeek', icon: Bot },
   ];
@@ -53,7 +54,7 @@ const SearchEngineSelector = () => {
 const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const { toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { toggleSidebar, toggleMobileSidebar, isCollapsed } = useSidebar();
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -64,16 +65,16 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-lg px-4 md:px-8">
+    <header className={`sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-white/5 bg-background/60 backdrop-blur-xl px-4 md:pl-20 md:pr-8 transition-all duration-400`}>
       <div className="flex items-center gap-4">
-        <button onClick={toggleSidebar} className="hidden md:block p-2 -ml-2 text-muted-foreground hover:text-primary">
+        <button onClick={toggleSidebar} className="hidden md:block p-2 -ml-2 text-muted-foreground hover:text-primary transition-colors">
           <PanelLeft className="h-6 w-6" />
         </button>
       </div>
 
-      <div className="md:hidden flex-1 flex justify-center">
-        <button onClick={toggleMobileSidebar} className="p-2 text-muted-foreground hover:text-primary">
-          <KyroRune className="h-8 w-8 text-primary" />
+      <div className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center">
+        <button onClick={toggleMobileSidebar} className="p-2 text-primary hover:scale-110 transition-transform">
+          <KyroRune className="h-7 w-7 drop-shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
         </button>
       </div>
 
@@ -89,7 +90,7 @@ const Header = () => {
             <Input
               type="search"
               placeholder="Busca en la web sin distracciones..."
-              className="w-full appearance-none bg-transparent pl-10"
+              className="w-full appearance-none bg-white/5 border-white/10 pl-10 focus:bg-white/10 transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -99,14 +100,21 @@ const Header = () => {
           </motion.div>
         </form>
       </div>
-      <div className="flex items-center">
-        <div className="flex items-center space-x-2 px-3 py-1 bg-primary/5 rounded-full border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)] animate-in fade-in zoom-in duration-500">
-          <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_12px_rgba(var(--primary),1)]" />
-          <span className="text-[11px] font-bold text-primary uppercase tracking-widest whitespace-nowrap">
-            ver. 2.35
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v4.0</span>
+        <button
+          onClick={() => navigate('/system-settings')}
+          className="flex items-center space-x-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.2)] cursor-pointer select-none active:scale-95 transition-all hover:bg-primary/20"
+          title="Ajustes del Sistema"
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-led-blink shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
+          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter whitespace-nowrap">
+            Ajustes del Sistema
           </span>
-        </div>
+        </button>
       </div>
+
+
     </header>
   );
 };
