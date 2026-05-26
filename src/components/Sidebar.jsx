@@ -40,10 +40,10 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => (
     onClick={onClick}
     title={isCollapsed ? label : ""}
     className={({ isActive }) =>
-      `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 group ${isActive
-        ? 'bg-primary/10 text-primary shadow-inner'
-        : 'text-muted-foreground hover:bg-primary/5 hover:text-primary'
-      } ${isCollapsed ? 'justify-center' : ''} ${window.document.documentElement.classList.contains('nova') ? 'hover:shadow-[0_0_15px_rgba(var(--primary),0.3)]' : ''}`
+      `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 group ${isActive
+        ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.4)] scale-105'
+        : 'text-white/20 hover:bg-white/[0.05] hover:text-white'
+      } ${isCollapsed ? 'justify-center' : ''}`
     }
   >
     <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 flex-shrink-0" />
@@ -54,7 +54,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => (
           animate={{ opacity: 1, width: 'auto' }}
           exit={{ opacity: 0, width: 0 }}
           transition={{ duration: 0.2 }}
-          className="font-medium overflow-hidden whitespace-nowrap"
+          className="font-black text-[10px] tracking-widest uppercase overflow-hidden whitespace-nowrap"
         >
           {label}
         </motion.span>
@@ -114,8 +114,8 @@ const Sidebar = () => {
           }}
           transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
         >
-          <div className={`flex items-center h-16 border-b border-white/20 transition-all duration-300 ${isCollapsed ? 'justify-center' : 'justify-center'} relative bg-white/[0.03]`}>
-            <KyroRune className={`w-8 h-8 text-primary transition-all duration-300 drop-shadow-[0_0_15px_rgba(var(--primary),0.7)]`} />
+          <div className={`flex items-center h-20 border-b border-white/5 transition-all duration-300 ${isCollapsed ? 'justify-center' : 'justify-center'} relative bg-black/40`}>
+            <KyroRune className={`w-9 h-9 text-cyan-400 transition-all duration-300 drop-shadow-[0_0_20px_rgba(34,211,238,0.8)]`} />
 
             <button
               onClick={() => toggleSidebar()}

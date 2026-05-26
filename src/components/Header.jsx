@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Settings, Bot, Sparkles, PanelLeft, Command as KyroRune } from 'lucide-react';
+import { Settings, Bot, Sparkles, PanelLeft, Command as KyroRune, BrainCircuit, Terminal, Zap } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useSidebar } from '@/contexts/SidebarContext';
+import AISandbox from './ai/AISandbox';
 
 
 const SearchEngineSelector = () => {
@@ -53,13 +54,16 @@ const SearchEngineSelector = () => {
 
 const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [sandboxOpen, setSandboxOpen] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState('');
   const navigate = useNavigate();
   const { toggleSidebar, toggleMobileSidebar, isCollapsed } = useSidebar();
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
+      setInitialPrompt(searchTerm);
+      setSandboxOpen(true);
       setSearchTerm('');
     }
   };
@@ -84,31 +88,42 @@ const Header = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative"
+            className="relative group"
           >
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <BrainCircuit className="h-4 w-4 text-primary animate-pulse" />
+              <div className="w-[1px] h-4 bg-white/10" />
+            </div>
             <Input
-              type="search"
-              placeholder="Busca en la web sin distracciones..."
-              className="w-full appearance-none bg-white/5 border-white/10 pl-10 focus:bg-white/10 transition-all"
+              type="text"
+              placeholder="Orquestador de Estrategia AI... (kW, costos, agenda)"
+              className="w-full appearance-none bg-white/5 border-white/10 pl-12 pr-12 focus:bg-white/10 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all rounded-2xl h-11 text-sm placeholder:text-muted-foreground/50 cursor-pointer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClick={() => setSandboxOpen(true)}
             />
-            <div className="absolute right-1 top-1/2 -translate-y-1/2">
-              <SearchEngineSelector />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+               <div className="text-[9px] font-black text-muted-foreground/30 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 uppercase tracking-tighter">AI Mode</div>
+               <SearchEngineSelector />
             </div>
           </motion.div>
         </form>
       </div>
+
+      <AISandbox 
+        open={sandboxOpen} 
+        onOpenChange={setSandboxOpen} 
+        initialPrompt={initialPrompt} 
+      />
       <div className="flex items-center gap-3">
-        <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v4.0</span>
+        <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v5.5</span>
         <button
           onClick={() => navigate('/system-settings')}
-          className="flex items-center space-x-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.2)] cursor-pointer select-none active:scale-95 transition-all hover:bg-primary/20"
+          className="flex items-center space-x-2 px-3 py-1 bg-cyan-500/10 rounded-full border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2)] cursor-pointer select-none active:scale-95 transition-all hover:bg-cyan-500/20"
           title="Ajustes del Sistema"
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-led-blink shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter whitespace-nowrap">
+          <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-led-blink shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+          <span className="text-[10px] font-black text-cyan-400 uppercase tracking-tighter whitespace-nowrap">
             Ajustes del Sistema
           </span>
         </button>

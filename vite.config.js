@@ -214,6 +214,14 @@ export default defineConfig({
 			'Cross-Origin-Embedder-Policy': 'credentialless',
 		},
 		allowedHosts: true,
+		proxy: {
+			'/api-image': {
+				target: 'http://localhost:3002',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api-image/, ''),
+				secure: false
+			}
+		}
 	},
 	resolve: {
 		extensions: ['.jsx', '.js', '.tsx', '.ts', '.json', ],
@@ -230,5 +238,8 @@ export default defineConfig({
 				'@babel/types'
 			]
 		}
+	},
+	optimizeDeps: {
+		exclude: ['@imgly/background-removal']
 	}
 });

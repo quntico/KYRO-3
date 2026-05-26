@@ -14,6 +14,7 @@ import DeleteLeadDialog from '@/components/leads/DeleteLeadDialog';
 import NewLeadDialog from '@/components/leads/NewLeadDialog';
 import FollowUpDialog from '@/components/leads/FollowUpDialog';
 import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
+import ModernLeadsDashboard from '@/components/leads/ModernLeadsDashboard';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,8 @@ const Leads = () => {
     conversation: false,
   });
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'kanban'
+  const [dashboardStyle, setDashboardStyle] = useState('modern'); // 'modern', 'classic'
+  const [sortMode, setSortMode] = useState('status'); // 'date', 'status', 'alpha', 'value'
   const [selectedLead, setSelectedLead] = useState(null);
   const [followUpAction, setFollowUpAction] = useState(null);
   const [initialPdf, setInitialPdf] = useState(null);
@@ -61,15 +64,25 @@ const Leads = () => {
       const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
       return matchesSearch && matchesStatus;
     }).sort((a, b) => {
-      try {
-        const dateB = b?.created_at ? new Date(b.created_at).getTime() : 0;
-        const dateA = a?.created_at ? new Date(a.created_at).getTime() : 0;
-        return dateB - dateA;
-      } catch (e) {
-        return 0;
+      if (sortMode === 'date') {
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
       }
+      if (sortMode === 'status') {
+        const priority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
+        const pA = priority[a.status] || 99;
+        const pB = priority[b.status] || 99;
+        if (pA !== pB) return pA - pB;
+        return (b.value || 0) - (a.value || 0);
+      }
+      if (sortMode === 'alpha') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (sortMode === 'value') {
+        return (b.value || 0) - (a.value || 0);
+      }
+      return 0;
     });
-  }, [leads, searchTerm, selectedStatus]);
+  }, [leads, searchTerm, selectedStatus, sortMode]);
 
   const totalPossibleSales = useMemo(() => {
     return filteredLeads.reduce((sum, lead) => sum + lead.value, 0);
@@ -188,7 +201,7 @@ const Leads = () => {
       phone: newLeadData.phone,
       status: 'new',
       score: 50,
-      source: 'Manual Entry',
+      source: newLeadData.source || 'Manual Entry',
       machines: newLeadData.machines,
       last_activity: new Date().toISOString(),
       notes: newLeadData.notes,
@@ -216,31 +229,38 @@ const Leads = () => {
   }, [user, addLead, closeDialogs]);
 
   const updateLeadAndLastActivity = useCallback(async (leadId, updates) => {
-    const { data, error } = await supabase
-      .from('leads')
-      .update({ ...updates, last_activity: new Date().toISOString() })
-      .eq('id', leadId)
-      .select()
-      .single();
-
-    if (error) {
-      toast({ title: "Error al actualizar prospecto", description: error.message, variant: "destructive" });
-    } else {
-      updateLead(data);
-    }
-    return { data, error };
+    const fullUpdates = { ...updates, last_activity: new Date().toISOString() };
+    await updateLead(leadId, fullUpdates);
+    return { data: fullUpdates, error: null };
   }, [updateLead]);
 
   const handleStatusChange = useCallback(async (leadId, newStatus) => {
     let newScore;
     switch (newStatus) {
+      case 'closing': newScore = 100; break;
       case 'hot': newScore = Math.floor(Math.random() * (99 - 85 + 1)) + 85; break;
       case 'warm': newScore = Math.floor(Math.random() * (84 - 60 + 1)) + 60; break;
       case 'cold': newScore = Math.floor(Math.random() * (59 - 30 + 1)) + 30; break;
+      case 'declined': newScore = Math.floor(Math.random() * (20 - 0 + 1)) + 0; break;
       default: newScore = 50;
     }
+    
+    const statusNames = {
+      closing: 'Cierre',
+      hot: 'Caliente',
+      warming: 'Avanzando',
+      warm: 'Tibio',
+      cooling: 'Enfriando',
+      cold: 'Frío',
+      new: 'Nuevo',
+      declined: 'Perdido'
+    };
+
     await updateLeadAndLastActivity(leadId, { status: newStatus, score: newScore });
-    toast({ title: "¡Estado Actualizado!", description: `El prospecto ha sido marcado como ${newStatus} y su score es ahora ${newScore}.` });
+    toast({ 
+      title: "¡Estatus Actualizado!", 
+      description: `El prospecto ha sido marcado como ${statusNames[newStatus] || newStatus}.` 
+    });
   }, [updateLeadAndLastActivity]);
 
   const handleNextStepChange = useCallback((lead, newNextStep) => {
@@ -300,7 +320,26 @@ const Leads = () => {
     const tableColumn = ["#", "Cliente", "Contacto", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
     const tableRows = [];
 
-    filteredLeads.forEach((lead, index) => {
+    const statusPriority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
+    const statusColorsRGB = {
+      closing: [0, 71, 255],
+      hot: [239, 68, 68],
+      warming: [16, 185, 129],
+      warm: [249, 115, 22],
+      cooling: [6, 182, 212],
+      cold: [59, 130, 246],
+      new: [168, 85, 247],
+      declined: [139, 69, 19],
+    };
+
+    const sortedLeads = [...filteredLeads].sort((a, b) => {
+      const pA = statusPriority[a.status] || 99;
+      const pB = statusPriority[b.status] || 99;
+      if (pA !== pB) return pA - pB;
+      return (b.value || 0) - (a.value || 0);
+    });
+
+    sortedLeads.forEach((lead, index) => {
       const machineProjects = (lead.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
       const leadData = [
         index + 1,
@@ -308,7 +347,7 @@ const Leads = () => {
         lead.contact,
         machineProjects || 'N/A',
         getNextStep(lead),
-        `$${lead.value.toLocaleString()}`,
+        `$${(lead.value || 0).toLocaleString()}`,
       ];
       tableRows.push(leadData);
     });
@@ -325,6 +364,15 @@ const Leads = () => {
       },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 30 },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 0) {
+          const leadStatus = sortedLeads[data.row.index].status;
+          const bgColor = statusColorsRGB[leadStatus] || [128, 128, 128];
+          data.cell.styles.fillColor = bgColor;
+          data.cell.styles.textColor = [255, 255, 255];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
     });
 
     const finalY = doc.lastAutoTable.finalY + 15;
@@ -375,6 +423,30 @@ const Leads = () => {
       description: "Se ha descargado la plantilla Excel (.xlsx) para importar prospectos."
     });
   }, []);
+
+  const exportDataToExcel = useCallback(() => {
+    const headers = ["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"];
+    const data = filteredLeads.map(lead => [
+      lead.name || '',
+      lead.contact || '',
+      lead.position || '',
+      lead.email || '',
+      lead.phone || '',
+      lead.notes || '',
+      lead.value || 0
+    ]);
+    const wsData = [headers, ...data];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Mis Prospectos");
+
+    XLSX.writeFile(wb, `prospectos-exportados-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    toast({
+      title: "✅ Exportación a Excel Exitosa",
+      description: "Tu lista de prospectos ha sido exportada. Puedes usar este archivo para importar de nuevo."
+    });
+  }, [filteredLeads]);
 
   const handleImportExcel = useCallback(async (event) => {
     const file = event.target.files[0];
@@ -486,14 +558,26 @@ const Leads = () => {
       </div>
     );
   }
-
   return (
-    <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground">
+    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden selection:bg-cyan-500/30">
       <Helmet>
-        <title>Prospectos - KYRO</title>
-        <meta name="description" content="Gestiona y convierte tus oportunidades de negocio en KYRO CRM." />
+        <title>Prospectos | KYRO STRATEGIC CONSOLE</title>
       </Helmet>
-      <div className="p-8">
+
+      {/* Futuristic Background System */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Digital Grid */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
+        
+        {/* Ambient Glows */}
+        <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-cyan-400/10 rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[150px]" />
+        
+        {/* Scanning Line Effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-400/10 to-transparent h-[2px] w-full animate-scan shadow-[0_0_15px_rgba(34,211,238,0.5)]" style={{ top: '-100%' }} />
+      </div>
+
+      <div className="relative z-10 p-4 md:p-10 max-w-[1700px] mx-auto space-y-10">
         <LeadsHeader
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -503,63 +587,86 @@ const Leads = () => {
           onNewLead={() => openDialog('new')}
           onExportPDF={exportToPDF}
           onExportExcel={exportExcelTemplate}
+          onExportDataExcel={exportDataToExcel}
           onImportExcel={handleImportExcel}
           totalSales={totalPossibleSales}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          dashboardStyle={dashboardStyle}
+          setDashboardStyle={setDashboardStyle}
+          sortMode={sortMode}
+          setSortMode={setSortMode}
         />
 
-        {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredLeads.map((lead, index) => (
-              <LeadCard
-                key={lead.id}
-                lead={lead}
-                index={index}
-                onView={(pdf = null) => openDialog('view', lead, pdf)}
-                onEdit={() => openDialog('edit', lead)}
-                onDelete={() => openDialog('delete', lead)}
-                onStatusChange={handleStatusChange}
-                onConvertToDeal={handleConvertToDeal}
-                onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
-                onNextStepChange={handleNextStepChange}
-                onOpenConversation={(lead) => openDialog('conversation', lead)}
-              />
-            ))}
-          </div>
-        )}
-
-        {viewMode === 'list' && (
-          <LeadsTable
-            leads={filteredLeads}
-            onView={(lead) => openDialog('view', lead)}
+        {dashboardStyle === 'modern' ? (
+          <ModernLeadsDashboard
+            filteredLeads={filteredLeads}
+            viewMode={viewMode}
+            onView={(lead, pdf = null) => openDialog('view', lead, pdf)}
             onEdit={(lead) => openDialog('edit', lead)}
             onDelete={(lead) => openDialog('delete', lead)}
-            onOpenConversation={(lead) => openDialog('conversation', lead)}
-            onConvertToDeal={handleConvertToDeal}
             onStatusChange={handleStatusChange}
-          />
-        )}
-
-        {viewMode === 'kanban' && (
-          <LeadsKanban
-            leads={filteredLeads}
-            onView={(lead) => openDialog('view', lead)}
+            onConvertToDeal={handleConvertToDeal}
+            onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
+            onNextStepChange={handleNextStepChange}
             onOpenConversation={(lead) => openDialog('conversation', lead)}
+            onUpdateField={updateLeadAndLastActivity}
           />
-        )}
+        ) : (
+          <>
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredLeads.map((lead, index) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
+                    index={index}
+                    onView={(pdf = null) => openDialog('view', lead, pdf)}
+                    onEdit={() => openDialog('edit', lead)}
+                    onDelete={() => openDialog('delete', lead)}
+                    onStatusChange={handleStatusChange}
+                    onConvertToDeal={handleConvertToDeal}
+                    onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
+                    onNextStepChange={handleNextStepChange}
+                    onOpenConversation={(lead) => openDialog('conversation', lead)}
+                  />
+                ))}
+              </div>
+            )}
 
-        {filteredLeads.length === 0 && !loading && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-            <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No se encontraron prospectos</h3>
-            <p className="text-muted-foreground mb-6">
-              {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando tu primer prospecto'}
-            </p>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white" onClick={() => openDialog('new')}>
-              <Plus className="w-4 h-4 mr-2" /> Agregar Prospecto
-            </Button>
-          </motion.div>
+            {viewMode === 'list' && (
+              <LeadsTable
+                leads={filteredLeads}
+                onView={(lead) => openDialog('view', lead)}
+                onEdit={(lead) => openDialog('edit', lead)}
+                onDelete={(lead) => openDialog('delete', lead)}
+                onOpenConversation={(lead) => openDialog('conversation', lead)}
+                onConvertToDeal={handleConvertToDeal}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+
+            {viewMode === 'kanban' && (
+              <LeadsKanban
+                leads={filteredLeads}
+                onView={(lead) => openDialog('view', lead)}
+                onOpenConversation={(lead) => openDialog('conversation', lead)}
+              />
+            )}
+
+            {filteredLeads.length === 0 && !loading && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+                <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No se encontraron prospectos</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando tu primer prospecto'}
+                </p>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white" onClick={() => openDialog('new')}>
+                  <Plus className="w-4 h-4 mr-2" /> Agregar Prospecto
+                </Button>
+              </motion.div>
+            )}
+          </>
         )}
 
         {/* LeadsTable removed from here as it is now controlled by viewMode */}

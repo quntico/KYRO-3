@@ -234,9 +234,14 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
             className="flex items-center justify-between group/copy cursor-pointer py-1 px-2 rounded-lg hover:bg-white/5 transition-colors"
             onClick={(e) => { e.stopPropagation(); handleCopy(lead.phone, 'phone'); }}
           >
-            <span className="flex items-center gap-2 overflow-hidden">
+            <span className="flex items-center gap-2 overflow-hidden flex-wrap">
               <Phone className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="truncate">{lead.phone}</span>
+              {lead.source && lead.source !== 'Manual Entry' && lead.source !== 'Excel Import' && lead.source !== 'Convertido de Contacto' && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-green-500/20 border border-green-500/30 text-green-400 rounded-md font-bold uppercase tracking-wider scale-90">
+                  {lead.source}
+                </span>
+              )}
             </span>
             {copied === 'phone' ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
           </div>

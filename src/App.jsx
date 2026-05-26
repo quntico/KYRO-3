@@ -64,10 +64,10 @@ const AppContent = () => {
   const [showSplash, setShowSplash] = React.useState(true);
 
   React.useEffect(() => {
-    // Bypass de seguridad: El splash screen solo durará 1 segundo máximo
+    // Reducimos el tiempo de splash screen para una carga más rápida
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 1000);
+    }, 500); // Antes era 1000
     return () => clearTimeout(timer);
   }, []);
 

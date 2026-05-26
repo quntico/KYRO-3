@@ -21,13 +21,13 @@ export const DataProvider = ({ children }) => {
     useEffect(() => {
         if (user?.id) {
             const loadCache = (key, setter) => {
-                const cached = localStorage.getItem(`kyro-${key}-${user.id}`);
-                if (cached) {
-                    try {
+                try {
+                    const cached = localStorage.getItem(`kyro-${key}-${user.id}`);
+                    if (cached) {
                         setter(JSON.parse(cached));
-                    } catch (e) {
-                        console.error(`Error parsing cache for ${key}:`, e);
                     }
+                } catch (e) {
+                    console.error(`Error loading cache for ${key}:`, e);
                 }
             };
 
@@ -36,12 +36,8 @@ export const DataProvider = ({ children }) => {
             loadCache('tasks', setTasks);
             loadCache('contacts', setContacts);
             loadCache('notes', setNotes);
-            loadCache('notes', setNotes);
             loadCache('logistics', setLogistics);
             loadCache('leadStatuses', setLeadStatuses);
-
-            // If we have some data in cache, we can turn off visible loading soon
-            // but we still want the initial fetch to happen
         }
     }, [user?.id]);
 
@@ -52,76 +48,85 @@ export const DataProvider = ({ children }) => {
         }
 
         try {
-            // No bloqueamos la UI con un loader si ya tenemos datos en memoria o caché
-            if (leads.length === 0) {
-                const hasCache = !!localStorage.getItem(`kyro-leads-${user.id}`);
-                if (!hasCache) setLoading(true);
-                else setLoading(false); // Si hay caché, entramos directo
+            // Speed up: if we have any data in memory or cache, don't show full loading
+            const hasCache = !!localStorage.getItem(`kyro-leads-${user.id}`);
+            if (leads.length === 0 && !hasCache) {
+                setLoading(true);
+            } else {
+                setLoading(false);
             }
 
+            // Execute all fetches in parallel with a timeout/safety
             const [
-                { data: leadsData, error: leadsError },
-                { data: dealsData, error: dealsError },
-                { data: tasksData, error: tasksError },
-                { data: contactsData, error: contactsError },
-                { data: notesData, error: notesError },
-                { data: logisticsData, error: logisticsError },
+                { data: leadsData, error: e1 },
+                { data: dealsData, error: e2 },
+                { data: tasksData, error: e3 },
+                { data: contactsData, error: e4 },
+                { data: logisticsData, error: e6 },
             ] = await Promise.all([
-                supabase.from('leads').select('*').eq('user_id', user.id),
+                supabase.from('leads').select('id, name, contact, position, email, phone, status, machines, follow_up_date, created_at, user_id, last_activity, score, dynamic_quotation_url, next_step, activity_status, source, notes').eq('user_id', user.id),
                 supabase.from('deals').select('*').eq('user_id', user.id),
                 supabase.from('tasks').select('*').eq('user_id', user.id),
                 supabase.from('contacts').select('*').eq('user_id', user.id),
-                supabase.from('notes').select('*').eq('user_id', user.id),
                 supabase.from('logistics').select('*').eq('user_id', user.id),
-            ]);
+            ]).catch(err => {
+                console.error("Data fetch network error:", err);
+                return [
+                    { data: [], error: err }, { data: [], error: err }, 
+                    { data: [], error: err }, { data: [], error: err }, 
+                    { data: [], error: err }, { data: [], error: err }
+                ];
+            });
 
-            if (leadsError) throw leadsError;
+            if (e1) console.error("Error fetching leads:", e1);
+            if (e2) console.error("Error fetching deals:", e2);
+            if (e3) console.error("Error fetching tasks:", e3);
+            if (e4) console.error("Error fetching contacts:", e4);
+            if (e6) console.error("Error fetching logistics:", e6);
 
-            const safeData = (data) => data || [];
+            const safeData = (data) => Array.isArray(data) ? data : [];
 
             const lData = safeData(leadsData);
             const dData = safeData(dealsData);
             const tData = safeData(tasksData);
             const cData = safeData(contactsData);
-            const nData = safeData(notesData);
             const logData = safeData(logisticsData);
 
             setLeads(lData);
             setDeals(dData);
             setTasks(tData);
             setContacts(cData);
-            setNotes(nData);
-            setNotes(nData);
             setLogistics(logData);
 
-            // Try fetch lead statuses, fallback to default if table missing or error
-            try {
-                const { data: statusData, error: statusError } = await supabase.from('lead_statuses').select('*').order('created_at', { ascending: true });
-                if (!statusError && statusData && statusData.length > 0) {
-                    setLeadStatuses(statusData);
-                    localStorage.setItem(`kyro-leadStatuses-${user.id}`, JSON.stringify(statusData));
-                } else {
-                    // Start with default if no custom statuses found
-                    localStorage.setItem(`kyro-leadStatuses-${user.id}`, JSON.stringify(DEFAULT_STATUSES));
-                }
-            } catch (e) {
-                console.log('Using default statuses');
-            }
 
-            // Update cache
-            localStorage.setItem(`kyro-leads-${user.id}`, JSON.stringify(lData));
-            localStorage.setItem(`kyro-deals-${user.id}`, JSON.stringify(dData));
-            localStorage.setItem(`kyro-tasks-${user.id}`, JSON.stringify(tData));
-            localStorage.setItem(`kyro-contacts-${user.id}`, JSON.stringify(cData));
-            localStorage.setItem(`kyro-notes-${user.id}`, JSON.stringify(nData));
-            localStorage.setItem(`kyro-logistics-${user.id}`, JSON.stringify(logData));
+
+            // Update cache safely
+            saveToCache(`leads-${user.id}`, lData);
+            saveToCache(`deals-${user.id}`, dData);
+            saveToCache(`tasks-${user.id}`, tData);
+            saveToCache(`contacts-${user.id}`, cData);
+            saveToCache(`logistics-${user.id}`, logData);
 
         } catch (error) {
             console.error('Fetch error:', error);
         } finally {
             setLoading(false);
         }
-    }, [user?.id]);
+    }, [user?.id, leads.length]);
+
+    const saveToCache = (key, data) => {
+        try {
+            localStorage.setItem(`kyro-${key}`, JSON.stringify(data));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError') {
+                console.warn('LocalStorage quota exceeded, cleaning up oldest kyro data...');
+                // Optional: clear all kyro data if full to make room for new one
+                Object.keys(localStorage).forEach(k => {
+                    if (k.startsWith('kyro-')) localStorage.removeItem(k);
+                });
+            }
+        }
+    };
 
     useEffect(() => {
         fetchData();

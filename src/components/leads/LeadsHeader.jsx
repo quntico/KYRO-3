@@ -1,20 +1,58 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, Plus, Filter, FileDown, DollarSign, Upload, LayoutGrid, List, Columns, TrendingUp } from 'lucide-react';
+import { 
+  Search, 
+  Plus, 
+  Filter, 
+  FileDown, 
+  DollarSign, 
+  Upload, 
+  LayoutGrid, 
+  List, 
+  Columns, 
+  TrendingUp, 
+  Sparkles, 
+  Palette, 
+  Clock, 
+  Type, 
+  SortAsc,
+  FileSpreadsheet,
+  FileText,
+  Layout
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 
-
-const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedStatus, leads, onNewLead, onExportPDF, onExportExcel, onImportExcel, totalSales, viewMode, setViewMode }) => {
+const LeadsHeader = ({ 
+  searchTerm, 
+  setSearchTerm, 
+  selectedStatus, 
+  setSelectedStatus, 
+  leads, 
+  onNewLead, 
+  onExportPDF, 
+  onExportExcel, 
+  onExportDataExcel, 
+  onImportExcel, 
+  totalSales, 
+  viewMode, 
+  setViewMode, 
+  dashboardStyle, 
+  setDashboardStyle, 
+  sortMode, 
+  setSortMode 
+}) => {
   const { theme } = useTheme();
   const fileInputRef = React.useRef(null);
 
   const statusOptions = [
     { value: 'all', label: 'Todos' },
     { value: 'new', label: 'Nuevos' },
+    { value: 'closing', label: 'Próximo Cierre' },
     { value: 'hot', label: 'Calientes' },
     { value: 'warm', label: 'Tibios' },
-    { value: 'cold', label: 'Fríos' }
+    { value: 'cold', label: 'Fríos' },
+    { value: 'declined', label: 'Declinados / Riesgo' }
   ];
 
   const getStatusCount = (status) => {
@@ -28,151 +66,178 @@ const LeadsHeader = ({ searchTerm, setSearchTerm, selectedStatus, setSelectedSta
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mb-8"
+      className="mb-10 space-y-8"
     >
-      <div className="flex flex-col lg:flex-row items-start justify-between mb-6 gap-6">
-        <div className="w-full lg:w-auto">
-          <div className="flex items-center gap-3">
-            <h1 className={`text-2xl md:text-3xl font-bold mb-1 md:mb-2 ${theme === 'futuristic' ? 'text-glow' : ''}`}>Prospectos</h1>
+      {/* Top Row: Strategic Title and Stats */}
+      <div className="flex flex-col xl:flex-row items-center justify-between gap-6 overflow-hidden">
+        <div className="flex items-center gap-6 w-full xl:w-auto">
+          <div className="w-1.5 h-12 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.5)] hidden md:block" />
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none">Prospectos</h1>
+              <div className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded text-[9px] font-bold text-cyan-400 tracking-[0.2em] animate-pulse">
+                LIVE OPS
+              </div>
+            </div>
+            <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] flex items-center gap-2">
+              Strategic AI Console <span className="w-8 h-[1px] bg-white/10" /> v5.5
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">Gestiona y convierte tus oportunidades de negocio</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+
+        <div className="flex flex-col lg:flex-row items-center gap-4 w-full xl:w-auto">
+          {/* Projected Capital Card - Solid Pandora Cyan */}
           <motion.div
             whileHover={{ scale: 1.02 }}
-            className="bg-primary px-4 md:px-6 py-2 md:py-3 rounded-2xl flex items-center gap-3 md:gap-4 shadow-[0_0_25px_rgba(var(--primary),0.2)] border border-primary/20 w-full sm:w-auto justify-center sm:justify-start"
+            className="bg-cyan-400 px-10 py-6 rounded-2xl flex items-center gap-8 shadow-[0_0_30px_rgba(34,211,238,0.3)] border-0 relative overflow-hidden group w-full sm:w-auto min-w-[340px]"
           >
-            <div className="bg-white/20 p-2 rounded-xl shrink-0">
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-slate-900" />
+            <div className="bg-black/10 p-4 rounded-xl border border-black/5 relative z-10">
+              <TrendingUp className="w-10 h-10 text-black" />
             </div>
-            <div>
-              <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-900/60 leading-none mb-1">
-                Ventas Posibles
+            <div className="relative z-10">
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-black/50 leading-none mb-3">
+                Capital Proyectado
               </p>
-              <div className="text-xl md:text-2xl font-black text-slate-900 tabular-nums leading-none">
+              <div className="text-4xl font-black text-black tabular-nums leading-none tracking-tighter">
                 ${(totalSales || 0).toLocaleString()}
               </div>
             </div>
           </motion.div>
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={onImportExcel}
-              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-              className="hidden"
-            />
+
+          {/* Action Buttons Container */}
+          <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
+            <input type="file" ref={fileInputRef} onChange={onImportExcel} accept=".csv, .xlsx, .xls" className="hidden" />
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-white/[0.03] border-white/5 text-white/50 rounded-xl h-12 px-5 hover:bg-white/[0.08] hover:text-white transition-all font-bold text-[11px] gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden xl:inline uppercase tracking-widest">Importar</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={onExportDataExcel}
+                className="bg-white/[0.03] border-white/5 text-white/50 rounded-xl h-12 px-5 hover:bg-white/[0.08] hover:text-white transition-all font-bold text-[11px] gap-2"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span className="hidden xl:inline uppercase tracking-widest">Excel</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={onExportExcel}
+                className="bg-white/[0.03] border-white/5 text-white/50 rounded-xl h-12 px-5 hover:bg-white/[0.08] hover:text-white transition-all font-bold text-[11px] gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden xl:inline uppercase tracking-widest">Plantilla</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={onExportPDF}
+                className="bg-white/[0.03] border-white/5 text-white/50 rounded-xl h-12 px-5 hover:bg-white/[0.08] hover:text-white transition-all font-bold text-[11px] gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="uppercase tracking-widest">PDF</span>
+              </Button>
+            </div>
+
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex-1 sm:flex-initial h-10 ${theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}`}
-              title="Sube tu archivo Excel/CSV con la lista de leads"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportExcel}
-              className={`flex-1 sm:flex-initial h-10 ${theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}`}
-              title="Descargar plantilla para importar leads"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              Plantilla
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExportPDF}
-              className={`flex-1 sm:flex-initial h-10 ${theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}`}
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
-            <Button
-              size="sm"
-              className={`w-full sm:w-auto h-10 font-bold ${theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-primary to-accent text-primary-foreground' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'}`}
               onClick={onNewLead}
+              className="bg-cyan-400 hover:bg-cyan-300 text-black rounded-2xl h-14 px-8 font-black shadow-[0_0_20px_rgba(34,211,238,0.4)] border-0 gap-3 w-full sm:w-auto text-sm"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo
+              <Plus className="w-6 h-6" />
+              <span className="uppercase tracking-tighter">NUEVO</span>
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="relative w-full sm:flex-1 sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+      {/* Middle Row: Strategic Controls */}
+      <div className="flex flex-col md:flex-row items-center gap-4">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/10 group-focus-within:text-cyan-400 transition-colors" />
           <input
             type="text"
-            placeholder="Buscar prospectos..."
+            placeholder="Search Vectors / Leads..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-input h-11 md:h-12"
+            className="w-full bg-white/[0.02] border border-white/5 rounded-2xl h-14 pl-14 pr-6 text-sm text-white placeholder:text-white/5 focus:outline-none focus:border-cyan-400/20 focus:bg-white/[0.04] transition-all font-mono tracking-wider"
           />
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className={`flex-1 sm:flex-initial items-center space-x-2 h-11 md:h-12 ${theme === 'futuristic' ? 'border-primary text-primary hover:bg-primary/20' : ''}`}
+            onClick={() => setDashboardStyle(dashboardStyle === 'classic' ? 'modern' : 'classic')}
+            className="bg-white/[0.02] border-white/5 text-white/40 rounded-2xl h-14 px-6 hover:bg-white/[0.08] hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] gap-3"
+          >
+            {dashboardStyle === 'classic' ? <Sparkles className="w-4 h-4 text-cyan-400" /> : <LayoutGrid className="w-4 h-4" />}
+            <span>Console Mode</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="bg-white/[0.02] border-white/5 text-white/40 rounded-2xl h-14 px-6 hover:bg-white/[0.08] hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] gap-3"
           >
             <Filter className="w-4 h-4" />
             <span>Filtros</span>
           </Button>
 
-          <div className="flex items-center bg-secondary/50 p-1 rounded-xl border border-border space-x-1 flex-1 sm:flex-initial">
+          <div className="bg-white/[0.01] border border-white/5 p-1.5 rounded-2xl flex items-center h-14">
+            {[
+              { id: 'grid', icon: LayoutGrid, label: '01' },
+              { id: 'list', icon: List, label: '02' },
+              { id: 'kanban', icon: Columns, label: '03' }
+            ].map((v) => (
+              <button
+                key={v.id}
+                onClick={() => setViewMode(v.id)}
+                className={`px-5 h-full rounded-xl flex items-center gap-3 transition-all ${viewMode === v.id ? 'bg-cyan-400/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]' : 'text-white/10 hover:text-white/30'}`}
+              >
+                <v.icon className="w-4 h-4" />
+                <span className="text-[10px] font-black">{v.label}</span>
+              </button>
+            ))}
+          </div>
 
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all ${viewMode === 'grid'
-                ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                }`}
-              title="Vista Cuadrícula"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              <span className="text-xs font-bold">1</span>
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all ${viewMode === 'list'
-                ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                }`}
-              title="Vista Lista"
-            >
-              <List className="w-4 h-4" />
-              <span className="text-xs font-bold">2</span>
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all ${viewMode === 'kanban'
-                ? 'bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                }`}
-              title="Vista Kanban"
-            >
-              <Columns className="w-4 h-4" />
-              <span className="text-xs font-bold">3</span>
-            </button>
+          <div className="bg-white/[0.01] border border-white/5 p-1.5 rounded-2xl flex items-center h-14">
+             <button className="px-4 text-yellow-500/50 hover:text-yellow-500 transition-colors">
+                <Palette className="w-5 h-5" />
+             </button>
+             <button className="px-4 text-white/10 hover:text-white transition-colors">
+                <Clock className="w-5 h-5" />
+             </button>
+             <button className="px-4 text-white/10 hover:text-white transition-colors">
+                <Type className="w-5 h-5" />
+             </button>
+             <button
+               onClick={() => setSortMode(sortMode === 'value' ? 'status' : 'value')}
+               className={`px-4 transition-colors ${sortMode === 'value' ? 'text-yellow-500' : 'text-white/10 hover:text-white'}`}
+             >
+                <SortAsc className="w-5 h-5" />
+             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex space-x-1 bg-secondary rounded-xl p-1 overflow-x-auto">
-        {statusOptions.map((option) => (
+      {/* Bottom Row: Status Tabs */}
+      <div className="flex flex-wrap items-center gap-3 w-full pb-2">
+        {statusOptions.map((opt) => (
           <button
-            key={option.value}
-            onClick={() => setSelectedStatus(option.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${selectedStatus === option.value
-              ? 'bg-card text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-              }`}
+            key={opt.value}
+            onClick={() => setSelectedStatus(opt.value)}
+            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap ${
+              selectedStatus === opt.value 
+                ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.3)] scale-105' 
+                : 'text-white/30 hover:text-white hover:bg-white/10 border border-white/5'
+            }`}
           >
-            {option.label} ({getStatusCount(option.value)})
+            {opt.label} <span className={`ml-2 ${selectedStatus === opt.value ? 'text-black/50' : 'opacity-30'}`}>[{getStatusCount(opt.value)}]</span>
           </button>
         ))}
       </div>

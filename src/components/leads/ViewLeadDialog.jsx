@@ -8,17 +8,26 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import {
   File, Send, FileText, Calendar, Video, Gem, CheckCircle,
   Circle, Download, ExternalLink, X, User, Mail, Phone,
-  Package, Activity, Target, MessageSquare, Check, Copy, Edit
+  Package, Activity, Target, MessageSquare, Check, Copy, Edit, Calculator
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import LeadQuoteCalculator from './LeadQuoteCalculator';
+import ExportPdfDialog from './ExportPdfDialog';
 
 const activitySteps = [
   { id: 'quotationSent', label: 'Cotización Enviada', Icon: Send },
@@ -45,12 +54,30 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
   const [viewingPdf, setViewingPdf] = useState(null);
   const [pdfObjectUrl, setPdfObjectUrl] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [quotations, setQuotations] = useState([]);
+  const [calcMachineIndex, setCalcMachineIndex] = useState(null);
+  const [pdfExportMachineIndex, setPdfExportMachineIndex] = useState(null);
 
   useEffect(() => {
     if (isOpen && initialPdf) {
       setViewingPdf(initialPdf);
     }
   }, [isOpen, initialPdf]);
+
+  useEffect(() => {
+    if (isOpen && lead) {
+      if (lead.quotations) setQuotations(lead.quotations);
+      else setQuotations([]);
+
+      const fetchHeavyData = async () => {
+        const { data } = await supabase.from('leads').select('quotations').eq('id', lead.id).single();
+        if (data && data.quotations) {
+            setQuotations(data.quotations);
+        }
+      };
+      fetchHeavyData();
+    }
+  }, [isOpen, lead]);
 
   const handleCopy = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -68,6 +95,8 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
     }
     if (!isOpen) {
       setViewingPdf(null);
+      setCalcMachineIndex(null);
+      setPdfExportMachineIndex(null);
     }
   }, [isOpen, lead]);
 
@@ -152,6 +181,44 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
     }
   }, [lead, activityStatus, onUpdate]);
 
+  const handleLeadStatusChange = useCallback(async (newStatus) => {
+    if (!lead) return;
+    let newScore;
+    switch (newStatus) {
+      case 'closing': newScore = 100; break;
+      case 'hot': newScore = Math.floor(Math.random() * (99 - 85 + 1)) + 85; break;
+      case 'warm': newScore = Math.floor(Math.random() * (84 - 60 + 1)) + 60; break;
+      case 'cold': newScore = Math.floor(Math.random() * (59 - 30 + 1)) + 30; break;
+      case 'declined': newScore = Math.floor(Math.random() * (20 - 0 + 1)) + 0; break;
+      default: newScore = 50;
+    }
+
+    const statusNames = {
+      closing: 'Cierre',
+      hot: 'Caliente',
+      warming: 'Avanzando',
+      warm: 'Tibio',
+      cooling: 'Enfriando',
+      cold: 'Frío',
+      new: 'Nuevo',
+      declined: 'Perdido'
+    };
+
+    const { data: updatedLead, error } = await supabase
+      .from('leads')
+      .update({ status: newStatus, score: newScore, last_activity: new Date().toISOString() })
+      .eq('id', lead.id)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error al actualizar estado", description: error.message, variant: "destructive" });
+    } else {
+      onUpdate(updatedLead.id, updatedLead);
+      toast({ title: "¡Estatus Actualizado!", description: `El prospecto ha sido marcado como ${statusNames[newStatus] || newStatus}.` });
+    }
+  }, [lead, onUpdate]);
+
   const handleViewPdf = useCallback((file) => {
     if (!file?.url) {
       toast({ title: "Error", description: "El documento no tiene una ubicación válida.", variant: "destructive" });
@@ -169,11 +236,39 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
     document.body.removeChild(link);
   }, []);
 
+  const handleApplyQuote = useCallback(async (index, updatedMachine) => {
+    if (!lead) return;
+    const newMachines = [...(lead.machines || [])];
+    newMachines[index] = updatedMachine;
+    
+    const totalValue = newMachines.reduce((sum, m) => sum + (Number(m.price || m.salePrice) || 0), 0);
+    const totalCommission = newMachines.reduce((sum, m) => sum + (Number(m.commission) || Number(m.estimated_commission) || 0), 0);
+    
+    const { data: updatedLead, error } = await supabase
+      .from('leads')
+      .update({ 
+        machines: newMachines,
+        value: totalValue,
+        commission: totalCommission,
+        last_activity: new Date().toISOString()
+      })
+      .eq('id', lead.id)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: "Error al actualizar cotización", description: error.message, variant: "destructive" });
+    } else {
+      onUpdate(updatedLead.id, updatedLead);
+      toast({ title: "Cotización Aplicada", description: "Se ha actualizado la ingeniería financiera del prospecto." });
+    }
+  }, [lead, onUpdate]);
+
   if (!lead) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className={`sm:max-w-[450px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-0 glass-bevel shadow-2xl [&>button]:hidden ${viewingPdf ? "sm:max-w-5xl h-[95vh]" : ""}`}>
+      <DialogContent className={`sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-0 glass-bevel shadow-2xl [&>button]:hidden ${viewingPdf ? "sm:max-w-5xl h-[95vh]" : ""}`}>
         {viewingPdf ? (
           <div className="flex flex-col h-full p-6">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
@@ -230,12 +325,62 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
               `}} />
               <div className="absolute top-4 right-4 flex items-center gap-3 z-20">
-                <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border transition-all ${lead.status === 'hot' ? 'bg-red-500/20 border-red-500/50 text-red-400' :
-                  lead.status === 'warm' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' :
-                    'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                  }`}>
-                  {lead.status === 'hot' ? '🔥 Caliente' : lead.status === 'warm' ? '⚡ Tibio' : '❄️ Frío'}
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border cursor-pointer transition-all flex items-center gap-1.5 hover:brightness-125 hover:scale-[1.02] active:scale-95 ${
+                        lead.status === 'closing' ? 'bg-[#00D4FF]/20 border-[#00D4FF]/50 text-[#00D4FF]' :
+                        lead.status === 'hot' ? 'bg-red-500/20 border-red-500/50 text-red-400' :
+                        lead.status === 'warming' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' :
+                        lead.status === 'warm' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' :
+                        lead.status === 'cooling' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' :
+                        lead.status === 'cold' ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' :
+                        lead.status === 'new' ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' :
+                        'bg-slate-500/20 border-slate-500/50 text-slate-400'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                      {
+                        lead.status === 'closing' ? '🚀 Cierre' :
+                        lead.status === 'hot' ? '🔥 Caliente' :
+                        lead.status === 'warming' ? '📈 Avanzando' :
+                        lead.status === 'warm' ? '⚡ Tibio' :
+                        lead.status === 'cooling' ? '📉 Enfriando' :
+                        lead.status === 'cold' ? '❄️ Frío' :
+                        lead.status === 'new' ? '🎯 Nuevo' :
+                        '💼 Perdido'
+                      }
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-[#050505] border-white/10 text-white/70 z-50 font-black text-[10px] uppercase tracking-widest rounded-xl">
+                    <DropdownMenuRadioGroup value={lead.status} onValueChange={handleLeadStatusChange}>
+                      <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
+                        🚀 Cierre
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="hot" className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer rounded-lg m-1">
+                        🔥 Caliente
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="warming" className="focus:bg-emerald-500/20 focus:text-emerald-400 cursor-pointer rounded-lg m-1">
+                        📈 Avanzando
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="warm" className="focus:bg-orange-500/20 focus:text-orange-400 cursor-pointer rounded-lg m-1">
+                        ⚡ Tibio
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="cooling" className="focus:bg-cyan-500/20 focus:text-cyan-400 cursor-pointer rounded-lg m-1">
+                        📉 Enfriando
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="cold" className="focus:bg-blue-500/20 focus:text-blue-400 cursor-pointer rounded-lg m-1">
+                        ❄️ Frío
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="new" className="focus:bg-purple-500/20 focus:text-purple-400 cursor-pointer rounded-lg m-1">
+                        🎯 Nuevo
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
+                        💼 Perdido
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <DialogClose asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all">
                     <X className="w-5 h-5" />
@@ -261,11 +406,11 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                 </div>
                 <div className="bg-white/5 p-2 rounded-xl border border-white/10 text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
                   <div className="text-[8px] uppercase tracking-widest text-white/50 mb-0.5">Venta</div>
-                  <div className="text-lg font-bold text-primary drop-shadow-[0_0_10px_rgba(var(--primary),0.4)]">${(lead.value || 0).toLocaleString()}</div>
+                  <div className="text-lg font-bold text-primary drop-shadow-[0_0_10px_rgba(var(--primary),0.4)]">${(lead.value || 0).toLocaleString()} USD</div>
                 </div>
                 <div className="bg-white/5 p-2 rounded-xl border border-white/10 text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
                   <div className="text-[8px] uppercase tracking-widest text-white/50 mb-0.5">Utilidad</div>
-                  <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">${(lead.commission || 0).toLocaleString()}</div>
+                  <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">${(lead.commission || 0).toLocaleString()} USD</div>
                 </div>
               </div>
             </div>
@@ -275,7 +420,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
               {/* Radiografía de Notas/Avance (Chat Bubble Style) */}
               <div className="space-y-4">
                 <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2 font-mono">
-                  <MessageSquare className="w-3 h-3" /> Radiografía de Avance
+                  <MessageSquare className="w-3 h-3" /> SEGUIMIENTO
                 </h3>
                 {(() => {
                   const lastNote = lead.notes ? (() => {
@@ -346,7 +491,14 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                         <div className="text-[9px] uppercase font-bold text-white/40 mb-1">Teléfono Directo</div>
                         {copied === 'phone' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/20 group-hover/copy:text-primary transition-colors" />}
                       </div>
-                      <div className="text-sm text-white/90 font-medium break-all">{lead.phone || 'N/A'}</div>
+                      <div className="text-sm text-white/90 font-medium break-all flex items-center gap-1.5 flex-wrap">
+                        <span>{lead.phone || 'N/A'}</span>
+                        {lead.source && lead.source !== 'Manual Entry' && lead.source !== 'Excel Import' && lead.source !== 'Convertido de Contacto' && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 border border-green-500/30 text-green-400 rounded-md font-bold uppercase tracking-wider">
+                            {lead.source}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -360,14 +512,54 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                 <div className="grid grid-cols-1 gap-3">
                   {lead.machines && lead.machines.length > 0 ? (
                     lead.machines.filter(Boolean).map((m, i) => (
-                      <div key={i} className="flex justify-between items-center bg-gradient-to-r from-white/5 to-transparent p-5 rounded-2xl border-l-[6px] border-l-primary border border-white/5 shadow-lg group hover:from-white/10 transition-all">
+                      <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-white/5 to-transparent p-5 rounded-2xl border-l-[6px] border-l-primary border border-white/5 shadow-lg group hover:from-white/10 transition-all gap-4">
                         <div className="flex items-center gap-4">
                           <div className="p-2 bg-black/20 rounded-lg group-hover:scale-110 transition-transform">
                             <Package className="w-5 h-5 text-primary" />
                           </div>
-                          <div className="font-black text-white text-base tracking-tight uppercase">{m?.name || 'Máquina'}</div>
+                          <div>
+                            <div className="font-black text-white text-base tracking-tight uppercase">{m?.name || 'Máquina'}</div>
+                            {m?.costChina !== undefined && (
+                              <div className="text-[10px] text-white/50 font-mono mt-0.5">
+                                Costo Base: ${Number(m.costChina).toLocaleString()} USD | TC: ${m.exchangeRate || 18.0} {m.divideByTwo ? ' (TC/2)' : ''}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-primary font-black text-lg drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">${Number(m?.price || 0).toLocaleString()}</div>
+                        <div className="flex items-center gap-3 justify-between sm:justify-end">
+                          <div className="text-primary font-black text-lg drop-shadow-[0_0_8px_rgba(var(--primary),0.5)] mr-2">
+                            ${Number(m?.price || 0).toLocaleString()} USD
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setCalcMachineIndex(i);
+                              }}
+                              className="text-primary hover:bg-primary/10 h-8 w-8 flex-shrink-0"
+                              title="Calcular costos y utilidad"
+                            >
+                              <Calculator className="w-4 h-4" />
+                            </Button>
+                            
+                            <Button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPdfExportMachineIndex(i);
+                              }}
+                              className="bg-primary hover:bg-primary/80 text-black h-8 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                              title="Exportar Radiografía Interna a PDF"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-black" />
+                              PDF
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -418,13 +610,13 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
               </div>
 
               {/* Cotizaciones */}
-              {lead.quotations && lead.quotations.length > 0 && (
+              {quotations && quotations.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
                     <FileText className="w-3 h-3" /> Documentos Adjuntos
                   </h3>
                   <div className="grid grid-cols-1 gap-2">
-                    {lead.quotations.map((file, index) => (
+                    {quotations.map((file, index) => (
                       <div key={index} className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10 hover:bg-white/10 transition-all group">
                         <div className="flex items-center gap-3 overflow-hidden mr-2">
                           <div className="p-2 bg-primary/10 rounded-lg">
@@ -473,6 +665,27 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
           </div>
         )}
       </DialogContent>
+      {calcMachineIndex !== null && (
+        <LeadQuoteCalculator
+          isOpen={calcMachineIndex !== null}
+          onClose={() => setCalcMachineIndex(null)}
+          location={lead.source}
+          clientName={lead.contact}
+          clientCompany={lead.name}
+          machine={lead.machines?.[calcMachineIndex]}
+          onApply={(updatedMachine) => handleApplyQuote(calcMachineIndex, updatedMachine)}
+        />
+      )}
+      {pdfExportMachineIndex !== null && (
+        <ExportPdfDialog
+          isOpen={pdfExportMachineIndex !== null}
+          onClose={() => setPdfExportMachineIndex(null)}
+          clientCompany={lead.name}
+          clientName={lead.contact}
+          location={lead.source}
+          machine={lead.machines?.[pdfExportMachineIndex]}
+        />
+      )}
     </Dialog>
   );
 };
