@@ -319,6 +319,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
       last_activity: new Date().toISOString(),
       score: editingLead.score,
       dynamic_quotation_url: editingLead.dynamic_quotation_url,
+      activity_status: editingLead.activity_status,
     };
 
     const { data: updatedLead, error } = await supabase
@@ -428,6 +429,28 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
                 value={editingLead.dynamic_quotation_url || ''}
                 onChange={handleInputChange}
                 placeholder="https://cotizacion.ejemplo.com/..."
+                className={theme === 'nova' ? 'bg-secondary/40' : ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client_code" className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                Número de Cliente / Cotización
+              </Label>
+              <Input
+                id="client_code"
+                value={editingLead.activity_status?.client_code || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setEditingLead(prev => ({
+                    ...prev,
+                    activity_status: {
+                      ...(prev.activity_status || {}),
+                      client_code: val
+                    }
+                  }));
+                }}
+                placeholder="Ej: C-1002"
                 className={theme === 'nova' ? 'bg-secondary/40' : ''}
               />
             </div>

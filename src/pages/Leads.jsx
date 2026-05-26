@@ -208,6 +208,7 @@ const Leads = () => {
       quotations: newLeadData.quotations,
       follow_up_date: null,
       activity_status: {
+        client_code: newLeadData.clientCode || '',
         quotationSent: { checked: !!newLeadData.quotations.length, date: newLeadData.quotations.length ? new Date().toISOString() : null },
         quotationReview: { checked: false, date: null },
         appointment: { checked: false, date: null },

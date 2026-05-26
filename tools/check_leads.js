@@ -6,18 +6,21 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function checkLeads() {
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
         .from('leads')
-        .select('id, name, user_id', { count: 'exact' });
+        .select('*')
+        .limit(1);
 
     if (error) {
         console.error('Error fetching leads:', error);
         return;
     }
 
-    console.log(`Total leads in DB: ${count}`);
-    console.log('Leads names and user_ids:');
-    data.forEach(l => console.log(`- ${l.name} (user_id: ${l.user_id})`));
+    if (data && data.length > 0) {
+        console.log('Columns in leads table:', Object.keys(data[0]));
+    } else {
+        console.log('No leads found in DB');
+    }
 }
 
 checkLeads();

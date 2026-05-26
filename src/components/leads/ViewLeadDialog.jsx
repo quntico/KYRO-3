@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
+import { Input } from "@/components/ui/input";
 import { toast } from '@/components/ui/use-toast';
 import {
   File, Send, FileText, Calendar, Video, Gem, CheckCircle,
@@ -28,6 +29,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import LeadQuoteCalculator from './LeadQuoteCalculator';
 import ExportPdfDialog from './ExportPdfDialog';
+import { Label } from "@/components/ui/label";
 
 const activitySteps = [
   { id: 'quotationSent', label: 'Cotización Enviada', Icon: Send },
@@ -57,6 +59,9 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
   const [quotations, setQuotations] = useState([]);
   const [calcMachineIndex, setCalcMachineIndex] = useState(null);
   const [pdfExportMachineIndex, setPdfExportMachineIndex] = useState(null);
+  const [isEditingClientCode, setIsEditingClientCode] = useState(false);
+  const [newClientCode, setNewClientCode] = useState('');
+  const [isSavingClientCode, setIsSavingClientCode] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialPdf) {
@@ -236,6 +241,36 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
     document.body.removeChild(link);
   }, []);
 
+  const handleSaveClientCode = useCallback(async () => {
+    if (!lead) return;
+    setIsSavingClientCode(true);
+    try {
+      const updatedActivityStatus = {
+        ...(lead.activity_status || {}),
+        client_code: newClientCode
+      };
+
+      const { data: updatedLead, error } = await supabase
+        .from('leads')
+        .update({ activity_status: updatedActivityStatus })
+        .eq('id', lead.id)
+        .select()
+        .single();
+
+      if (error) {
+        toast({ title: "Error al actualizar número de cliente", description: error.message, variant: "destructive" });
+      } else {
+        onUpdate(updatedLead.id, updatedLead);
+        toast({ title: "¡Número de Cliente Guardado!", description: `Se ha asignado el Nº "${newClientCode}" correctamente.` });
+        setIsEditingClientCode(false);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingClientCode(false);
+    }
+  }, [lead, newClientCode, onUpdate]);
+
   const handleApplyQuote = useCallback(async (index, updatedMachine) => {
     if (!lead) return;
     const newMachines = [...(lead.machines || [])];
@@ -392,9 +427,27 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                 <DialogTitle className="text-2xl font-black text-white tracking-tight mb-1 uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
                   {String(lead?.name || 'Prospecto sin nombre')}
                 </DialogTitle>
-                <div className="flex items-center gap-2 text-primary font-bold tracking-widest text-[10px] uppercase opacity-80 mb-3">
-                  <User className="w-3.5 h-3.5" />
-                  {String(lead?.contact || 'Sin contacto')}
+                <div className="flex items-center gap-2 text-primary font-bold tracking-widest text-[10px] uppercase opacity-80 mb-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <User className="w-3.5 h-3.5" />
+                    {String(lead?.contact || 'Sin contacto')}
+                  </div>
+                  <span className="w-1.5 h-[1px] bg-white/10 hidden sm:inline" />
+                  <button
+                    onClick={() => {
+                      setNewClientCode(lead.activity_status?.client_code || '');
+                      setIsEditingClientCode(true);
+                    }}
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] tracking-[0.1em] font-mono border transition-all duration-200 cursor-pointer bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 active:scale-95"
+                    title="Editar número de cliente / cotización"
+                  >
+                    <FileText className="w-3 h-3 text-[#00D4FF]" />
+                    {lead.activity_status?.client_code ? (
+                      <>Nº {lead.activity_status.client_code}</>
+                    ) : (
+                      <span className="text-[#00D4FF]/80 italic font-sans font-bold uppercase tracking-wider">Asignar Nº Cliente</span>
+                    )}
+                  </button>
                 </div>
               </DialogHeader>
 
@@ -686,6 +739,48 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
           machine={lead.machines?.[pdfExportMachineIndex]}
         />
       )}
+      <Dialog open={isEditingClientCode} onOpenChange={setIsEditingClientCode}>
+        <DialogContent className="sm:max-w-[400px] glass-bevel border-white/10 shadow-2xl p-6 bg-black text-white z-[60]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase tracking-wider text-white">Numeración del Cliente</DialogTitle>
+            <DialogDescription className="text-white/60 text-xs">
+              Introduce el número de cotización o de cliente para este prospecto.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="popup_client_code" className="text-xs uppercase tracking-widest text-white/50 font-bold">Nº de Cotización / Cliente</Label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                <Input
+                  id="popup_client_code"
+                  value={newClientCode}
+                  onChange={(e) => setNewClientCode(e.target.value)}
+                  placeholder="Ej: C-1002"
+                  className="pl-10 bg-white/5 border-white/10 focus:border-primary/50 text-white rounded-lg h-10 w-full"
+                  autoFocus
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditingClientCode(false)}
+              className="border-white/15 text-white hover:bg-white/10 h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveClientCode}
+              disabled={isSavingClientCode}
+              className="bg-primary hover:bg-primary/80 text-black h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
+            >
+              {isSavingClientCode ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

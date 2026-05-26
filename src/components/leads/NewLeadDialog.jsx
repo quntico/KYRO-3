@@ -122,6 +122,7 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
   const [machines, setMachines] = useState([{ name: '', price: '', commission: '' }]);
   const [notes, setNotes] = useState('');
   const [dynamicQuotationUrl, setDynamicQuotationUrl] = useState('');
+  const [clientCode, setClientCode] = useState('');
   const [calcMachineIndex, setCalcMachineIndex] = useState(null);
   const [pdfExportMachineIndex, setPdfExportMachineIndex] = useState(null);
   const [focusedField, setFocusedField] = useState(null);
@@ -138,6 +139,7 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
     setMachines([{ name: '', price: '', commission: '' }]);
     setNotes('');
     setDynamicQuotationUrl('');
+    setClientCode('');
     setPdfExportMachineIndex(null);
   }, []);
 
@@ -206,8 +208,8 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
       toast({ variant: "destructive", title: "Campos Requeridos", description: "Por favor, completa el nombre de la empresa y del contacto." });
       return;
     }
-    onSubmit({ company, name, position, email, phone, source, machines, quotations: files, notes, dynamic_quotation_url: dynamicQuotationUrl });
-  }, [company, name, position, email, phone, source, machines, files, notes, dynamicQuotationUrl, onSubmit]);
+    onSubmit({ company, name, position, email, phone, source, machines, quotations: files, notes, dynamic_quotation_url: dynamicQuotationUrl, clientCode });
+  }, [company, name, position, email, phone, source, machines, files, notes, dynamicQuotationUrl, clientCode, onSubmit]);
 
   const onMachineChange = (index, field, value) => {
     const newMachines = [...machines];
@@ -302,6 +304,19 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
                 value={dynamicQuotationUrl}
                 onChange={(e) => setDynamicQuotationUrl(e.target.value)}
                 placeholder="https://cotizacion.ejemplo.com/..."
+                className={theme === 'nova' ? 'bg-white/5' : ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client_code" className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-primary" />
+                Número de Cliente / Cotización
+              </Label>
+              <Input
+                id="client_code"
+                value={clientCode}
+                onChange={(e) => setClientCode(e.target.value)}
+                placeholder="Ej: C-1002"
                 className={theme === 'nova' ? 'bg-white/5' : ''}
               />
             </div>
