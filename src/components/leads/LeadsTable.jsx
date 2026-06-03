@@ -120,7 +120,19 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
     }
   };
 
-  const statusPriority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'hot': return 'text-red-400';
+      case 'closing': return 'text-[#00D4FF]';
+      case 'warming': return 'text-emerald-400';
+      case 'warm': return 'text-orange-400';
+      case 'cooling': return 'text-cyan-400';
+      case 'cold': return 'text-blue-400';
+      case 'new': return 'text-purple-400';
+      case 'declined': return 'text-[#D2691E]';
+      default: return 'text-primary';
+    }
+  };
 
   const sortedLeads = leads || [];
 
@@ -169,7 +181,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                       onClick={() => onView(lead)}
                     >
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-base text-primary transition-colors">
+                        <span className={`font-black text-base transition-colors ${getStatusTextColor(lead.status)}`}>
                           {lead.name}
                         </span>
                         {lead.activity_status?.client_code && (
