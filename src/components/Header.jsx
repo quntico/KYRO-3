@@ -103,7 +103,7 @@ const Header = () => {
               onClick={() => setSandboxOpen(true)}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-               <div className="text-[9px] font-black text-muted-foreground/30 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 uppercase tracking-tighter">AI Mode</div>
+               <div className="text-[9px] font-black text-muted-foreground/30 bg-white/5 px-1.5 py-0.5 rounded border border-white/10 uppercase tracking-tighter">Modo IA</div>
                <SearchEngineSelector />
             </div>
           </motion.div>

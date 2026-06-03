@@ -124,7 +124,7 @@ const Analytics = () => {
   return (
     <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground">
       <Helmet>
-        <title>Analytics - KYROS</title>
+        <title>Analíticas - KYRO</title>
         <meta name="description" content="Analíticas reales de tu pipeline." />
       </Helmet>
       <div className="p-8 max-w-7xl mx-auto space-y-8">

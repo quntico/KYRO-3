@@ -243,7 +243,7 @@ const ToDo = () => {
   return (
     <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden border-t border-white/5">
       <Helmet>
-        <title>KYRO Notes & Tasks</title>
+        <title>KYRO | Notas y Tareas</title>
         <style>
           {`
             [contenteditable]:empty:before {

@@ -28,16 +28,16 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
             className="relative group cursor-default"
           >
             <div className={`absolute -inset-px bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="bg-[#0A0A0A] border border-white/5 p-6 relative overflow-hidden flex flex-col justify-between h-32 shadow-2xl">
+            <div className="bg-[#0d1117] border border-white/12 p-6 relative overflow-hidden flex flex-col justify-between h-32 shadow-2xl transition-all duration-300 group-hover:border-white/25">
               {/* Corner Accents */}
-              <div className={`absolute top-0 right-0 w-8 h-[1px] ${metric.accent} opacity-40`} />
-              <div className={`absolute top-0 right-0 h-8 w-[1px] ${metric.accent} opacity-40`} />
+              <div className={`absolute top-0 right-0 w-8 h-[1px] ${metric.accent} opacity-80`} />
+              <div className={`absolute top-0 right-0 h-8 w-[1px] ${metric.accent} opacity-80`} />
               
               <div className="flex justify-between items-start">
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] leading-none">
+                <p className="text-[9px] font-black text-white/65 uppercase tracking-[0.3em] leading-none">
                   {metric.label}
                 </p>
-                <metric.icon className={`w-4 h-4 ${metric.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
+                <metric.icon className={`w-4 h-4 ${metric.color} opacity-80 group-hover:opacity-100 transition-opacity`} />
               </div>
               
               <div className="flex items-baseline gap-2">
@@ -57,6 +57,8 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
           leads={filteredLeads}
           onView={(lead) => cardProps.onView(lead)}
           onOpenConversation={(lead) => cardProps.onOpenConversation(lead)}
+          companies={cardProps.companies}
+          onUpdateField={cardProps.onUpdateField}
         />
       ) : viewMode === 'list' ? (
         <LeadsTable
@@ -67,6 +69,8 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
           onOpenConversation={(lead) => cardProps.onOpenConversation(lead)}
           onConvertToDeal={(lead) => cardProps.onConvertToDeal(lead)}
           onStatusChange={(leadId, status) => cardProps.onStatusChange(leadId, status)}
+          companies={cardProps.companies}
+          onUpdateField={cardProps.onUpdateField}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">

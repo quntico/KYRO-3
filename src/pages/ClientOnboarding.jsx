@@ -74,7 +74,7 @@ const ClientOnboarding = () => {
   return (
     <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground transition-colors duration-500">
       <Helmet>
-        <title>Onboarding - KYRO</title>
+        <title>Alta de Clientes - KYRO</title>
       </Helmet>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8">
@@ -90,7 +90,7 @@ const ClientOnboarding = () => {
                   <UserPlus className="w-6 h-6 text-primary" />
                 </div>
                 <h1 className={`text-4xl font-black tracking-tight ${theme === 'futuristic' ? 'text-glow' : ''}`}>
-                  ONBOARDING <span className="text-primary italic">PRIME</span>
+                  ALTA DE CLIENTES <span className="text-primary italic">PRIME</span>
                 </h1>
               </div>
               <p className="text-muted-foreground text-lg">Impulsa tus prospectos a la fase de clientes activos con un solo click.</p>
@@ -208,7 +208,7 @@ const ClientOnboarding = () => {
                           <Target className="w-6 h-6 animate-spin" />
                         ) : (
                           <>
-                            ONBOARD AHORA
+                            DAR DE ALTA
                             <ArrowRight className="w-5 h-5 transform group-hover/btn:translate-x-1 transition-transform" />
                           </>
                         )}

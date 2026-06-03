@@ -110,8 +110,8 @@ const LogisticsCard = ({ entry, index, onUpdateStatus }) => {
 
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
           <div className="space-y-1">
-            <span className="text-[10px] font-black text-muted-foreground uppercase flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> TRACKING
+            <span className="text-[10px] font-black text-muted-foreground/60 uppercase flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" /> SEGUIMIENTO
             </span>
             <p className="text-sm font-mono font-bold truncate">{entry.tracking_number || 'S/N'}</p>
           </div>
@@ -220,9 +220,9 @@ const Logistics = () => {
               </div>
               <div>
                 <h1 className={`text-4xl font-black italic tracking-tighter ${theme === 'futuristic' ? 'text-glow' : ''}`}>
-                  GLOBAL <span className="text-primary not-italic">LOGISTICS</span>
+                  LOGÍSTICA <span className="text-primary not-italic">GLOBAL</span>
                 </h1>
-                <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.3em]">Smart Supply Chain Management</p>
+                <p className="text-muted-foreground font-medium uppercase text-xs tracking-[0.3em]">Gestión Inteligente de la Cadena de Suministro</p>
               </div>
             </motion.div>
           </div>

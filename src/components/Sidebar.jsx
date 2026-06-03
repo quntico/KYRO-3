@@ -22,16 +22,16 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Tablero' },
   { to: '/leads', icon: Target, label: 'Prospectos' },
   { to: '/deals', icon: Handshake, label: 'Ventas' },
   { to: '/clients', icon: UserPlus, label: 'Clientes' },
   { to: '/client-onboarding', icon: UserPlus, label: 'Alta' },
   { to: '/logistics', icon: Ship, label: 'Logística' },
-  { to: '/todo', icon: ListChecks, label: 'To Do' },
+  { to: '/todo', icon: ListChecks, label: 'Tareas' },
   { to: '/directory', icon: BookUser, label: 'Directorio' },
   { to: '/news', icon: Newspaper, label: 'Noticias' },
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/analytics', icon: BarChart2, label: 'Analíticas' },
 ];
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => (

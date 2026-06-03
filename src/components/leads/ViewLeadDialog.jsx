@@ -50,7 +50,7 @@ const safeFormatDate = (dateSource, formatStr = "dd/MM/yy") => {
   }
 };
 
-const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation, initialPdf }) => {
+const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation, initialPdf, companies = [] }) => {
   const { theme } = useTheme();
   const [activityStatus, setActivityStatus] = useState({});
   const [viewingPdf, setViewingPdf] = useState(null);
@@ -301,6 +301,8 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
   if (!lead) return null;
 
+  const matchedCompany = companies.find(c => c.id === lead?.activity_status?.managingCompanyId);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className={`sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-0 glass-bevel shadow-2xl [&>button]:hidden ${viewingPdf ? "sm:max-w-5xl h-[95vh]" : ""}`}>
@@ -424,30 +426,45 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
               </div>
 
               <DialogHeader className="text-left">
-                <DialogTitle className="text-2xl font-black text-white tracking-tight mb-1 uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                <DialogTitle className="text-4xl font-black text-white tracking-tight mb-2 uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
                   {String(lead?.name || 'Prospecto sin nombre')}
                 </DialogTitle>
-                <div className="flex items-center gap-2 text-primary font-bold tracking-widest text-[10px] uppercase opacity-80 mb-3 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-3 text-primary font-bold tracking-widest text-sm uppercase opacity-90 mb-4 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-4 h-4" />
                     {String(lead?.contact || 'Sin contacto')}
                   </div>
-                  <span className="w-1.5 h-[1px] bg-white/10 hidden sm:inline" />
+                  <span className="w-2 h-[2px] bg-white/20 hidden sm:inline" />
                   <button
                     onClick={() => {
                       setNewClientCode(lead.activity_status?.client_code || '');
                       setIsEditingClientCode(true);
                     }}
-                    className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[8px] tracking-[0.1em] font-mono border transition-all duration-200 cursor-pointer bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 active:scale-95"
+                    className="flex items-center gap-2 px-3 py-1 rounded-md text-xs font-black tracking-widest border transition-all duration-200 cursor-pointer bg-[#0047FF]/20 border-[#00D4FF]/50 text-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.4)] hover:bg-[#0047FF]/40 hover:border-[#00D4FF]/80 active:scale-95"
                     title="Editar número de cliente / cotización"
                   >
-                    <FileText className="w-3 h-3 text-[#00D4FF]" />
+                    <FileText className="w-4 h-4 text-[#00D4FF]" />
                     {lead.activity_status?.client_code ? (
                       <>Nº {lead.activity_status.client_code}</>
                     ) : (
-                      <span className="text-[#00D4FF]/80 italic font-sans font-bold uppercase tracking-wider">Asignar Nº Cliente</span>
+                      <span className="text-[#00D4FF]/80 italic font-bold uppercase tracking-wider">Asignar Nº Cliente</span>
                     )}
                   </button>
+                  {matchedCompany && (
+                    <>
+                      <span className="w-2 h-[2px] bg-white/20 hidden sm:inline" />
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black tracking-widest border border-white/20 bg-white/5 text-white/90 shadow-[0_0_8px_rgba(255,255,255,0.05)]">
+                        {matchedCompany.logo ? (
+                          <img src={matchedCompany.logo} alt={matchedCompany.name} className="w-3.5 h-3.5 rounded object-cover" />
+                        ) : (
+                          <div className="w-3.5 h-3.5 rounded bg-white/10 flex items-center justify-center text-[7px] font-black">
+                            {matchedCompany.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{matchedCompany.name}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </DialogHeader>
 

@@ -28,9 +28,31 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from '@/components/ui/use-toast';
 
-const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onConvertToDeal, onStatusChange }) => {
+const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onConvertToDeal, onStatusChange, companies = [], onUpdateField }) => {
   const { theme } = useTheme();
   const [copied, setCopied] = React.useState(null);
+
+  const handleCompanyChange = async (lead, companyId) => {
+    if (!onUpdateField) return;
+    try {
+      const updatedActivityStatus = {
+        ...(lead.activity_status || {}),
+        managingCompanyId: companyId
+      };
+      await onUpdateField(lead.id, { activity_status: updatedActivityStatus });
+      toast({
+        title: "Empresa Gestora Actualizada",
+        description: `Prospecto asignado a ${companies.find(c => c.id === companyId)?.name || 'la empresa seleccionada'}.`
+      });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar la empresa gestora."
+      });
+    }
+  };
 
   const handleCopy = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -55,6 +77,19 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
     if (!status.zoom?.checked) return 'Realizar Zoom';
     if (!status.closing?.checked) return 'Próximo a Cierre';
     return 'Cerrado';
+  };
+
+  const getLastNote = (lead) => {
+    if (!lead || !lead.notes) return 'Sin seguimiento registrado';
+    try {
+      const parsed = JSON.parse(lead.notes);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed[parsed.length - 1].text || 'Sin texto';
+      }
+      return String(lead.notes);
+    } catch (e) {
+      return String(lead.notes);
+    }
   };
 
   const formatLastActivity = (dateString) => {
@@ -96,17 +131,16 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
       transition={{ duration: 0.5, delay: 0.2 }}
       className="mt-6"
     >
-      <div className={`bg-card rounded-2xl border border-border overflow-hidden ${theme === 'nova' ? 'hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]' : ''}`}>
-        <Table>
-          <TableHeader className="bg-secondary/30">
-            <TableRow>
-              <TableHead className="w-[50px] text-center uppercase text-[10px] tracking-widest font-bold">#</TableHead>
-              <TableHead className="w-[300px] uppercase text-[10px] tracking-widest font-bold">Empresa / Contacto</TableHead>
-              <TableHead className="uppercase text-[10px] tracking-widest font-bold">Proyecto / Equipo</TableHead>
-              <TableHead className="uppercase text-[10px] tracking-widest font-bold">Status</TableHead>
-              <TableHead className="uppercase text-[10px] tracking-widest font-bold">Finanzas</TableHead>
-              <TableHead className="uppercase text-[10px] tracking-widest font-bold">Seguimiento</TableHead>
-              <TableHead className="text-right uppercase text-[10px] tracking-widest font-bold">Acciones</TableHead>
+      <div className={`bg-card rounded-2xl border border-border overflow-visible ${theme === 'nova' ? 'hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]' : ''}`}>
+        <Table wrapperClassName="overflow-visible" className="[&_td]:py-1.5 [&_td]:px-3 [&_th]:py-2 [&_th]:px-3">
+          <TableHeader className="bg-[#00D4FF] sticky top-0 z-40 shadow-lg shadow-black/50 [&>tr>th:first-child]:rounded-tl-2xl [&>tr>th:last-child]:rounded-tr-2xl">
+            <TableRow className="border-b-0 hover:bg-transparent">
+              <TableHead className="w-[50px] text-center uppercase text-[12px] tracking-widest font-black text-black">#</TableHead>
+              <TableHead className="w-[300px] text-center uppercase text-[12px] tracking-widest font-black text-black">Empresa / Contacto</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Proyecto / Equipo</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Status</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Finanzas</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Seguimiento</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -134,10 +168,16 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                       className="flex flex-col cursor-pointer hover:opacity-80 transition-all"
                       onClick={() => onView(lead)}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-primary transition-colors">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-base text-primary transition-colors">
                           {lead.name}
                         </span>
+                        {lead.activity_status?.client_code && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-[#0047FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] text-[9.5px] font-black tracking-wider shadow-[0_0_8px_rgba(0,212,255,0.3)]">
+                            Nº {lead.activity_status.client_code}
+                          </span>
+                        )}
+
                         {lead.quotations && lead.quotations.length > 0 && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -152,40 +192,103 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           </Tooltip>
                         )}
                       </div>
-                      <div className="flex flex-col gap-0.5 mt-1">
+                      <div className="flex flex-col gap-1 mt-1.5 text-[11px] text-muted-foreground">
                         <div
-                          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer group/copy"
+                          className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/copy"
                           onClick={(e) => { e.stopPropagation(); handleCopy(lead.email, `email-${lead.id}`); }}
                         >
-                          <Mail className="w-3 h-3" />
-                          <span className="truncate max-w-[150px]">{lead.email}</span>
-                          {copied === `email-${lead.id}` ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                          <span className="truncate max-w-[170px] font-medium">{lead.email}</span>
+                          {copied === `email-${lead.id}` ? (
+                            <Check className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3 opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+                          )}
                         </div>
                         <div
-                          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer group/copy flex-wrap"
+                          className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/copy"
                           onClick={(e) => { e.stopPropagation(); handleCopy(lead.phone, `phone-${lead.id}`); }}
                         >
-                          <Phone className="w-3 h-3" />
-                          <span>{lead.phone}</span>
-                          {lead.source && lead.source !== 'Manual Entry' && lead.source !== 'Excel Import' && lead.source !== 'Convertido de Contacto' && (
-                            <span className="text-[9px] px-1 py-0.2 bg-green-500/20 border border-green-500/30 text-green-400 rounded font-bold uppercase tracking-wider scale-90">
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                          <span className="font-medium">{lead.phone}</span>
+                          {copied === `phone-${lead.id}` ? (
+                            <Check className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3 opacity-0 group-hover/copy:opacity-100 transition-opacity" />
+                          )}
+                        </div>
+                        {lead.source && lead.source !== 'Manual Entry' && lead.source !== 'Excel Import' && lead.source !== 'Convertido de Contacto' && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider rounded bg-green-500/10 border border-green-500/30 text-green-400">
                               {lead.source}
                             </span>
-                          )}
-                          {copied === `phone-${lead.id}` ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 items-start">
+                      {(() => {
+                        const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
+                        if (!matchedCompany) return null;
+                        return (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <button className="flex items-center justify-center p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                                {matchedCompany.logo ? (
+                                  <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-5 w-auto max-w-[60px] object-contain rounded" />
+                                ) : (
+                                  <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40 uppercase">
+                                    {matchedCompany.name.slice(0, 2)}
+                                  </div>
+                                )}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="bg-[#050505] border border-white/10 text-white/80 p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
+                              <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-white/40 uppercase border-b border-white/5 mb-1">
+                                Asignar Empresa Gestora
+                              </div>
+                              {(companies || []).map(c => (
+                                <DropdownMenuRadioItem
+                                  key={c.id}
+                                  value={c.id}
+                                  checked={c.id === matchedCompany.id}
+                                  onClick={() => handleCompanyChange(lead, c.id)}
+                                  className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/10 hover:text-white rounded-lg cursor-pointer transition-colors"
+                                >
+                                  {c.logo ? (
+                                    <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
+                                  ) : (
+                                    <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40">
+                                      {c.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <span>{c.name}</span>
+                                  {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-cyan-400" />}
+                                </DropdownMenuRadioItem>
+                              ))}
+                              <div className="border-t border-white/5 my-1" />
+                              <DropdownMenuRadioItem
+                                value="manage"
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('open-manage-companies'));
+                                }}
+                                className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 rounded-lg cursor-pointer transition-colors"
+                              >
+                                  ⚙️ Gestionar Empresas
+                              </DropdownMenuRadioItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        );
+                      })()}
                       {lead.machines && lead.machines.length > 0 ? (
                         <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <div className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-[8px] font-black uppercase text-primary tracking-tighter">
+                          <div className="flex items-start gap-1.5">
+                            <div className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-[8px] font-black uppercase text-primary tracking-tighter mt-0.5 shrink-0">
                               EQUIPO
                             </div>
-                            <span className="text-[11px] font-bold text-foreground truncate max-w-[160px]">
+                            <span className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight max-w-[185px] break-words">
                               {lead.machines[0].name}
                             </span>
                           </div>
@@ -231,68 +334,88 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-primary">${value.toLocaleString()}</span>
-                      {utilities > 0 && (
-                        <span className="text-[10px] text-yellow-500 font-bold uppercase mt-0.5">Utilidad: ${utilities.toLocaleString()}</span>
-                      )}
+                      <span className="text-sm font-bold text-white">
+                        ${value.toLocaleString()} <span className="text-[10px] text-white/70">USD</span>
+                      </span>
+                      {utilities > 0 && (() => {
+                        const tc = lead.machines && lead.machines.length > 0 ? (lead.machines[0].exchangeRate || 18.0) : 18.0;
+                        const utilMXN = utilities * tc;
+                        return (
+                          <div className="flex flex-col mt-0.5 gap-0.5">
+                            <span className="text-[10px] text-white font-bold uppercase">
+                              Utilidad: ${utilities.toLocaleString()} <span className="text-[8px] text-white/70">USD</span>
+                            </span>
+                            <span className="text-[9px] text-white/80 font-bold uppercase">
+                              ${utilMXN.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[7px] text-white/50">MXN</span>
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className={`text-xs font-bold ${theme === 'nova' ? 'text-primary' : 'text-foreground'}`}>
-                        {getNextStep(lead)}
+                    <div 
+                      className="flex flex-col min-w-[280px] max-w-[500px] cursor-pointer group/note p-1 rounded-xl hover:bg-white/5 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }}
+                    >
+                      <span 
+                        className="text-xs font-bold leading-snug text-white group-hover/note:text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] transition-colors mb-0.5"
+                        title={getLastNote(lead)}
+                      >
+                        {getLastNote(lead)}
                       </span>
-                      <span className="text-[10px] text-muted-foreground uppercase">
-                        Último: {formatLastActivity(lead.last_activity)}
+                      <span className="text-[10px] text-white/40 group-hover/note:text-white/60 uppercase tracking-wider font-bold transition-colors">
+                        {lead.last_activity && isValid(parseISO(lead.last_activity)) 
+                          ? format(parseISO(lead.last_activity), "dd MMM yyyy • HH:mm", { locale: es }) 
+                          : 'N/A'}
                       </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }} className="h-8 w-8 p-0">
-                            <MessageSquare className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Conversación</TooltipContent>
-                      </Tooltip>
+                      
+                      <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => onOpenConversation(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Conversación</TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onView(lead); }} className="h-8 w-8 p-0">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Ver Detalles</TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => onView(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Ver Detalles</TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} className="h-8 w-8 p-0">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Editar</TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => onEdit(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar</TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead); }} className="h-8 w-8 p-0 text-green-500 hover:text-green-600">
-                            <HeartHandshake className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Convertir a Venta</TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => onConvertToDeal(lead)} className="h-7 w-7 p-0 text-green-500/70 hover:text-green-400 hover:bg-green-500/10 rounded-lg">
+                              <HeartHandshake className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Convertir a Venta</TooltipContent>
+                        </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} className="h-8 w-8 p-0 text-red-500 hover:text-red-600">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Eliminar</TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={() => onDelete(lead)} className="h-7 w-7 p-0 text-red-500/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Eliminar</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
                   </TableCell>
                 </TableRow>

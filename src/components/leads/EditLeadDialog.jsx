@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { UploadCloud, File, Calendar as CalendarIcon, Bell, X, PlusCircle, Trash2, DollarSign, Link as LinkIcon, Calculator, FileText } from 'lucide-react';
+import { UploadCloud, File, Calendar as CalendarIcon, Bell, X, PlusCircle, Trash2, DollarSign, Link as LinkIcon, Calculator, FileText, Building } from 'lucide-react';
 import LeadQuoteCalculator from './LeadQuoteCalculator';
 import ExportPdfDialog from './ExportPdfDialog';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -123,7 +123,7 @@ const parseUSD = (str) => {
   return cleaned;
 };
 
-const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
+const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate, companies = [] }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [editingLead, setEditingLead] = useState(null);
@@ -131,6 +131,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
   const [scheduleFollowUp, setScheduleFollowUp] = useState(false);
   const [followUpDate, setFollowUpDate] = useState(null);
   const [followUpTime, setFollowUpTime] = useState("09:00");
+  const [managingCompanyId, setManagingCompanyId] = useState('comp-1');
   const [isSaving, setIsSaving] = useState(false);
   const [calcMachineIndex, setCalcMachineIndex] = useState(null);
   const [pdfExportMachineIndex, setPdfExportMachineIndex] = useState(null);
@@ -147,6 +148,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
   useEffect(() => {
     if (isOpen && lead) {
       setEditingLead({ ...lead });
+      setManagingCompanyId(lead?.activity_status?.managingCompanyId || 'comp-1');
       
       if (lead.quotations) setFiles(lead.quotations);
       else setFiles([]);
@@ -304,6 +306,11 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
       const [hours, minutes] = followUpTime.split(':').map(Number);
       const finalFollowUpDate = scheduleFollowUp && followUpDate ? new Date(new Date(followUpDate).setHours(hours, minutes, 0, 0)).toISOString() : null;
 
+    const updatedActivityStatus = {
+      ...(editingLead.activity_status || {}),
+      managingCompanyId: managingCompanyId
+    };
+
     const updatePayload = {
       name: editingLead.name,
       contact: editingLead.contact,
@@ -319,7 +326,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
       last_activity: new Date().toISOString(),
       score: editingLead.score,
       dynamic_quotation_url: editingLead.dynamic_quotation_url,
-      activity_status: editingLead.activity_status,
+      activity_status: updatedActivityStatus,
     };
 
     const { data: updatedLead, error } = await supabase
@@ -361,7 +368,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
     } finally {
       setIsSaving(false);
     }
-  }, [editingLead, followUpTime, scheduleFollowUp, followUpDate, files, onUpdate, onOpenChange, user]);
+  }, [editingLead, followUpTime, scheduleFollowUp, followUpDate, files, managingCompanyId, onUpdate, onOpenChange, user]);
 
   if (!isOpen || !editingLead) return null;
 
@@ -453,6 +460,36 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate }) => {
                 placeholder="Ej: C-1002"
                 className={theme === 'nova' ? 'bg-secondary/40' : ''}
               />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="managing_company" className="flex items-center gap-2">
+                <Building className="w-3.5 h-3.5 text-primary" />
+                Empresa Gestora (Unidad de Negocio)
+              </Label>
+              <Select
+                value={managingCompanyId}
+                onValueChange={setManagingCompanyId}
+              >
+                <SelectTrigger className="bg-transparent border-white/10 text-white rounded-xl h-10 w-full focus:ring-primary/50">
+                  <SelectValue placeholder="Selecciona Empresa Gestora" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#121214] border-white/15 text-white z-[70]">
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="focus:bg-white/5 focus:text-white cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        {c.logo ? (
+                          <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black">
+                            {c.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{c.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

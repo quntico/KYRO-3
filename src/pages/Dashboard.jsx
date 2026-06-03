@@ -114,7 +114,7 @@ const Dashboard = () => {
   return (
     <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground">
       <Helmet>
-        <title>Dashboard - KYRO</title>
+        <title>Tablero - KYRO</title>
         <meta name="description" content="Panel de control principal de KYRO CRM con resumen de ventas, leads y tareas." />
       </Helmet>
       <div className="p-4 md:p-8">

@@ -6,10 +6,10 @@ import React, { useState, useEffect } from 'react';
     const mockNews = [
       { source: 'Milenio', title: 'Economía mexicana muestra signos de recuperación en el último trimestre.' },
       { source: 'El Financiero', title: 'El superpeso: ¿Hasta dónde puede llegar la apreciación de la moneda?' },
-      { source: 'USA Today', title: 'Tech stocks rally as Fed holds interest rates steady.' },
+      { source: 'USA Today', title: 'Acciones de tecnología suben mientras la Fed mantiene estables las tasas de interés.' },
       { source: 'Milenio', title: 'Nuevas regulaciones para el sector fintech entrarán en vigor en 2025.' },
       { source: 'El Financiero', title: 'Inversión extranjera directa en México alcanza cifra récord.' },
-      { source: 'USA Today', title: 'Future of remote work: Companies adopt hybrid models permanently.' },
+      { source: 'USA Today', title: 'El futuro del teletrabajo: Empresas adoptan modelos híbridos permanentemente.' },
     ];
 
     const NewsTicker = () => {

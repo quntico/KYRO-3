@@ -15,6 +15,7 @@ import NewLeadDialog from '@/components/leads/NewLeadDialog';
 import FollowUpDialog from '@/components/leads/FollowUpDialog';
 import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
 import ModernLeadsDashboard from '@/components/leads/ModernLeadsDashboard';
+import ManageCompaniesDialog from '@/components/leads/ManageCompaniesDialog';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +29,49 @@ const Leads = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { leads, loading, updateLead, removeLead, addLead, addDeal, addTask, updateTaskByLeadId, fetchData } = useData();
+  
+  const defaultCompanies = useMemo(() => [
+    { id: 'comp-1', name: 'Empresa 1', logo: '' },
+    { id: 'comp-2', name: 'Empresa 2', logo: '' },
+    { id: 'comp-3', name: 'Empresa 3', logo: '' },
+    { id: 'comp-4', name: 'Empresa 4', logo: '' },
+    { id: 'comp-5', name: 'Empresa 5', logo: '' },
+  ], []);
+
+  const [companies, setCompanies] = useState(() => {
+    const saved = localStorage.getItem('kyro_crm_companies_v5.5');
+    return saved ? JSON.parse(saved) : [
+      { id: 'comp-1', name: 'Empresa 1', logo: '' },
+      { id: 'comp-2', name: 'Empresa 2', logo: '' },
+      { id: 'comp-3', name: 'Empresa 3', logo: '' },
+      { id: 'comp-4', name: 'Empresa 4', logo: '' },
+      { id: 'comp-5', name: 'Empresa 5', logo: '' },
+    ];
+  });
+
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState(['all']);
+  const handleToggleCompany = (companyId) => {
+    setSelectedCompanyIds((prev) => {
+      if (companyId === 'all') {
+        return ['all'];
+      }
+      let next = prev.filter(id => id !== 'all');
+      if (next.includes(companyId)) {
+        next = next.filter(id => id !== companyId);
+        if (next.length === 0) return ['all'];
+        return next;
+      } else {
+        return [...next, companyId];
+      }
+    });
+  };
+  const [manageCompaniesOpen, setManageCompaniesOpen] = useState(false);
+
+  const handleSaveCompanies = (updatedCompanies) => {
+    setCompanies(updatedCompanies);
+    localStorage.setItem('kyro_crm_companies_v5.5', JSON.stringify(updatedCompanies));
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [dialogState, setDialogState] = useState({
@@ -62,7 +106,9 @@ const Leads = () => {
         (lead.contact?.toLowerCase() || '').includes(search) ||
         (lead.email?.toLowerCase() || '').includes(search);
       const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
-      return matchesSearch && matchesStatus;
+      const leadCompanyId = lead.activity_status?.managingCompanyId || 'comp-1';
+      const matchesCompany = selectedCompanyIds.includes('all') || selectedCompanyIds.includes(leadCompanyId);
+      return matchesSearch && matchesStatus && matchesCompany;
     }).sort((a, b) => {
       if (sortMode === 'date') {
         return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
@@ -82,7 +128,7 @@ const Leads = () => {
       }
       return 0;
     });
-  }, [leads, searchTerm, selectedStatus, sortMode]);
+  }, [leads, searchTerm, selectedStatus, sortMode, selectedCompanyIds]);
 
   const totalPossibleSales = useMemo(() => {
     return filteredLeads.reduce((sum, lead) => sum + lead.value, 0);
@@ -304,21 +350,48 @@ const Leads = () => {
     doc.line(cx - offset + r, cy - offset, cx + offset - r, cy - offset);
     doc.line(cx - offset + r, cy + offset, cx + offset - r, cy + offset);
 
-    // Logo Text
-    doc.setTextColor(...activeColors.primary);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('KYRO', 24, 15);
+    // Logo Text / Brand branding
+    const isSingleCompany = selectedCompanyIds.length === 1 && selectedCompanyIds[0] !== 'all';
+    const selectedComp = isSingleCompany ? companies.find(c => c.id === selectedCompanyIds[0]) : null;
+    if (selectedComp) {
+      if (selectedComp.logo) {
+        try {
+          doc.addImage(selectedComp.logo, 'PNG', 24, 5, 15, 15);
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(selectedComp.name.toUpperCase(), 43, 15);
+        } catch (e) {
+          doc.setTextColor(...activeColors.primary);
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text(selectedComp.name.toUpperCase(), 24, 15);
+        }
+      } else {
+        doc.setTextColor(...activeColors.primary);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(selectedComp.name.toUpperCase(), 24, 15);
+      }
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text('REPORTE DE PROSPECTOS', 95, 15);
+    } else {
+      doc.setTextColor(...activeColors.primary);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('KYRO', 24, 15);
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.text('REPORTE DE PROSPECTOS', 80, 15);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.text('REPORTE DE PROSPECTOS', 80, 15);
+    }
 
     doc.setFontSize(9);
     doc.setTextColor(180, 180, 180);
     doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 165, 15);
 
-    const tableColumn = ["#", "Cliente", "Contacto", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
+    const tableColumn = ["#", "Cliente", "Contacto", "Empresa Gestora", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
     const tableRows = [];
 
     const statusPriority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
@@ -342,10 +415,13 @@ const Leads = () => {
 
     sortedLeads.forEach((lead, index) => {
       const machineProjects = (lead.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
+      const companyId = lead.activity_status?.managingCompanyId || 'comp-1';
+      const companyName = companies.find(c => c.id === companyId)?.name || 'Empresa 1';
       const leadData = [
         index + 1,
         lead.name,
         lead.contact,
+        companyName,
         machineProjects || 'N/A',
         getNextStep(lead),
         `$${(lead.value || 0).toLocaleString()}`,
@@ -409,7 +485,7 @@ const Leads = () => {
 
     doc.save(`reporte-prospectos-${new Date().toISOString().split('T')[0]}.pdf`);
     toast({ title: "¡Exportación Exitosa!", description: "Reporte generado con conversión a MXN (TC: 17.50)." });
-  }, [filteredLeads, getNextStep, theme, totalPossibleSales, totalPossibleUtilities]);
+  }, [filteredLeads, getNextStep, theme, totalPossibleSales, totalPossibleUtilities, companies, selectedCompanyIds]);
 
   const exportExcelTemplate = useCallback(() => {
     const headers = [["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"]];
@@ -426,16 +502,21 @@ const Leads = () => {
   }, []);
 
   const exportDataToExcel = useCallback(() => {
-    const headers = ["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"];
-    const data = filteredLeads.map(lead => [
-      lead.name || '',
-      lead.contact || '',
-      lead.position || '',
-      lead.email || '',
-      lead.phone || '',
-      lead.notes || '',
-      lead.value || 0
-    ]);
+    const headers = ["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Empresa Gestora", "Notas", "Valor Estimado"];
+    const data = filteredLeads.map(lead => {
+      const companyId = lead.activity_status?.managingCompanyId || 'comp-1';
+      const companyName = companies.find(c => c.id === companyId)?.name || 'Empresa 1';
+      return [
+        lead.name || '',
+        lead.contact || '',
+        lead.position || '',
+        lead.email || '',
+        lead.phone || '',
+        companyName,
+        lead.notes || '',
+        lead.value || 0
+      ];
+    });
     const wsData = [headers, ...data];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
@@ -447,7 +528,7 @@ const Leads = () => {
       title: "✅ Exportación a Excel Exitosa",
       description: "Tu lista de prospectos ha sido exportada. Puedes usar este archivo para importar de nuevo."
     });
-  }, [filteredLeads]);
+  }, [filteredLeads, companies]);
 
   const handleImportExcel = useCallback(async (event) => {
     const file = event.target.files[0];
@@ -483,12 +564,17 @@ const Leads = () => {
           position: getIdx(['cargo', 'puesto', 'position', 'role']),
           email: getIdx(['email', 'correo', 'e-mail']),
           phone: getIdx(['teléfono', 'telefono', 'phone', 'celular', 'whatsapp']),
-          notes: getIdx(['notas', 'notas adicionales', 'notes', 'comentarios'])
+          notes: getIdx(['notas', 'notas adicionales', 'notes', 'comentarios']),
+          managingCompany: getIdx(['empresa gestora', 'managing company', 'unidad de negocio', 'gestora'])
         };
 
         const leadsToInsert = jsonData.slice(1).map(row => {
           const getName = () => row[colIdx.name] || row[colIdx.contact] || null;
           if (!getName()) return null;
+
+          const rawCompanyName = row[colIdx.managingCompany] ? String(row[colIdx.managingCompany]).trim() : '';
+          const matchedCompany = companies.find(c => c.name.toLowerCase() === rawCompanyName.toLowerCase());
+          const managingCompanyId = matchedCompany ? matchedCompany.id : 'comp-1';
 
           return {
             user_id: user.id,
@@ -505,6 +591,7 @@ const Leads = () => {
             machines: [],
             quotations: [],
             activity_status: {
+              managingCompanyId: managingCompanyId,
               quotationSent: { checked: false, date: null },
               quotationReview: { checked: false, date: null },
               appointment: { checked: false, date: null },
@@ -541,15 +628,22 @@ const Leads = () => {
       }
     };
     reader.readAsArrayBuffer(file);
-  }, [user, supabase, fetchData]);
+  }, [user, supabase, fetchData, companies]);
 
   React.useEffect(() => {
     const handleOpenEdit = (e) => {
       const lead = e.detail;
       openDialog('edit', lead);
     };
+    const handleOpenManageCompanies = () => {
+      setManageCompaniesOpen(true);
+    };
     window.addEventListener('open-edit-lead', handleOpenEdit);
-    return () => window.removeEventListener('open-edit-lead', handleOpenEdit);
+    window.addEventListener('open-manage-companies', handleOpenManageCompanies);
+    return () => {
+      window.removeEventListener('open-edit-lead', handleOpenEdit);
+      window.removeEventListener('open-manage-companies', handleOpenManageCompanies);
+    };
   }, [openDialog]);
 
   if (loading && (!leads || leads.length === 0)) {
@@ -560,9 +654,9 @@ const Leads = () => {
     );
   }
   return (
-    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-cyan-500/30">
       <Helmet>
-        <title>Prospectos | KYRO STRATEGIC CONSOLE</title>
+        <title>Prospectos | Consola Estratégica KYRO</title>
       </Helmet>
 
       {/* Futuristic Background System */}
@@ -597,6 +691,10 @@ const Leads = () => {
           setDashboardStyle={setDashboardStyle}
           sortMode={sortMode}
           setSortMode={setSortMode}
+          companies={companies}
+          selectedCompanyIds={selectedCompanyIds}
+          onToggleCompany={handleToggleCompany}
+          onManageCompanies={() => setManageCompaniesOpen(true)}
         />
 
         {dashboardStyle === 'modern' ? (
@@ -612,6 +710,7 @@ const Leads = () => {
             onNextStepChange={handleNextStepChange}
             onOpenConversation={(lead) => openDialog('conversation', lead)}
             onUpdateField={updateLeadAndLastActivity}
+            companies={companies}
           />
         ) : (
           <>
@@ -630,6 +729,8 @@ const Leads = () => {
                     onQuickFollowUp={(lead, actionType) => openDialog('followUp', lead, actionType)}
                     onNextStepChange={handleNextStepChange}
                     onOpenConversation={(lead) => openDialog('conversation', lead)}
+                    companies={companies}
+                    onUpdateField={updateLeadAndLastActivity}
                   />
                 ))}
               </div>
@@ -644,6 +745,8 @@ const Leads = () => {
                 onOpenConversation={(lead) => openDialog('conversation', lead)}
                 onConvertToDeal={handleConvertToDeal}
                 onStatusChange={handleStatusChange}
+                companies={companies}
+                onUpdateField={updateLeadAndLastActivity}
               />
             )}
 
@@ -652,6 +755,8 @@ const Leads = () => {
                 leads={filteredLeads}
                 onView={(lead) => openDialog('view', lead)}
                 onOpenConversation={(lead) => openDialog('conversation', lead)}
+                companies={companies}
+                onUpdateField={updateLeadAndLastActivity}
               />
             )}
 
@@ -681,12 +786,14 @@ const Leads = () => {
         initialPdf={initialPdf}
         onUpdate={updateLead}
         onOpenConversation={(lead) => openDialog('conversation', lead)}
+        companies={companies}
       />
       <EditLeadDialog
         isOpen={dialogState.edit}
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, edit: isOpen }))}
         lead={selectedLead}
         onUpdate={updateLead}
+        companies={companies}
       />
       <DeleteLeadDialog
         isOpen={dialogState.delete}
@@ -698,6 +805,7 @@ const Leads = () => {
         open={dialogState.new}
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, new: isOpen }))}
         onSubmit={handleCreateLead}
+        companies={companies}
       />
       <FollowUpDialog
         open={dialogState.followUp}
@@ -712,6 +820,12 @@ const Leads = () => {
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, conversation: isOpen }))}
         lead={selectedLead}
         onSave={updateLeadAndLastActivity}
+      />
+      <ManageCompaniesDialog
+        isOpen={manageCompaniesOpen}
+        onOpenChange={setManageCompaniesOpen}
+        companies={companies}
+        onSave={handleSaveCompanies}
       />
     </div>
   );

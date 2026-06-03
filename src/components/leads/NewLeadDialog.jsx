@@ -11,11 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { UploadCloud, File, X, PlusCircle, Trash2, DollarSign, Link as LinkIcon, Calculator, FileText } from 'lucide-react';
+import { UploadCloud, File, X, PlusCircle, Trash2, DollarSign, Link as LinkIcon, Calculator, FileText, Building } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 import LeadQuoteCalculator from './LeadQuoteCalculator';
 import ExportPdfDialog from './ExportPdfDialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const detectLocationFromPhone = (phoneStr) => {
   if (!phoneStr) return '';
@@ -110,7 +117,7 @@ const parseUSD = (str) => {
   return cleaned;
 };
 
-const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
+const NewLeadDialog = ({ open, onOpenChange, onSubmit, companies = [] }) => {
   const { theme } = useTheme();
   const [company, setCompany] = useState('');
   const [name, setName] = useState('');
@@ -123,6 +130,7 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
   const [notes, setNotes] = useState('');
   const [dynamicQuotationUrl, setDynamicQuotationUrl] = useState('');
   const [clientCode, setClientCode] = useState('');
+  const [managingCompanyId, setManagingCompanyId] = useState('comp-1');
   const [calcMachineIndex, setCalcMachineIndex] = useState(null);
   const [pdfExportMachineIndex, setPdfExportMachineIndex] = useState(null);
   const [focusedField, setFocusedField] = useState(null);
@@ -140,6 +148,7 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
     setNotes('');
     setDynamicQuotationUrl('');
     setClientCode('');
+    setManagingCompanyId('comp-1');
     setPdfExportMachineIndex(null);
   }, []);
 
@@ -208,8 +217,8 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
       toast({ variant: "destructive", title: "Campos Requeridos", description: "Por favor, completa el nombre de la empresa y del contacto." });
       return;
     }
-    onSubmit({ company, name, position, email, phone, source, machines, quotations: files, notes, dynamic_quotation_url: dynamicQuotationUrl, clientCode });
-  }, [company, name, position, email, phone, source, machines, files, notes, dynamicQuotationUrl, clientCode, onSubmit]);
+    onSubmit({ company, name, position, email, phone, source, machines, quotations: files, notes, dynamic_quotation_url: dynamicQuotationUrl, clientCode, managingCompanyId });
+  }, [company, name, position, email, phone, source, machines, files, notes, dynamicQuotationUrl, clientCode, managingCompanyId, onSubmit]);
 
   const onMachineChange = (index, field, value) => {
     const newMachines = [...machines];
@@ -319,6 +328,36 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit }) => {
                 placeholder="Ej: C-1002"
                 className={theme === 'nova' ? 'bg-white/5' : ''}
               />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="managing_company" className="flex items-center gap-2">
+                <Building className="w-3.5 h-3.5 text-primary" />
+                Empresa Gestora (Unidad de Negocio)
+              </Label>
+              <Select
+                value={managingCompanyId}
+                onValueChange={setManagingCompanyId}
+              >
+                <SelectTrigger className="bg-transparent border-white/10 text-white rounded-xl h-10 w-full focus:ring-primary/50">
+                  <SelectValue placeholder="Selecciona Empresa Gestora" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#121214] border-white/15 text-white z-[70]">
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="focus:bg-white/5 focus:text-white cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        {c.logo ? (
+                          <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black">
+                            {c.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{c.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

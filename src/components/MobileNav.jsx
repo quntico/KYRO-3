@@ -6,19 +6,19 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const mainNavItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Tablero' },
   { to: '/leads', icon: Target, label: 'Prospectos' },
   { to: '/deals', icon: Handshake, label: 'Ventas' },
   { to: '/news', icon: Newspaper, label: 'Noticias' },
 ];
 
 const moreNavItems = [
-  { to: '/todo', icon: ListChecks, label: 'To Do' },
+  { to: '/todo', icon: ListChecks, label: 'Tareas' },
   { to: '/directory', icon: BookUser, label: 'Directorio' },
   { to: '/clients', icon: UserPlus, label: 'Clientes' },
   { to: '/client-onboarding', icon: UserPlus, label: 'Alta' },
   { to: '/logistics', icon: Ship, label: 'Logística' },
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
+  { to: '/analytics', icon: BarChart2, label: 'Analíticas' },
   { to: '/settings', icon: Settings, label: 'Ajustes' },
 ];
 

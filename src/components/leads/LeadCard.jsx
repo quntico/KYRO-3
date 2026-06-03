@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, TrendingUp, TrendingDown, Clock, MoreVertical, Eye, Edit, Trash2, Flame, Sun, Snowflake, Banknote, BookUser, HeartHandshake, Package, Phone, Mail, Video, FileText, Sparkles, CalendarPlus, Send, FileSearch, Calendar, Gem, MessageSquare, PlusCircle, Copy, Check, Link as LinkIcon, ExternalLink, File } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Clock, MoreVertical, Eye, Edit, Trash2, Flame, Sun, Snowflake, Banknote, BookUser, HeartHandshake, Package, Phone, Mail, Video, FileText, Sparkles, CalendarPlus, Send, FileSearch, Calendar, Gem, MessageSquare, PlusCircle, Copy, Check, Link as LinkIcon, ExternalLink, File, Building, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,11 +19,13 @@ import { useData } from '@/contexts/DataContext';
 import { ICON_MAP } from '@/constants/leadStatuses';
 import * as Icons from 'lucide-react';
 
-const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation }) => {
+const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, companies = [], onUpdateField }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const { leadStatuses } = useData();
   const [copied, setCopied] = React.useState(null);
+
+  const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
 
   const handleCopy = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -137,7 +139,66 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{lead.contact}</p>
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <p className="text-xs text-muted-foreground">{lead.contact}</p>
+              {matchedCompany && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <button className="flex items-center justify-center p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                      {matchedCompany.logo ? (
+                        <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-5 w-auto max-w-[50px] object-contain rounded" />
+                      ) : (
+                        <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40 uppercase">
+                          {matchedCompany.name.slice(0, 2)}
+                        </div>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-[#050505] border border-white/10 text-white/80 p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
+                    <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-white/40 uppercase border-b border-white/5 mb-1">
+                      Asignar Empresa Gestora
+                    </div>
+                    {(companies || []).map(c => (
+                      <DropdownMenuRadioItem
+                        key={c.id}
+                        value={c.id}
+                        checked={c.id === matchedCompany.id}
+                        onClick={() => {
+                          if (onUpdateField) {
+                            const updatedActivityStatus = {
+                              ...(lead.activity_status || {}),
+                              managingCompanyId: c.id
+                            };
+                            onUpdateField(lead.id, { activity_status: updatedActivityStatus });
+                          }
+                        }}
+                        className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/10 hover:text-white rounded-lg cursor-pointer transition-colors"
+                      >
+                        {c.logo ? (
+                          <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40">
+                            {c.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{c.name}</span>
+                        {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-cyan-400" />}
+                      </DropdownMenuRadioItem>
+                    ))}
+                    <div className="border-t border-white/5 my-1" />
+                    <DropdownMenuRadioItem
+                      value="manage"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('open-manage-companies'));
+                      }}
+                      className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 rounded-lg cursor-pointer transition-colors"
+                    >
+                      ⚙️ Gestionar Empresas
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
           <div className="flex items-center space-x-1">
             <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${statusInfo.color}`}>
