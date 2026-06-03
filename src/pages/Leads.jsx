@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
-import { Target, Plus } from 'lucide-react';
+import { Target, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import LeadsHeader from '@/components/leads/LeadsHeader';
@@ -674,8 +674,6 @@ const Leads = () => {
 
       <div className="relative z-10 p-4 md:p-10 max-w-[1700px] mx-auto space-y-10">
         <LeadsHeader
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}
           leads={leads}
@@ -696,6 +694,28 @@ const Leads = () => {
           onToggleCompany={handleToggleCompany}
           onManageCompanies={() => setManageCompaniesOpen(true)}
         />
+
+        {/* Buscador de mejor tamaño justo arriba de los leads */}
+        <div className="flex justify-start pt-2">
+          <div className="relative w-full max-w-2xl group">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/40 group-focus-within:text-cyan-400 transition-colors" />
+            <input
+              type="text"
+              placeholder="Buscar Vectores / Prospectos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white/[0.03] border border-white/15 rounded-2xl h-14 pl-14 pr-12 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-cyan-400/40 focus:bg-white/[0.06] focus:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all font-mono tracking-wider"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-md transition-all text-white/40 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {dashboardStyle === 'modern' ? (
           <ModernLeadsDashboard

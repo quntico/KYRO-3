@@ -46,8 +46,6 @@ import {
 } from "@/components/ui/select";
 
 const LeadsHeader = ({ 
-  searchTerm, 
-  setSearchTerm, 
   selectedStatus, 
   setSelectedStatus, 
   leads, 
@@ -205,19 +203,8 @@ const LeadsHeader = ({
       </div>
 
       {/* Middle Row: Strategic Controls */}
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-cyan-400 transition-colors" />
-          <input
-            type="text"
-            placeholder="Buscar Vectores / Prospectos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/15 rounded-2xl h-14 pl-14 pr-6 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-cyan-400/40 focus:bg-white/[0.06] focus:shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-all font-mono tracking-wider"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col md:flex-row items-center justify-end gap-4 w-full">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
           <DropdownMenu open={filterDropdownOpen} onOpenChange={setFilterDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button className="bg-white/[0.04] border border-white/15 hover:border-cyan-400/40 text-white/70 hover:bg-white/[0.08] hover:text-cyan-400 rounded-2xl h-14 w-[210px] text-[10px] font-black uppercase tracking-[0.2em] justify-between flex items-center px-5 transition-all">
