@@ -142,12 +142,27 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     }
   };
 
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'hot': return 'text-red-400';
+      case 'closing': return 'text-[#00D4FF]';
+      case 'warming': return 'text-emerald-400';
+      case 'warm': return 'text-orange-400';
+      case 'cooling': return 'text-cyan-400';
+      case 'cold': return 'text-blue-400';
+      case 'new': return 'text-purple-400';
+      case 'declined': return 'text-[#D2691E]';
+      default: return 'text-white';
+    }
+  };
+
   const statusGradient = getStatusColor(lead.status);
   const statusPill = getStatusPill(lead.status);
   const scoreGradient = getScoreGradient(lead.status);
   const hoverFx = getHoverEffects(lead.status);
   const statusName = getStatusName(lead.status);
   const displayScore = getDerivedScore(lead.status, lead.score);
+  const statusTextColor = getStatusTextColor(lead.status);
 
   const lastUpdateRaw = lead.lastActivity || lead.updated_at || lead.updatedAt || lead.created_at || new Date().toISOString();
   const formattedDate = new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
@@ -174,7 +189,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                <Clock className="w-2.5 h-2.5" /> {formattedDate}
              </span>
           </div>
-          <h3 className="text-2xl font-black text-white tracking-tight uppercase mb-0.5 line-clamp-1">
+          <h3 className={`text-2xl font-black tracking-tight uppercase mb-0.5 line-clamp-1 ${statusTextColor}`}>
             {lead.name}
           </h3>
           <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.15em] truncate mt-1 flex items-center gap-2">
