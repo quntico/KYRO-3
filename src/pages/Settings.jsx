@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 const Settings = () => {
   const { user } = useAuth();
   const { theme, changeTheme, themeSettings, updateThemeSettings, saveThemeSettings } = useTheme();
-  const { settings, setSettings, refetchSettings } = useSettings();
+  const { settings, setSettings, refetchSettings, saveSettingsToCloud } = useSettings();
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
@@ -49,6 +49,7 @@ const Settings = () => {
     { value: 'futuristic', label: 'Futurista', icon: Sparkles },
     { value: 'play', label: 'MODO PLAY', icon: Gamepad2 },
     { value: 'nova', label: 'NOVA', icon: Zap },
+    { value: 'recilogic', label: 'Recilogic (Claro)', icon: Palette },
   ];
 
   const handleAction = (action) => {
@@ -64,16 +65,14 @@ const Settings = () => {
 
   const handleSaveGreetings = useCallback(async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({ id: user.id, greetings: settings.greetings }, { onConflict: 'id' });
+    const { error } = await saveSettingsToCloud({ greetings: settings.greetings });
 
     if (error) {
       toast({ title: "Error al guardar", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "¡Guardado!", description: "Tu saludo de bienvenida ha sido actualizado." });
     }
-  }, [user, settings.greetings]);
+  }, [user, settings.greetings, saveSettingsToCloud]);
 
   const handleLogoUpload = async (event) => {
     const file = event.target.files[0];
@@ -93,15 +92,11 @@ const Settings = () => {
 
       const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase
-        .from('user_settings')
-        .upsert({ id: user.id, logo_url: publicUrl }, { onConflict: 'id' });
+      const { error: dbError } = await saveSettingsToCloud({ logo_url: publicUrl });
 
       if (dbError) {
         throw dbError;
       }
-
-      await refetchSettings();
 
       toast({
         title: '¡Logo actualizado!',
@@ -249,7 +244,7 @@ const Settings = () => {
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Sube el logo de tu compañía para personalizar el Dashboard.
+                Sube el logo de tu compañía para personalizar el Tablero.
               </p>
             </div>
           </motion.div>
@@ -263,7 +258,7 @@ const Settings = () => {
           >
             <h2 className="text-xl font-semibold flex items-center mb-4">
               <LayoutDashboard className="w-6 h-6 mr-3 text-blue-500" />
-              Dashboard
+              Tablero
             </h2>
             <div className="space-y-4">
               <div>
@@ -283,7 +278,7 @@ const Settings = () => {
                   <Button onClick={handleSaveGreetings}>Guardar</Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Separa cada saludo con una coma. Estos rotarán en el Dashboard.
+                  Separa cada saludo con una coma. Estos rotarán en el Tablero.
                 </p>
               </div>
             </div>

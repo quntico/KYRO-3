@@ -46,8 +46,22 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
   };
 
   const getStatusInfo = (status) => {
+    const isDark = theme === 'futuristic' || theme === 'play' || theme === 'nova' || theme === 'dark';
+    if (!isDark) {
+      switch (status) {
+        case 'hot': return { label: 'Caliente', color: 'bg-red-50 text-red-600 border border-red-200', Icon: Flame };
+        case 'closing': return { label: 'Cierre', color: 'bg-blue-50 text-blue-600 border border-blue-200', Icon: Sparkles };
+        case 'warming': return { label: 'Se está calentando', color: 'bg-emerald-50 text-emerald-600 border border-emerald-200', Icon: TrendingUp };
+        case 'warm': return { label: 'Tibio', color: 'bg-orange-50 text-orange-600 border border-orange-200', Icon: Sun };
+        case 'cooling': return { label: 'Se está enfriando', color: 'bg-cyan-50 text-cyan-700 border border-cyan-200', Icon: TrendingDown };
+        case 'cold': return { label: 'Frío', color: 'bg-blue-50 text-blue-600 border border-blue-200', Icon: Snowflake };
+        case 'new': return { label: 'Nuevo', color: 'bg-purple-50 text-purple-600 border border-purple-200', Icon: null };
+        default: return { label: status, color: 'bg-gray-50 text-gray-600 border border-gray-200', Icon: null };
+      }
+    }
     switch (status) {
       case 'hot': return { label: 'Caliente', color: theme === 'futuristic' ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400', Icon: Flame };
+      case 'closing': return { label: 'Cierre', color: theme === 'futuristic' ? 'bg-[#00D4FF]/20 text-[#00D4FF]' : 'bg-[#00D4FF]/10 text-[#00D4FF] dark:bg-[#00D4FF]/20 dark:text-[#00D4FF]', Icon: Sparkles };
       case 'warming': return { label: 'Se está calentando', color: theme === 'futuristic' ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400', Icon: TrendingUp };
       case 'warm': return { label: 'Tibio', color: theme === 'futuristic' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-400', Icon: Sun };
       case 'cooling': return { label: 'Se está enfriando', color: theme === 'futuristic' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-400', Icon: TrendingDown };
@@ -67,6 +81,20 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
   };
 
   const getStatusTextColor = (status) => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    if (isLightTheme) {
+      switch (status) {
+        case 'hot': return 'text-red-600';
+        case 'closing': return 'text-[#005AB5]';
+        case 'warming': return 'text-emerald-600';
+        case 'warm': return 'text-orange-600';
+        case 'cooling': return 'text-cyan-700';
+        case 'cold': return 'text-blue-600';
+        case 'new': return 'text-purple-600';
+        case 'declined': return 'text-[#8B4513]';
+        default: return 'text-foreground';
+      }
+    }
     switch (status) {
       case 'hot': return 'text-red-500 dark:text-red-400';
       case 'closing': return 'text-[#00D4FF]';
@@ -158,18 +186,18 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
               {matchedCompany && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <button className="flex items-center justify-center p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                    <button className="flex items-center justify-center p-1 rounded bg-secondary/40 border border-border hover:bg-secondary transition-all cursor-pointer">
                       {matchedCompany.logo ? (
                         <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-5 w-auto max-w-[50px] object-contain rounded" />
                       ) : (
-                        <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40 uppercase">
+                        <div className="w-5 h-5 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80 uppercase">
                           {matchedCompany.name.slice(0, 2)}
                         </div>
                       )}
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="bg-[#050505] border border-white/10 text-white/80 p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
-                    <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-white/40 uppercase border-b border-white/5 mb-1">
+                  <DropdownMenuContent align="start" className="bg-popover border border-border text-popover-foreground p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
+                    <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-muted-foreground uppercase border-b border-border mb-1">
                       Asignar Empresa Gestora
                     </div>
                     {(companies || []).map(c => (
@@ -186,26 +214,26 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                             onUpdateField(lead.id, { activity_status: updatedActivityStatus });
                           }
                         }}
-                        className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/10 hover:text-white rounded-lg cursor-pointer transition-colors"
+                        className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-secondary rounded-lg cursor-pointer transition-colors"
                       >
                         {c.logo ? (
                           <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
                         ) : (
-                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40">
+                          <div className="w-4 h-4 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80">
                             {c.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
                         <span>{c.name}</span>
-                        {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-cyan-400" />}
+                        {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
                       </DropdownMenuRadioItem>
                     ))}
-                    <div className="border-t border-white/5 my-1" />
+                    <div className="border-t border-border my-1" />
                     <DropdownMenuRadioItem
                       value="manage"
                       onClick={() => {
                         window.dispatchEvent(new CustomEvent('open-manage-companies'));
                       }}
-                      className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 rounded-lg cursor-pointer transition-colors"
+                      className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-primary hover:bg-primary/10 hover:text-primary rounded-lg cursor-pointer transition-colors"
                     >
                       ⚙️ Gestionar Empresas
                     </DropdownMenuRadioItem>
@@ -265,7 +293,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
           </div>
 
           <div className="flex flex-col items-end gap-1.5 flex-1">
-            <div className="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 w-full justify-between sm:justify-end">
+            <div className="flex items-center space-x-2 bg-secondary/30 px-3 py-1.5 rounded-xl border border-border w-full justify-between sm:justify-end">
               <div className="flex flex-col items-end mr-1">
                 <span className="text-[9px] uppercase font-bold text-muted-foreground leading-none mb-1">Venta</span>
                 <span className={`font-black text-sm leading-none ${theme === 'futuristic' ? 'text-glow text-white' : 'text-foreground'}`}>
@@ -290,12 +318,13 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                 </div>
               </div>
             )}
+
           </div>
         </div>
 
         <div className="space-y-2 mb-4 text-sm text-muted-foreground">
           <div
-            className="flex items-center justify-between group/copy cursor-pointer py-1 px-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="flex items-center justify-between group/copy cursor-pointer py-1 px-2 rounded-lg hover:bg-secondary transition-colors"
             onClick={(e) => { e.stopPropagation(); handleCopy(lead.email, 'email'); }}
           >
             <span className="flex items-center gap-2 overflow-hidden">
@@ -306,7 +335,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
           </div>
 
           <div
-            className="flex items-center justify-between group/copy cursor-pointer py-1 px-2 rounded-lg hover:bg-white/5 transition-colors"
+            className="flex items-center justify-between group/copy cursor-pointer py-1 px-2 rounded-lg hover:bg-secondary transition-colors"
             onClick={(e) => { e.stopPropagation(); handleCopy(lead.phone, 'phone'); }}
           >
             <span className="flex items-center gap-2 overflow-hidden flex-wrap">

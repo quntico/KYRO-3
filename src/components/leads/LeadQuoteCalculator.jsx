@@ -68,11 +68,14 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
   const [incoterm, setIncoterm] = useState(() => machine?.incoterm || 'FOB');
   const [freightLandChina, setFreightLandChina] = useState(() => machine?.freightLandChina || 0);
   const [freightSea, setFreightSea] = useState(() => machine?.freightSea || 0);
+  const [incrementablesUSD, setIncrementablesUSD] = useState(() => machine?.incrementablesUSD || 0);
   const [freightMex, setFreightMex] = useState(() => {
     if (machine?.freightMex !== undefined) return machine.freightMex;
     return getFreightMexByDefault(location);
   });
   const [costTech, setCostTech] = useState(() => machine?.costTech || 0);
+  const [taxImportPercent, setTaxImportPercent] = useState(() => machine?.taxImportPercent !== undefined ? machine.taxImportPercent : 20);
+  const [ivaPercent, setIvaPercent] = useState(() => machine?.ivaPercent !== undefined ? machine.ivaPercent : 16);
   const [exchangeRate, setExchangeRate] = useState(() => machine?.exchangeRate || 18.0);
   const [divideByTwo, setDivideByTwo] = useState(() => machine?.divideByTwo || false);
   const [salePrice, setSalePrice] = useState(() => machine?.salePrice || machine?.price || 0);
@@ -86,13 +89,16 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
       incoterm: incoterm,
       freightLandChina: parseFloat(freightLandChina) || 0,
       freightSea: parseFloat(freightSea) || 0,
+      incrementablesUSD: parseFloat(incrementablesUSD) || 0,
       freightMex: parseFloat(freightMex) || 0,
       costTech: parseFloat(costTech) || 0,
+      taxImportPercent: parseFloat(taxImportPercent) || 20,
+      ivaPercent: parseFloat(ivaPercent) || 16,
       exchangeRate: parseFloat(exchangeRate) || 18.0,
       divideByTwo: divideByTwo,
       salePrice: parseFloat(salePrice) || 0
     };
-  }, [machine, costChina, incoterm, freightLandChina, freightSea, freightMex, costTech, exchangeRate, divideByTwo, salePrice]);
+  }, [machine, costChina, incoterm, freightLandChina, freightSea, incrementablesUSD, freightMex, costTech, taxImportPercent, ivaPercent, exchangeRate, divideByTwo, salePrice]);
 
   const getInputValue = useCallback((field, rawValue) => {
     if (focusedField === field) {
@@ -108,8 +114,11 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
       setIncoterm(machine.incoterm || 'FOB');
       setFreightLandChina(machine.freightLandChina || 0);
       setFreightSea(machine.freightSea || 0);
+      setIncrementablesUSD(machine.incrementablesUSD || 0);
       setFreightMex(machine.freightMex !== undefined ? machine.freightMex : getFreightMexByDefault(location));
       setCostTech(machine.costTech || 0);
+      setTaxImportPercent(machine.taxImportPercent !== undefined ? machine.taxImportPercent : 20);
+      setIvaPercent(machine.ivaPercent !== undefined ? machine.ivaPercent : 16);
       setExchangeRate(machine.exchangeRate || 18.0);
       setDivideByTwo(machine.divideByTwo || false);
       setSalePrice(machine.salePrice || machine.price || 0);
@@ -121,75 +130,88 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     const cChina = parseFloat(costChina) || 0;
     const fLandChina = parseFloat(freightLandChina) || 0;
     const fSea = parseFloat(freightSea) || 0;
+    const incUSD = parseFloat(incrementablesUSD) || 0;
     const fMex = parseFloat(freightMex) || 0;
     const cTech = parseFloat(costTech) || 0;
+    const taxPct = (parseFloat(taxImportPercent) || 0) / 100;
     const tc = parseFloat(exchangeRate) || 1;
     const pVentaUSD = parseFloat(salePrice) || 0;
+    const ivaPct = (parseFloat(ivaPercent) || 0) / 100;
 
-    // Incrementables = Costo China + Flete Terrestre China + Flete Maritimo
-    const incrementablesUSD = cChina + fLandChina + fSea;
-    
-    // Impuestos = 20% de (Incrementables)
-    const taxesUSD = incrementablesUSD * 0.20;
+    // 1. Flete nacional in USD
+    const fMexUSD = fMex / tc;
+
+    // 2. Base impuestos importacion
+    const baseImpuestosUSD = cChina + fLandChina + fSea + incUSD;
+
+    // 3. Impuestos importacion USD
+    const taxesUSD = baseImpuestosUSD * taxPct;
     const taxesMXN = taxesUSD * tc;
 
-    // Convert MXN items to USD
-    const fMexUSD = fMex / tc;
+    // 4. Costo tecnico instalacion USD
     const cTechUSD = cTech / tc;
 
-    // Costo Total
-    const totalCostUSD = cChina + fLandChina + fSea + taxesUSD + fMexUSD + cTechUSD;
+    // 5. Costo total real USD
+    const totalCostUSD = cChina + fLandChina + fSea + incUSD + taxesUSD + fMexUSD + cTechUSD;
     const totalCostMXN = totalCostUSD * tc;
 
-    // Utility (Profit)
+    // 6. IVA de venta USD & MXN
+    const salePriceIVA_USD = pVentaUSD * ivaPct;
+    const salePriceIVA_MXN = salePriceIVA_USD * tc;
+
+    // 7. Precio de venta con IVA USD & MXN
+    const salePriceTotal_USD = pVentaUSD + salePriceIVA_USD;
+    const salePriceTotal_MXN = salePriceTotal_USD * tc;
+
+    const salePriceMXN = pVentaUSD * tc;
+
+    // 8. Utilidad real sin IVA
     let profitUSD = pVentaUSD - totalCostUSD;
     if (divideByTwo) {
       profitUSD = profitUSD / 2;
     }
     const profitMXN = profitUSD * tc;
 
-    // IVA (16%)
-    const salePriceMXN = pVentaUSD * tc;
-    
-    const salePriceIVA_USD = pVentaUSD * 0.16;
-    const salePriceIVA_MXN = salePriceMXN * 0.16;
+    // Margen sobre venta
+    const margenSobreVenta = pVentaUSD > 0 ? profitUSD / pVentaUSD : 0;
 
-    const totalCostIVA_USD = totalCostUSD * 0.16;
-    const totalCostIVA_MXN = totalCostMXN * 0.16;
+    // Markup sobre costo
+    const markupSobreCosto = totalCostUSD > 0 ? profitUSD / totalCostUSD : 0;
 
-    const profitIVA_USD = profitUSD * 0.16;
-    const profitIVA_MXN = profitMXN * 0.16;
+    // 9. Utilidad con IVA flujo USD & MXN
+    let profitWithIVAFlowUSD = salePriceTotal_USD - totalCostUSD;
+    if (divideByTwo) {
+      profitWithIVAFlowUSD = profitWithIVAFlowUSD / 2;
+    }
+    const profitWithIVAFlowMXN = profitWithIVAFlowUSD * tc;
 
     return {
-      incrementablesUSD,
+      incrementablesUSD: incUSD,
+      baseImpuestosUSD,
       taxesUSD,
       taxesMXN,
+      fMexUSD,
+      cTechUSD,
       totalCostUSD,
       totalCostMXN,
       profitUSD,
       profitMXN,
       salePriceMXN,
+      margenSobreVenta,
+      markupSobreCosto,
       
       // IVA breakdowns
       salePriceIVA_USD,
       salePriceIVA_MXN,
-      salePriceTotal_USD: pVentaUSD + salePriceIVA_USD,
-      salePriceTotal_MXN: salePriceMXN + salePriceIVA_MXN,
+      salePriceTotal_USD,
+      salePriceTotal_MXN,
 
-      totalCostIVA_USD,
-      totalCostIVA_MXN,
-      totalCostTotal_USD: totalCostUSD + totalCostIVA_USD,
-      totalCostTotal_MXN: totalCostMXN + totalCostIVA_MXN,
-
-      profitIVA_USD,
-      profitIVA_MXN,
-      profitTotal_USD: profitUSD + profitIVA_USD,
-      profitTotal_MXN: profitMXN + profitIVA_MXN,
+      profitWithIVAFlowUSD,
+      profitWithIVAFlowMXN,
     };
-  }, [costChina, freightLandChina, freightSea, freightMex, costTech, exchangeRate, divideByTwo, salePrice]);
+  }, [costChina, freightLandChina, freightSea, incrementablesUSD, freightMex, costTech, taxImportPercent, exchangeRate, divideByTwo, salePrice, ivaPercent]);
 
   const handleApply = () => {
-    // Copy the final calculated Selling Price (pVentaUSD) and Commission (profitUSD) to the lead form row!
     onApply({
       ...machine,
       price: parseFloat(salePrice) || 0,
@@ -199,8 +221,11 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
       incoterm: incoterm,
       freightLandChina: parseFloat(freightLandChina) || 0,
       freightSea: parseFloat(freightSea) || 0,
+      incrementablesUSD: parseFloat(incrementablesUSD) || 0,
       freightMex: parseFloat(freightMex) || 0,
       costTech: parseFloat(costTech) || 0,
+      taxImportPercent: parseFloat(taxImportPercent) || 20,
+      ivaPercent: parseFloat(ivaPercent) || 16,
       exchangeRate: parseFloat(exchangeRate) || 18.0,
       divideByTwo: divideByTwo,
       salePrice: parseFloat(salePrice) || 0
@@ -231,18 +256,24 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     doc.setFillColor(30, 41, 59);
     doc.rect(0, 0, 210, 38, 'F');
 
-    // Header Title
-    doc.setTextColor(255, 255, 255);
+    // SMQ Text Logo
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("KYRO 2.1  |  RADIOGRAFÍA INTERNA", 15, 16);
+    doc.setFontSize(22);
+    doc.setTextColor(0, 120, 215); // SMQ Blue color for logo
+    doc.text("SMQ", 15, 16);
+    
+    // Header Title Divider & Text
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.text(" |  RADIOGRAFÍA INTERNA", 34, 16);
+    
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(234, 179, 8); // Gold color
+    doc.setTextColor(0, 120, 215); // SMQ Blue color
     doc.text("INGENIERÍA FINANCIERA Y ESTRUCTURA DE UTILIDADES COMERCIALES", 15, 22);
 
     // Decorative line
-    doc.setFillColor(234, 179, 8);
+    doc.setFillColor(0, 120, 215);
     doc.rect(15, 26, 180, 1, 'F');
 
     // Info details
@@ -295,7 +326,7 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     doc.text("1. ESTRUCTURA DE COSTOS E INCREMENTABLES", 15, y);
     
     // Bottom border line for section header
-    doc.setDrawColor(234, 179, 8);
+    doc.setDrawColor(0, 120, 215);
     doc.line(15, y + 2, 195, y + 2);
 
     y += 8;
@@ -318,33 +349,50 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
       return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const currentTC = parseFloat(exchangeRate) || 1.0;
+
     const costRows = [
-      { name: "Costo Base en China", currency: "USD", val: costChina, usdVal: costChina },
-      { name: `Flete Terrestre China (${incoterm})`, currency: "USD", val: freightLandChina, usdVal: freightLandChina },
-      { name: "Flete Marítimo Internacional", currency: "USD", val: freightSea, usdVal: freightSea },
-      { name: "Incrementables Totales", currency: "USD", val: calculations.incrementablesUSD, usdVal: calculations.incrementablesUSD },
-      { name: "Impuesto de Importación Arancelario (20%)", currency: "USD", val: calculations.taxesUSD, usdVal: calculations.taxesUSD },
-      { name: "Flete Terrestre Nacional (Manzanillo)", currency: "MXN", val: freightMex, usdVal: parseFloat(freightMex) / parseFloat(exchangeRate) },
-      { name: "Costo Técnico y de Instalación", currency: "MXN", val: costTech, usdVal: parseFloat(costTech) / parseFloat(exchangeRate) }
+      { name: "Costo Base de Máquina (USD)", currency: "USD", val: costChina, usdVal: costChina },
+      { name: `Flete Terrestre China (USD) [Incoterm: ${incoterm}]`, currency: "USD", val: freightLandChina, usdVal: freightLandChina },
+      { name: "Flete Marítimo Internacional (USD)", currency: "USD", val: freightSea, usdVal: freightSea },
+      { name: "Otros Incrementables (USD)", currency: "USD", val: incrementablesUSD, usdVal: incrementablesUSD },
+      { name: "Base de Impuestos de Importación (USD)", currency: "USD", val: calculations.baseImpuestosUSD, usdVal: calculations.baseImpuestosUSD },
+      { name: `Impuestos / Importación Estimada (${taxImportPercent}%)`, currency: "USD", val: calculations.taxesUSD, usdVal: calculations.taxesUSD },
+      { name: "Flete Terrestre Nacional (MXN)", currency: "MXN", val: freightMex, usdVal: calculations.fMexUSD },
+      { name: "Costo Técnico y de Instalación (MXN)", currency: "MXN", val: costTech, usdVal: calculations.cTechUSD },
+      { name: "Costo Total Real del Proyecto", currency: "USD", val: calculations.totalCostUSD, usdVal: calculations.totalCostUSD }
     ];
 
     doc.setFont("helvetica", "normal");
     costRows.forEach((row, rIdx) => {
-      // Zebra striping
-      if (rIdx % 2 === 0) {
-        doc.setFillColor(248, 250, 252);
+      const isTotal = row.name.includes("Costo Total Real");
+      if (isTotal) {
+        doc.setFillColor(241, 245, 249);
         doc.rect(15, y - 4, 180, 6, 'F');
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+      } else {
+        if (rIdx % 2 === 0) {
+          doc.setFillColor(248, 250, 252);
+          doc.rect(15, y - 4, 180, 6, 'F');
+        }
+        doc.setTextColor(71, 85, 105);
+        doc.setFont("helvetica", "normal");
       }
-      doc.setTextColor(71, 85, 105);
+      
       doc.text(row.name, 18, y);
       doc.text(row.currency, 90, y);
       
       const prefix = row.currency === "USD" ? "$" : "Mex$";
       doc.text(`${prefix} ${formatCurrencyPDF(row.val)}`, 140, y);
+      
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 41, 59);
+      if (isTotal) {
+        doc.setTextColor(15, 23, 42);
+      } else {
+        doc.setTextColor(30, 41, 59);
+      }
       doc.text(`$ ${formatCurrencyPDF(row.usdVal)}`, 170, y);
-      doc.setFont("helvetica", "normal");
       
       y += 6;
     });
@@ -361,24 +409,23 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     doc.text("TIPO DE CAMBIO (TC) PACTADO:", 20, y + 6.5);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(220, 38, 38); // red exchange rate
-    doc.text(`$ ${formatCurrencyPDF(exchangeRate)} MXN por USD`, 85, y + 6.5);
+    doc.text(`$ ${formatCurrencyPDF(currentTC)} MXN por USD`, 85, y + 6.5);
 
     y += 18;
 
-    // SECTION 3: INGENIERÍA FINANCIERA COMPARATIVA (VENTA VS COSTO VS UTILIDAD)
+    // SECTION 3: INGENIERÍA FINANCIERA COMPARATIVA (Venta, Costo, Utilidad)
     doc.setTextColor(30, 41, 59);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("2. RESUMEN FINANCIERO Y MARGEN DE UTILIDAD NETA", 15, y);
-    doc.setDrawColor(234, 179, 8);
+    doc.setDrawColor(0, 120, 215);
     doc.line(15, y + 2, 195, y + 2);
 
     y += 10;
 
-    // Three Column Dashboard Card
-    // 1. Venta Total
+    // 1. Venta Total Card (Block 1)
     doc.setFillColor(30, 41, 59);
-    doc.rect(15, y, 56, 45, 'F');
+    doc.rect(15, y, 56, 50, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
@@ -387,143 +434,173 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     doc.setFontSize(7);
     doc.setTextColor(203, 213, 225);
     doc.text("Subtotal (USD):", 18, y + 14);
-    doc.text("IVA 16% (USD):", 18, y + 20);
-    doc.text("Subtotal (MXN):", 18, y + 28);
-    doc.text("IVA 16% (MXN):", 18, y + 34);
+    doc.text("IVA Venta (USD):", 18, y + 20);
+    doc.text("Subtotal (MXN):", 18, y + 26);
+    doc.text("IVA Venta (MXN):", 18, y + 32);
     
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
     doc.text(`$ ${formatCurrencyPDF(salePrice)}`, 48, y + 14);
     doc.text(`$ ${formatCurrencyPDF(calculations.salePriceIVA_USD)}`, 48, y + 20);
-    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceMXN)}`, 48, y + 28);
-    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceIVA_MXN)}`, 48, y + 34);
+    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceMXN)}`, 48, y + 26);
+    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceIVA_MXN)}`, 48, y + 32);
 
-    doc.setFillColor(234, 179, 8); // Gold total footer inside card
-    doc.rect(15, y + 39, 56, 6, 'F');
+    doc.setFillColor(0, 120, 215); // SMQ Blue footer
+    doc.rect(15, y + 38, 56, 12, 'F');
     doc.setTextColor(30, 41, 59);
     doc.setFont("helvetica", "bold");
-    doc.text("TOTAL CON IVA (USD):", 18, y + 43);
-    doc.text(`$${formatCurrencyPDF(calculations.salePriceTotal_USD)}`, 46, y + 43);
-
-    // 2. Costo Total
-    doc.setFillColor(71, 85, 105);
-    doc.rect(77, y, 56, 45, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text("2. COSTO TOTAL", 80, y + 6);
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.setTextColor(203, 213, 225);
-    doc.text("Subtotal (USD):", 80, y + 14);
-    doc.text("IVA 16% (USD):", 80, y + 20);
-    doc.text("Subtotal (MXN):", 80, y + 28);
-    doc.text("IVA 16% (MXN):", 80, y + 34);
+    doc.text("TOTAL CON IVA (USD):", 18, y + 43);
+    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceTotal_USD)}`, 46, y + 43);
+    doc.text("TOTAL CON IVA (MXN):", 18, y + 47);
+    doc.text(`$ ${formatCurrencyPDF(calculations.salePriceTotal_MXN)}`, 46, y + 47);
 
+    // 2. Costo Real Card (Block 2)
+    doc.setFillColor(71, 85, 105);
+    doc.rect(77, y, 56, 50, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostUSD)}`, 110, y + 14);
-    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostIVA_USD)}`, 110, y + 20);
-    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostMXN)}`, 110, y + 28);
-    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostIVA_MXN)}`, 110, y + 34);
+    doc.text("2. COSTO REAL PROYECTO", 80, y + 6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(226, 232, 240);
+    doc.text("Base Impuestos (USD):", 80, y + 13);
+    doc.text("Impuestos Imp. (USD):", 80, y + 19);
+    doc.text("Flete Nacional (USD):", 80, y + 25);
+    doc.text("Costo Técnico (USD):", 80, y + 31);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(`$ ${formatCurrencyPDF(calculations.baseImpuestosUSD)}`, 110, y + 13);
+    doc.text(`$ ${formatCurrencyPDF(calculations.taxesUSD)}`, 110, y + 19);
+    doc.text(`$ ${formatCurrencyPDF(calculations.fMexUSD)}`, 110, y + 25);
+    doc.text(`$ ${formatCurrencyPDF(calculations.cTechUSD)}`, 110, y + 31);
 
     doc.setFillColor(226, 232, 240); // Silver footer
-    doc.rect(77, y + 39, 56, 6, 'F');
+    doc.rect(77, y + 38, 56, 12, 'F');
     doc.setTextColor(30, 41, 59);
     doc.setFont("helvetica", "bold");
-    doc.text("TOTAL CON IVA (USD):", 80, y + 43);
-    doc.text(`$${formatCurrencyPDF(calculations.totalCostTotal_USD)}`, 108, y + 43);
-
-    // 3. Utilidad Neto (USD & MXN)
-    doc.setFillColor(22, 101, 52); // Dark Green for Profit Card
-    doc.rect(139, y, 56, 45, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text("3. UTILIDAD NETO COMERCIAL", 142, y + 6);
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
-    doc.setTextColor(187, 247, 208);
-    doc.text("Subtotal (USD):", 142, y + 14);
-    doc.text("IVA 16% (USD):", 142, y + 20);
-    doc.text("Subtotal (MXN):", 142, y + 28);
-    doc.text("IVA 16% (MXN):", 142, y + 34);
+    doc.text("COSTO REAL (USD):", 80, y + 43);
+    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostUSD)}`, 108, y + 43);
+    doc.text("COSTO REAL (MXN):", 80, y + 47);
+    doc.text(`$ ${formatCurrencyPDF(calculations.totalCostMXN)}`, 108, y + 47);
 
+    // 3. Utilidad Card (Block 3)
+    doc.setFillColor(22, 101, 52); // Dark green
+    doc.rect(139, y, 56, 50, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`$ ${formatCurrencyPDF(calculations.profitUSD)}`, 172, y + 14);
-    doc.text(`$ ${formatCurrencyPDF(calculations.profitIVA_USD)}`, 172, y + 20);
-    doc.text(`$ ${formatCurrencyPDF(calculations.profitMXN)}`, 172, y + 28);
-    doc.text(`$ ${formatCurrencyPDF(calculations.profitIVA_MXN)}`, 172, y + 34);
+    doc.text("3. UTILIDAD COMERCIAL", 142, y + 6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(187, 247, 208);
+    doc.text("Real Sin IVA (USD):", 142, y + 13);
+    doc.text("Real Sin IVA (MXN):", 142, y + 19);
+    doc.text("Margen / Markup:", 142, y + 25);
+    doc.text("Flujo con IVA (USD):", 142, y + 31);
 
-    doc.setFillColor(74, 222, 128); // Bright Green footer
-    doc.rect(139, y + 39, 56, 6, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitUSD)}`, 172, y + 13);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitMXN)}`, 172, y + 19);
+    doc.text(`${(calculations.margenSobreVenta * 100).toFixed(1)}% / ${(calculations.markupSobreCosto * 100).toFixed(1)}%`, 172, y + 25);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitWithIVAFlowUSD)}`, 172, y + 31);
+
+    doc.setFillColor(74, 222, 128); // Bright green footer
+    doc.rect(139, y + 38, 56, 12, 'F');
     doc.setTextColor(21, 76, 38);
     doc.setFont("helvetica", "bold");
-    doc.text("TOTAL CON IVA (USD):", 142, y + 43);
-    doc.text(`$${formatCurrencyPDF(calculations.profitTotal_USD)}`, 170, y + 43);
+    doc.setFontSize(7);
+    doc.text("FLUJO CON IVA (USD):", 142, y + 43);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitWithIVAFlowUSD)}`, 170, y + 43);
+    doc.text("FLUJO CON IVA (MXN):", 142, y + 47);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitWithIVAFlowMXN)}`, 170, y + 47);
 
-    y += 54;
+    y += 59;
 
-    // SECTION 4: NET MARGIN AND FINAL RESULTS IN BOLD COLORS
-    doc.setFillColor(254, 252, 232); // gold tint banner
-    doc.rect(15, y, 180, 24, 'F');
-    doc.setDrawColor(254, 240, 138);
-    doc.rect(15, y, 180, 24, 'S');
+    // SECTION 4: NET MARGIN Banner and accountant note
+    doc.setFillColor(239, 246, 255); // blue tint banner
+    doc.rect(15, y, 180, 42, 'F');
+    doc.setDrawColor(191, 219, 254);
+    doc.rect(15, y, 180, 42, 'S');
 
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(113, 63, 18);
-    doc.text("ESTATUS DE LA UTILIDAD NETAMENTE ESTIMADA:", 20, y + 6);
+    doc.setTextColor(30, 58, 138); // dark blue text
+    doc.text("ESTATUS GLOBAL DE UTILIDAD Y FLUJO:", 20, y + 6);
     
     if (divideByTwo) {
-      doc.setFillColor(234, 179, 8);
+      doc.setFillColor(0, 120, 215);
       doc.rect(20, y + 9, 32, 4.5, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.text("DIVIDIDO AL 50% (÷2)", 22, y + 12.5);
     } else {
       doc.setFillColor(71, 85, 105);
       doc.rect(20, y + 9, 32, 4.5, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7);
+      doc.setFontSize(6.5);
       doc.text("ESTRUCTURA COMPLETA (100%)", 21, y + 12.5);
     }
 
-    doc.setFontSize(9);
-    doc.setTextColor(113, 63, 18);
-    doc.text(`Utilidad Neta en Dólares:`, 65, y + 10);
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 58, 138);
+    doc.text(`Utilidad Real Sin IVA (USD):`, 65, y + 10);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(10.5);
     doc.setTextColor(22, 101, 52);
-    doc.text(`$${formatCurrencyPDF(calculations.profitUSD)} USD`, 65, y + 15);
-    doc.setFontSize(7.5);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitUSD)} USD`, 65, y + 15);
+    doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Con IVA: $${formatCurrencyPDF(calculations.profitTotal_USD)} USD`, 65, y + 20);
+    doc.text(`Margen sobre venta: ${(calculations.margenSobreVenta * 100).toFixed(1)}%`, 65, y + 20);
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(113, 63, 18);
-    doc.text(`Utilidad Neta en Pesos:`, 130, y + 10);
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 58, 138);
+    doc.text(`Utilidad Real Sin IVA (MXN):`, 130, y + 10);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
+    doc.setFontSize(10.5);
     doc.setTextColor(22, 101, 52);
-    doc.text(`$${formatCurrencyPDF(calculations.profitMXN)} MXN`, 130, y + 15);
-    doc.setFontSize(7.5);
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitMXN)} MXN`, 130, y + 15);
+    doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Con IVA: $${formatCurrencyPDF(calculations.profitTotal_MXN)} MXN`, 130, y + 20);
+    doc.text(`Markup sobre costo: ${(calculations.markupSobreCosto * 100).toFixed(1)}%`, 130, y + 20);
 
-    y += 34;
+    // ROW 2: CON IVA
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 58, 138);
+    doc.text(`Flujo con IVA (USD):`, 65, y + 28);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(0, 120, 215); // SMQ blue
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitWithIVAFlowUSD)} USD`, 65, y + 33);
 
-    // Disclaimer and Signatures area
-    doc.setTextColor(148, 163, 184);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 58, 138);
+    doc.text(`Flujo con IVA (MXN):`, 130, y + 28);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(0, 120, 215); // SMQ blue
+    doc.text(`$ ${formatCurrencyPDF(calculations.profitWithIVAFlowMXN)} MXN`, 130, y + 33);
+
+    y += 50;
+
+    // Disclaimer and Accountant Note
+    doc.setTextColor(71, 85, 105);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text("Nota: El IVA será conciliado contablemente/fiscalmente por el contador.", 15, y);
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.text("Nota de Confidencialidad: Este documento contiene proyecciones financieras exclusivas para fines de toma de decisiones internas", 15, y);
-    doc.text("del equipo comercial de KYRO. No debe ser compartido en ninguna circunstancia con el cliente final ni con terceros ajenos.", 15, y + 3.5);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Esta utilidad con IVA representa flujo comercial estimado, no utilidad fiscal definitiva.", 15, y + 3.5);
+    doc.text("Nota de Confidencialidad: Este documento contiene proyecciones financieras exclusivas para fines de toma de decisiones internas", 15, y + 8.5);
+    doc.text("del equipo comercial de SMQ. No debe ser compartido en ninguna circunstancia con el cliente final ni con terceros ajenos.", 15, y + 12);
 
     // Bottom border bar
     doc.setFillColor(30, 41, 59);
@@ -532,7 +609,7 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
     // Save File
     const sanitizedFilename = `Radiografia_Interna_${activeCompany.replace(/[^a-z0-9]/gi, '_')}_${activeMachine.replace(/[^a-z0-9]/gi, '_')}.pdf`;
     doc.save(sanitizedFilename);
-  }, [clientCompany, clientName, location, machine, costChina, incoterm, freightLandChina, freightSea, freightMex, costTech, exchangeRate, divideByTwo, salePrice, calculations]);
+  }, [clientCompany, clientName, location, machine, costChina, incoterm, freightLandChina, freightSea, freightMex, costTech, exchangeRate, divideByTwo, salePrice, calculations, taxImportPercent, ivaPercent]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -642,6 +719,41 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
 
               <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
                 <div className="space-y-1.5">
+                  <Label htmlFor="incrementablesUSD" className="text-white/70 text-xs font-bold flex items-center gap-1">
+                    <DollarSign className="w-3.5 h-3.5 text-primary" /> Otros Incrementables (USD)
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                    <Input
+                      id="incrementablesUSD"
+                      type="text"
+                      value={getInputValue('incrementablesUSD', incrementablesUSD)}
+                      onFocus={() => setFocusedField('incrementablesUSD')}
+                      onBlur={() => setFocusedField(null)}
+                      onChange={(e) => setIncrementablesUSD(parseNumberFromCommas(e.target.value))}
+                      placeholder="0.00"
+                      className="pl-8 bg-white/5 border-white/10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="taxImportPercent" className="text-white/70 text-xs font-bold flex items-center gap-1">
+                    <Percent className="w-3.5 h-3.5 text-yellow-500" /> Impuesto Importación (%)
+                  </Label>
+                  <Input
+                    id="taxImportPercent"
+                    type="number"
+                    value={taxImportPercent || ''}
+                    onChange={(e) => setTaxImportPercent(parseFloat(e.target.value) || 0)}
+                    placeholder="20"
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                <div className="space-y-1.5">
                   <Label htmlFor="freightMex" className="text-white/70 text-xs font-bold flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5 text-primary" /> Flete Mex (Manzanillo) (MXN)
                   </Label>
@@ -716,6 +828,22 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ivaPercent" className="text-white/70 text-xs font-bold flex items-center gap-1">
+                    <Percent className="w-3.5 h-3.5 text-primary" /> IVA Venta (%)
+                  </Label>
+                  <Input
+                    id="ivaPercent"
+                    type="number"
+                    value={ivaPercent || ''}
+                    onChange={(e) => setIvaPercent(parseFloat(e.target.value) || 0)}
+                    placeholder="16"
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+              </div>
+
               <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 mt-4">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-white/80">Dividir Utilidad / Comisión entre 2</span>
@@ -744,13 +872,13 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
 
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
-                      <span className="text-white/60">Incrementables (USD):</span>
-                      <span className="font-bold text-white font-mono">${calculations.incrementablesUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="text-white/60">Base de Impuestos (USD):</span>
+                      <span className="font-bold text-white font-mono">${calculations.baseImpuestosUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
                       <span className="text-white/60 flex items-center gap-1">
-                        Impuestos Arancelarios (20%):
+                        Impuestos / Importación ({taxImportPercent}%):
                       </span>
                       <div className="flex flex-col items-end">
                         <span className="font-bold text-yellow-500 font-mono">${calculations.taxesUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</span>
@@ -759,7 +887,7 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                     </div>
 
                     <div className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
-                      <span className="text-white/60">Costo Total de Importación:</span>
+                      <span className="text-white/60">Costo Total Real del Proyecto:</span>
                       <div className="flex flex-col items-end">
                         <span className="font-bold text-white font-mono">${calculations.totalCostUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} USD</span>
                         <span className="text-[10px] text-white/40 font-mono">${calculations.totalCostMXN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} MXN</span>
@@ -768,14 +896,14 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                   </div>
                 </div>
 
-                {/* Final Profit Block */}
+                {/* Final Profit Block - SIN IVA */}
                 <div className="bg-primary/10 border border-primary/20 p-5 rounded-xl space-y-2 mt-4 shadow-inner relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-full bg-primary/5 -skew-x-12 translate-x-8" />
                   
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-[9px] uppercase tracking-widest text-primary/70 font-mono font-black">
-                        UTILIDAD NETAMENTE ESTIMADA
+                        UTILIDAD REAL COMERCIAL SIN IVA
                       </span>
                       {divideByTwo && (
                         <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ml-1.5">
@@ -783,7 +911,6 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-white/40 font-bold uppercase">Más IVA (+16%)</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-2">
@@ -792,7 +919,7 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                       <span className={`text-xl font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)] font-mono`}>
                         {calculations.profitUSD >= 0 ? '' : '-'}${Math.abs(calculations.profitMXN).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                       </span>
-                      <span className="text-[9px] text-white/30 block mt-0.5">Con IVA: ${calculations.profitTotal_MXN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="text-[9px] text-white/30 block mt-0.5">Margen: {(calculations.margenSobreVenta * 100).toFixed(1)}%</span>
                     </div>
 
                     <div className="pl-2">
@@ -800,7 +927,41 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                       <span className={`text-xl font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)] font-mono`}>
                         {calculations.profitUSD >= 0 ? '' : '-'}${Math.abs(calculations.profitUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                       </span>
-                      <span className="text-[9px] text-white/30 block mt-0.5">Con IVA: ${calculations.profitTotal_USD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="text-[9px] text-white/30 block mt-0.5">Markup: {(calculations.markupSobreCosto * 100).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Profit Block - CON IVA */}
+                <div className="bg-primary/20 border border-primary/40 p-5 rounded-xl space-y-2 mt-4 shadow-[0_0_20px_rgba(var(--primary),0.1)] relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-full bg-primary/10 -skew-x-12 translate-x-8" />
+                  
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest text-primary font-mono font-black">
+                        UTILIDAD DE FLUJO CON IVA INCLUIDO
+                      </span>
+                      {divideByTwo && (
+                        <span className="text-[8px] bg-primary/30 text-primary-foreground px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ml-1.5">
+                          Dividido ÷ 2
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="border-r border-primary/30 pr-2">
+                      <span className="text-[10px] text-white/50 block">Pesos (MXN)</span>
+                      <span className={`text-xl font-black text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)] font-mono`}>
+                        {calculations.profitWithIVAFlowUSD >= 0 ? '' : '-'}${Math.abs(calculations.profitWithIVAFlowMXN).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </span>
+                    </div>
+
+                    <div className="pl-2">
+                      <span className="text-[10px] text-white/50 block">Dólares (USD)</span>
+                      <span className={`text-xl font-black text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)] font-mono`}>
+                        {calculations.profitWithIVAFlowUSD >= 0 ? '' : '-'}${Math.abs(calculations.profitWithIVAFlowUSD).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -814,12 +975,12 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
           {/* TABLE OF TOTALS & IVA SUMMARY */}
           <div className="bg-white/[0.02] border border-white/5 p-5 rounded-2xl space-y-4">
             <h3 className="text-xs font-black tracking-widest text-white/40 uppercase flex items-center gap-1.5 font-mono">
-              <Percent className="w-3.5 h-3.5 text-primary" /> RESUMEN DE IMPUESTOS IVA (+16% MÁS IVA)
+              <Percent className="w-3.5 h-3.5 text-primary" /> RESUMEN FINANCIERO Y CONTROL DE UTILIDADES
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
-              {/* Venta Card */}
+              {/* Precio de Venta Card */}
               <div className="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-between">
                 <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">1. PRECIO DE VENTA</span>
                 <div className="mt-2 space-y-1">
@@ -827,67 +988,100 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
                     <span className="text-white/60">Subtotal (USD):</span>
                     <span className="font-bold text-white font-mono">${parseFloat(salePrice).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-white/60">IVA Venta (USD):</span>
+                    <span className="font-mono text-white/80">${calculations.salePriceIVA_USD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
                   <div className="flex justify-between items-center text-[10px] text-white/40 border-b border-white/5 pb-1">
-                    <span>IVA (16%):</span>
-                    <span className="font-mono">${calculations.salePriceIVA_USD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    <span>Subtotal (MXN):</span>
+                    <span className="font-mono">${calculations.salePriceMXN.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs font-bold text-primary pt-1">
-                    <span>Total con IVA:</span>
+                    <span>Total con IVA (USD):</span>
                     <span className="font-mono">${calculations.salePriceTotal_USD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
+                  <div className="flex justify-between items-center text-xs font-bold text-primary">
+                    <span>Total con IVA (MXN):</span>
+                    <span className="font-mono">${calculations.salePriceTotal_MXN.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Costo Card */}
+              {/* Costo Real Card */}
               <div className="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-between">
-                <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">2. COSTO TOTAL</span>
+                <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">2. COSTO REAL DEL PROYECTO</span>
                 <div className="mt-2 space-y-1">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-white/60">Subtotal (USD):</span>
-                    <span className="font-bold text-white font-mono">${calculations.totalCostUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  <div className="flex justify-between items-center text-[10px] text-white/50">
+                    <span>Máquina (USD):</span>
+                    <span className="font-mono">${parseFloat(costChina).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-white/50">
+                    <span>Fletes (USD):</span>
+                    <span className="font-mono">${(parseFloat(freightLandChina) + parseFloat(freightSea)).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-white/50">
+                    <span>Base Impuestos:</span>
+                    <span className="font-mono">${calculations.baseImpuestosUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-white/50">
+                    <span>Impuestos Importación:</span>
+                    <span className="font-mono">${calculations.taxesUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-white/50">
+                    <span>Flete Nacional (USD):</span>
+                    <span className="font-mono">${calculations.fMexUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] text-white/40 border-b border-white/5 pb-1">
-                    <span>IVA (16%):</span>
-                    <span className="font-mono">${calculations.totalCostIVA_USD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span>Costo Técnico (USD):</span>
+                    <span className="font-mono">${calculations.cTechUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs font-bold text-white pt-1">
-                    <span>Total con IVA:</span>
-                    <span className="font-mono">${calculations.totalCostTotal_USD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span>Costo Total USD:</span>
+                    <span className="font-mono">${calculations.totalCostUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-bold text-white">
+                    <span>Costo Total MXN:</span>
+                    <span className="font-mono">${calculations.totalCostMXN.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Utilidad Card */}
+              {/* Utilidad Comercial Card */}
               <div className="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-between">
-                <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">3. UTILIDAD NETO</span>
+                <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">3. UTILIDAD COMERCIAL</span>
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-white/60">Subtotal (USD):</span>
-                    <span className="font-bold text-white font-mono">${calculations.profitUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="text-white/60">Utilidad Sin IVA (USD):</span>
+                    <span className="font-bold text-green-400 font-mono">${calculations.profitUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-white/60">Subtotal (MXN):</span>
-                    <span className="font-bold text-white font-mono">${calculations.profitMXN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span className="text-white/60">Utilidad Sin IVA (MXN):</span>
+                    <span className="font-bold text-green-400 font-mono">${calculations.profitMXN.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-white/40">
+                    <span>Margen sobre Venta:</span>
+                    <span className="font-mono">${(calculations.margenSobreVenta * 100).toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] text-white/40 border-b border-white/5 pb-1">
-                    <span>IVA (16% USD):</span>
-                    <span className="font-mono">${calculations.profitIVA_USD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <span>Markup sobre Costo:</span>
+                    <span className="font-mono">${(calculations.markupSobreCosto * 100).toFixed(1)}%</span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] text-white/40 border-b border-white/5 pb-1">
-                    <span>IVA (16% MXN):</span>
-                    <span className="font-mono">${calculations.profitIVA_MXN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  <div className="flex justify-between items-center text-xs font-bold text-yellow-400 pt-1">
+                    <span>Flujo con IVA (USD):</span>
+                    <span className="font-mono">${calculations.profitWithIVAFlowUSD.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs font-bold text-green-400 pt-1">
-                    <span>Total con IVA (USD):</span>
-                    <span className="font-mono">${calculations.profitTotal_USD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs font-bold text-green-400 pt-1">
-                    <span>Total con IVA (MXN):</span>
-                    <span className="font-mono">${calculations.profitTotal_MXN.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                  <div className="flex justify-between items-center text-xs font-bold text-yellow-400">
+                    <span>Flujo con IVA (MXN):</span>
+                    <span className="font-mono">${calculations.profitWithIVAFlowMXN.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                 </div>
               </div>
 
+            </div>
+
+            {/* Disclaimer accountant note */}
+            <div className="text-[10px] text-white/40 italic pt-2 border-t border-white/5">
+              Nota: El IVA será conciliado contablemente/fiscalmente por el contador. Esta utilidad con IVA representa flujo comercial estimado, no utilidad fiscal definitiva.
             </div>
           </div>
 
@@ -903,7 +1097,7 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
           </Button>
 
           <Button
-            onClick={() => setIsExportDialogOpen(true)}
+            onClick={handleExportPDF}
             className="bg-primary hover:bg-primary/80 text-black font-black uppercase tracking-wider text-xs px-5 h-9 flex items-center gap-1.5 shadow-[0_4px_15px_rgba(234,179,8,0.2)] border-0"
           >
             <FileText className="w-4 h-4 text-black" />
@@ -918,14 +1112,6 @@ const LeadQuoteCalculator = ({ isOpen, onClose, location, machine, onApply, clie
           </Button>
         </DialogFooter>
 
-        <ExportPdfDialog
-          isOpen={isExportDialogOpen}
-          onClose={() => setIsExportDialogOpen(false)}
-          clientCompany={clientCompany}
-          clientName={clientName}
-          location={location}
-          machine={tempMachineForExport}
-        />
       </DialogContent>
     </Dialog>
   );

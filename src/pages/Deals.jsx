@@ -140,13 +140,13 @@ const Deals = () => {
     <div className="h-full flex flex-col overflow-hidden bg-background text-foreground">
       <Helmet>
         <title>Ventas - KYRO</title>
-        <meta name="description" content="Visualiza y gestiona tu pipeline de ventas en KYRO CRM." />
+        <meta name="description" content="Visualiza y gestiona tu flujo de ventas en KYRO CRM." />
       </Helmet>
 
       <header className={`p-4 md:p-6 border-b border-border sticky top-0 z-10 ${headerBgClass}`}>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className={`text-3xl font-bold mb-1 ${theme === 'futuristic' ? 'text-glow' : ''}`}>Pipeline de Ventas</h1>
+            <h1 className={`text-3xl font-bold mb-1 ${theme === 'futuristic' ? 'text-glow' : ''}`}>Flujo de Ventas</h1>
             <p className="text-muted-foreground">Arrastra y suelta las ventas para actualizar su estado.</p>
           </div>
           <div className="flex space-x-2">
@@ -154,7 +154,7 @@ const Deals = () => {
               <Filter className="w-4 h-4" />
               <span>Filtros</span>
             </Button>
-            <Button className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-primary to-accent' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'} onClick={() => toast({ title: '🚧 Nueva Venta', description: "Esta función no está implementada aún—¡pero no te preocupes! Puedes solicitarla en tu próximo prompt! 🚀" })}>
+            <Button className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-primary to-accent' : 'bg-primary text-primary-foreground hover:bg-primary/90'} onClick={() => toast({ title: '🚧 Nueva Venta', description: "Esta función no está implementada aún—¡pero no te preocupes! Puedes solicitarla en tu próximo prompt! 🚀" })}>
               <Plus className="w-4 h-4 mr-2" />
               Nueva Venta
             </Button>

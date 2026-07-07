@@ -153,6 +153,30 @@
     --radius: 0.5rem;
     --glow-intensity: 0.8;
   }
+
+  .recilogic {
+    --background: 187 20% 98%;       /* Light cyan/gray background #f4fafb */
+    --foreground: 209 61% 16%;       /* Deep dark navy #0f2d4a */
+    --card: 0 0% 100%;               /* Pure white card */
+    --card-foreground: 209 61% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 209 61% 16%;
+    --primary: 187 100% 36%;         /* Recilogic turquoise #00a2b9 */
+    --primary-foreground: 0 0% 100%; /* Pure white text for buttons */
+    --secondary: 187 40% 95%;        /* Very light cyan secondary #edf9fc */
+    --secondary-foreground: 209 61% 16%;
+    --muted: 187 15% 91%;
+    --muted-foreground: 209 25% 45%;
+    --accent: 187 100% 36%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 187 30% 88%;          /* Soft light cyan borders */
+    --input: 187 30% 88%;
+    --ring: 187 100% 36%;
+    --radius: 0.75rem;
+    --glow-intensity: 0.2;
+  }
 }
 
 @layer base {
@@ -173,7 +197,8 @@
 
   .futuristic body,
   .play body,
-  .nova body {
+  .nova body,
+  .recilogic body {
     background-color: hsl(var(--background));
     background-image: radial-gradient(circle at 1% 1%, hsl(var(--primary) / calc(0.1 * var(--glow-intensity))), transparent 25%),
       radial-gradient(circle at 99% 99%, hsl(var(--accent) / calc(0.1 * var(--glow-intensity))), transparent 25%);
@@ -190,13 +215,15 @@
 
 .futuristic .card-hover,
 .play .card-hover,
-.nova .card-hover {
+.nova .card-hover,
+.recilogic .card-hover {
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .futuristic .card-hover:hover,
 .play .card-hover:hover,
-.nova .card-hover:hover {
+.nova .card-hover:hover,
+.recilogic .card-hover:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 30px -10px hsl(var(--primary) / calc(0.2 * var(--glow-intensity))), 0 4px 6px -2px hsl(var(--accent) / calc(0.1 * var(--glow-intensity)));
   border-color: hsl(var(--primary) / 0.5);

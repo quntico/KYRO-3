@@ -338,17 +338,17 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit, companies = [] }) => {
                 value={managingCompanyId}
                 onValueChange={setManagingCompanyId}
               >
-                <SelectTrigger className="bg-transparent border-white/10 text-white rounded-xl h-10 w-full focus:ring-primary/50">
+                <SelectTrigger className="bg-transparent border-border text-foreground rounded-xl h-10 w-full focus:ring-primary/50">
                   <SelectValue placeholder="Selecciona Empresa Gestora" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#121214] border-white/15 text-white z-[70]">
+                <SelectContent className="bg-popover border-border text-popover-foreground z-[70]">
                   {companies.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="focus:bg-white/5 focus:text-white cursor-pointer">
+                    <SelectItem key={c.id} value={c.id} className="focus:bg-secondary cursor-pointer">
                       <div className="flex items-center gap-2">
                         {c.logo ? (
                           <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
                         ) : (
-                          <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black">
+                          <div className="w-4 h-4 rounded bg-secondary text-muted-foreground flex items-center justify-center text-[8px] font-black">
                             {c.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -365,28 +365,39 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit, companies = [] }) => {
             <Label>Máquinas/Proyectos</Label>
             <div className="space-y-2">
               {machines.map((machine, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-secondary rounded-md">
-                  <Input
-                    value={machine.name}
-                    onChange={(e) => onMachineChange(index, 'name', e.target.value)}
-                    placeholder="Nombre de la máquina"
-                    className="flex-1"
-                  />
-                  <div className="relative">
-                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div key={index} className="flex flex-col gap-3 p-3 bg-secondary/30 rounded-xl border border-border">
+                  {/* First row: Machine Name (full width) */}
+                  <div className="flex items-center gap-2">
                     <Input
-                      type="text"
-                      value={getInputValue(index, 'price', machine.price)}
-                      onFocus={() => setFocusedField({ index, field: 'price' })}
-                      onBlur={() => setFocusedField(null)}
-                      onChange={(e) => onMachineChange(index, 'price', parseUSD(e.target.value))}
-                      placeholder="Precio"
-                      className="w-36 pl-7"
+                      value={machine.name}
+                      onChange={(e) => onMachineChange(index, 'name', e.target.value)}
+                      placeholder="Nombre de la máquina o proyecto"
+                      className="flex-grow bg-background/50"
                     />
+                    <Button variant="ghost" size="icon" onClick={() => removeMachine(index)} className="text-destructive hover:bg-destructive/10 hover:text-destructive flex-shrink-0">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div className="flex flex-col gap-1.5 w-40">
-                    <div className="relative">
-                      <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+
+                  {/* Second row: Price, Est Commission, Calc Commission, Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Price input */}
+                    <div className="relative flex-grow min-w-[120px]">
+                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        value={getInputValue(index, 'price', machine.price)}
+                        onFocus={() => setFocusedField({ index, field: 'price' })}
+                        onBlur={() => setFocusedField(null)}
+                        onChange={(e) => onMachineChange(index, 'price', parseUSD(e.target.value))}
+                        placeholder="Precio"
+                        className="pl-8 bg-background/50"
+                      />
+                    </div>
+
+                    {/* Estimated Commission */}
+                    <div className="relative flex-grow min-w-[125px]">
+                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input
                         type="text"
                         value={getInputValue(index, 'estimated_commission', machine.estimated_commission)}
@@ -394,48 +405,51 @@ const NewLeadDialog = ({ open, onOpenChange, onSubmit, companies = [] }) => {
                         onBlur={() => setFocusedField(null)}
                         onChange={(e) => onMachineChange(index, 'estimated_commission', parseUSD(e.target.value))}
                         placeholder="Comisión Est."
-                        className="pl-7 text-xs h-8"
+                        className="pl-7 bg-background/50"
                         title="Comisión Estimada (Manual)"
                       />
                     </div>
-                    <div className="relative">
-                      <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+
+                    {/* Calculated Commission */}
+                    <div className="relative flex-grow min-w-[125px]">
+                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input
                         type="text"
                         value={formatUSD(machine.commission)}
                         readOnly
                         placeholder="Comisión Calc."
-                        className="pl-7 text-xs h-8 bg-muted/40 cursor-not-allowed border-dashed border-white/20 text-green-400 font-bold"
+                        className="pl-7 bg-muted/40 cursor-not-allowed border-dashed border-border text-green-600 dark:text-green-400 font-bold"
                         title="Comisión Calculada (Cotizador)"
                       />
                     </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCalcMachineIndex(index);
+                        }}
+                        className="text-primary hover:bg-primary/10 h-10 w-10 flex-shrink-0"
+                        title="Calcular costos y utilidad"
+                      >
+                        <Calculator className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPdfExportMachineIndex(index);
+                        }}
+                        className="bg-primary hover:bg-primary/80 text-primary-foreground h-10 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider flex-shrink-0"
+                        title="Exportar Radiografía Interna a PDF"
+                      >
+                        <FileText className="w-4 h-4 text-primary-foreground" />
+                        PDF
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCalcMachineIndex(index);
-                    }}
-                    className="text-primary hover:bg-primary/10 h-10 w-10 flex-shrink-0"
-                    title="Calcular costos y utilidad"
-                  >
-                    <Calculator className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPdfExportMachineIndex(index);
-                    }}
-                    className="bg-primary hover:bg-primary/80 text-black h-10 px-3 rounded-lg flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider flex-shrink-0"
-                    title="Exportar Radiografía Interna a PDF"
-                  >
-                    <FileText className="w-4 h-4 text-black" />
-                    PDF
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => removeMachine(index)} className="text-destructive hover:bg-destructive/10">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
             </div>

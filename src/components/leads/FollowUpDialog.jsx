@@ -73,10 +73,10 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-card/80 backdrop-blur-lg border-white/10">
+      <DialogContent className="sm:max-w-[425px] bg-card border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Cambiar Status a "{actionType}"</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-muted-foreground">
             ¿Quieres agendar esta acción para <span className="font-bold">{lead.name}</span>?
           </DialogDescription>
         </DialogHeader>
@@ -93,7 +93,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
                     <Button
                       variant={'outline'}
                       className={cn(
-                        'col-span-3 justify-start text-left font-normal',
+                        'col-span-3 justify-start text-left font-normal border-border',
                         !date && 'text-muted-foreground'
                       )}
                     >
@@ -108,7 +108,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
                       })()}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-card/80 backdrop-blur-lg border-white/10">
+                  <PopoverContent className="w-auto p-0 bg-popover border-border text-popover-foreground">
                     <Calendar
                       mode="single"
                       selected={date}
@@ -129,23 +129,23 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
-                  className="col-span-3"
+                  className="col-span-3 border-border bg-background"
                 />
               </div>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowCalendar(false)}>Atrás</Button>
-              <Button onClick={handleSchedule} className="text-white bg-gradient-to-r from-primary to-accent button-glow">
+              <Button onClick={handleSchedule} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Agendar
               </Button>
             </DialogFooter>
           </>
         ) : (
           <DialogFooter className="sm:justify-between gap-2 pt-4">
-            <Button variant="outline" onClick={handleJustUpdate}>
+            <Button variant="outline" className="border-border text-foreground hover:bg-secondary" onClick={handleJustUpdate}>
               Sólo Actualizar Status
             </Button>
-            <Button onClick={() => setShowCalendar(true)} className="text-white bg-gradient-to-r from-primary to-accent button-glow">
+            <Button onClick={() => setShowCalendar(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
               Actualizar y Agendar
             </Button>
           </DialogFooter>

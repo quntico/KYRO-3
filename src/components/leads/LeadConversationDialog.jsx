@@ -254,8 +254,8 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                 </div>
             )}
             <Dialog aria-describedby="bitacora-vance-description" open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-xl glass-bevel p-0 overflow-hidden border-none shadow-2xl !transform !translate-x-[-50%] !translate-y-[-50%]">
-                <div className="p-6 border-b border-white/10 bg-white/5">
+                <DialogContent className="sm:max-w-xl border border-border bg-card text-foreground shadow-2xl p-0 overflow-hidden !transform !translate-x-[-50%] !translate-y-[-50%]">
+                <div className="p-6 border-b border-border bg-secondary/10">
                     <DialogHeader>
                         <div className="flex justify-between items-center w-full pr-4">
                             <div className="flex items-center gap-3">
@@ -263,8 +263,8 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                     <MessageCircle className="w-5 h-5 text-primary" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-xl font-bold">SEGUIMIENTO</DialogTitle>
-                                    <DialogDescription className="text-muted-foreground/80">
+                                    <DialogTitle className="text-xl font-bold text-foreground">SEGUIMIENTO</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground/80 text-xs">
                                         Sigue la conversación con <span className="text-primary font-bold">{lead.name}</span>
                                     </DialogDescription>
                                 </div>
@@ -274,14 +274,14 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                     <Download className="w-4 h-4 text-muted-foreground hover:text-primary" />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={handleShareWhatsApp} title="Compartir por WhatsApp">
-                                    <Share2 className="w-4 h-4 text-green-500 hover:text-green-400" />
+                                    <Share2 className="w-4 h-4 text-green-600 dark:text-green-500 hover:text-green-500 dark:hover:text-green-400" />
                                 </Button>
                             </div>
                         </div>
                     </DialogHeader>
                 </div>
 
-                <ScrollArea className="h-[400px] p-6" viewportRef={scrollRef}>
+                <ScrollArea className="h-[400px] p-6 bg-card" viewportRef={scrollRef}>
                     <div className="space-y-6">
                         {history.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground opacity-50">
@@ -299,8 +299,8 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                             {safeFormatDate(entry.date)}
                                         </span>
                                     </div>
-                                    <div className="bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl rounded-tl-none p-4 shadow-sm relative group/message">
-                                        <div className="absolute top-2 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity flex gap-1 bg-black/40 backdrop-blur-md p-1 rounded-md z-10">
+                                    <div className="bg-secondary/40 border border-border rounded-2xl rounded-tl-none p-4 shadow-sm relative group/message text-foreground">
+                                        <div className="absolute top-2 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity flex gap-1 bg-secondary border border-border p-1 rounded-md z-10">
                                             <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleEditMessage(index)}>
                                                 <Edit2 className="w-3 h-3" />
                                             </Button>
@@ -315,18 +315,18 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                                     <img 
                                                         src={entry.fileUrl} 
                                                         alt={entry.fileName} 
-                                                        className="max-h-48 rounded-lg object-contain bg-black/20 cursor-pointer hover:opacity-80 transition-opacity border border-white/5" 
+                                                        className="max-h-48 rounded-lg object-contain bg-secondary cursor-pointer hover:opacity-80 transition-opacity border border-border" 
                                                         onClick={() => setSelectedImage(entry.fileUrl)}
                                                     />
                                                 ) : entry.fileType?.startsWith('video/') ? (
-                                                    <video src={entry.fileUrl} controls className="max-h-48 rounded-lg w-full bg-black/20" />
+                                                    <video src={entry.fileUrl} controls className="max-h-48 rounded-lg w-full bg-secondary" />
                                                 ) : entry.fileType === 'application/pdf' ? (
-                                                    <div className="flex items-center gap-3 bg-black/20 p-2 rounded-lg inline-flex cursor-pointer hover:bg-black/40 transition-colors" onClick={() => setSelectedPdf(entry.fileUrl)}>
+                                                    <div className="flex items-center gap-3 bg-secondary p-2 rounded-lg inline-flex cursor-pointer hover:bg-secondary/80 transition-colors" onClick={() => setSelectedPdf(entry.fileUrl)}>
                                                         <Paperclip className="w-4 h-4 text-primary" />
                                                         <span className="text-sm font-bold text-primary hover:underline">{entry.fileName}</span>
                                                     </div>
                                                 ) : (
-                                                    <a href={entry.fileUrl} download={entry.fileName} className="text-primary hover:underline font-bold text-sm flex items-center gap-2 bg-black/20 p-2 rounded-lg inline-flex">
+                                                    <a href={entry.fileUrl} download={entry.fileName} className="text-primary hover:underline font-bold text-sm flex items-center gap-2 bg-secondary p-2 rounded-lg inline-flex">
                                                         <Paperclip className="w-4 h-4" />
                                                         Descargar {entry.fileName}
                                                     </a>
@@ -343,15 +343,15 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                                 <Textarea 
                                                     value={editText} 
                                                     onChange={(e) => setEditText(e.target.value)} 
-                                                    className="bg-black/40 border-white/20 text-sm min-h-[60px]"
+                                                    className="bg-background border-border text-foreground text-sm min-h-[60px]"
                                                 />
                                                 <div className="flex justify-end gap-2">
                                                     <Button size="sm" variant="ghost" onClick={() => setEditingIndex(null)}>Cancelar</Button>
-                                                    <Button size="sm" onClick={() => handleSaveEdit(index)} className="bg-primary hover:bg-primary/80">Guardar</Button>
+                                                    <Button size="sm" onClick={() => handleSaveEdit(index)} className="bg-primary hover:bg-primary/80 text-primary-foreground">Guardar</Button>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap mt-2 pr-12">
+                                            <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap mt-2 pr-12">
                                                 {entry.text}
                                             </p>
                                         )}
@@ -363,13 +363,13 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                     </div>
                 </ScrollArea>
 
-                <div className="p-6 bg-white/5 border-t border-white/10">
+                <div className="p-6 bg-secondary/10 border-t border-border">
                     <div className="relative group">
                         <Textarea
                             placeholder="Escribe el seguimiento de lo que dijo el cliente..."
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            className="min-h-[100px] bg-black/20 border-white/10 focus:border-primary/50 transition-all resize-none pr-32 rounded-xl"
+                            className="min-h-[100px] bg-background border-border text-foreground focus:border-primary/50 transition-all resize-none pr-32 rounded-xl"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
@@ -389,7 +389,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-8 h-8 rounded-full hover:bg-white/10" 
+                                className="w-8 h-8 rounded-full hover:bg-secondary" 
                                 title="Adjuntar Archivo"
                             >
                                 <Paperclip className="w-4 h-4 text-muted-foreground" />
@@ -398,7 +398,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                 variant="ghost" 
                                 size="icon" 
                                 onClick={toggleRecording}
-                                className={`w-8 h-8 rounded-full hover:bg-white/10 ${isRecording ? 'bg-red-500/20 animate-pulse' : ''}`} 
+                                className={`w-8 h-8 rounded-full hover:bg-secondary ${isRecording ? 'bg-red-500/20 animate-pulse' : ''}`} 
                                 title={isRecording ? "Detener Grabación" : "Grabar Nota de Voz"}
                             >
                                 <Mic className={`w-4 h-4 ${isRecording ? 'text-red-500' : 'text-muted-foreground'}`} />
@@ -409,7 +409,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                 disabled={!comment.trim()}
                                 className="w-8 h-8 rounded-full bg-primary hover:bg-primary/80 transition-transform active:scale-90"
                             >
-                                <Send className="w-4 h-4 text-white" />
+                                <Send className="w-4 h-4 text-primary-foreground" />
                             </Button>
                         </div>
                     </div>

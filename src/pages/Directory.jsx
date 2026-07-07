@@ -23,7 +23,11 @@
         case 'cold': return { label: 'Frío', color: 'bg-cyan-500' };
         case 'closed-won': return { label: 'Cliente', color: 'bg-green-500' };
         case 'contact': return { label: 'Contacto', color: 'bg-gray-500' };
-        default: return { label: status, color: 'bg-gray-400' };
+        case 'closing': return { label: 'Cierre', color: 'bg-[#00D4FF]' };
+        case 'warming': return { label: 'Avanzando', color: 'bg-emerald-500' };
+        case 'cooling': return { label: 'Enfriando', color: 'bg-cyan-500' };
+        case 'declined': return { label: 'Perdido', color: 'bg-amber-700' };
+        default: return { label: status ? status.toUpperCase() : 'Contacto', color: 'bg-gray-400' };
       }
     };
 

@@ -305,20 +305,20 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className={`sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 overflow-hidden border-0 glass-bevel shadow-2xl [&>button]:hidden ${viewingPdf ? "sm:max-w-5xl h-[95vh]" : ""}`}>
+      <DialogContent className={`sm:max-w-[580px] max-h-[90vh] flex flex-col p-0 overflow-hidden border border-border bg-card text-foreground shadow-2xl [&>button]:hidden ${viewingPdf ? "sm:max-w-5xl h-[95vh]" : ""}`}>
         {viewingPdf ? (
-          <div className="flex flex-col h-full p-6">
+          <div className="flex flex-col h-full p-6 bg-background">
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold text-white tracking-tight">Visor: {viewingPdf.fileName}</DialogTitle>
-                <DialogDescription className="text-white/60">Revisando documento para {lead.name}.</DialogDescription>
+                <DialogTitle className="text-xl font-bold text-foreground tracking-tight">Visor: {viewingPdf.fileName}</DialogTitle>
+                <DialogDescription className="text-muted-foreground">Revisando documento para {lead.name}.</DialogDescription>
               </DialogHeader>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => downloadPdf(viewingPdf)}
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="border-border text-foreground hover:bg-secondary"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Descargar
@@ -327,19 +327,19 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                   variant="ghost"
                   size="sm"
                   onClick={() => setViewingPdf(null)}
-                  className="text-white/70 hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Cerrar Visor
                 </Button>
                 <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/50 hover:text-foreground hover:bg-secondary rounded-full transition-all">
                     <X className="w-5 h-5" />
                   </Button>
                 </DialogClose>
               </div>
             </div>
-            <div className="flex-grow w-full bg-black/40 rounded-xl overflow-hidden border border-white/10 shadow-inner">
+            <div className="flex-grow w-full bg-secondary/50 rounded-xl overflow-hidden border border-border shadow-inner">
               {pdfObjectUrl && (
                 <iframe
                   src={pdfObjectUrl}
@@ -351,15 +351,15 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
             </div>
           </div>
         ) : (
-          <div className="flex flex-col min-h-0 h-full bg-white/[0.02]">
+          <div className="flex flex-col min-h-0 h-full bg-background text-foreground">
             {/* Header de la Ficha */}
-            <div className="p-6 pb-4 border-b border-white/10 bg-white/[0.03] relative overflow-hidden flex-shrink-0">
+            <div className="p-6 pb-4 border-b border-border bg-secondary/10 relative overflow-hidden flex-shrink-0">
               <style dangerouslySetInnerHTML={{
                 __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--primary-hover); }
               `}} />
               <div className="absolute top-4 right-4 flex items-center gap-3 z-20">
                 <DropdownMenu>
@@ -389,7 +389,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                       }
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-[#050505] border-white/10 text-white/70 z-50 font-black text-[10px] uppercase tracking-widest rounded-xl">
+                  <DropdownMenuContent align="end" className="bg-popover border border-border text-popover-foreground z-50 font-black text-[10px] uppercase tracking-widest rounded-xl">
                     <DropdownMenuRadioGroup value={lead.status} onValueChange={handleLeadStatusChange}>
                       <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
                         🚀 Cierre
@@ -419,28 +419,28 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/50 hover:text-foreground hover:bg-secondary rounded-full transition-all">
                     <X className="w-5 h-5" />
                   </Button>
                 </DialogClose>
               </div>
 
               <DialogHeader className="text-left">
-                <DialogTitle className="text-4xl font-black text-white tracking-tight mb-2 uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                <DialogTitle className="text-4xl font-black text-foreground tracking-tight mb-2 uppercase">
                   {String(lead?.name || 'Prospecto sin nombre')}
                 </DialogTitle>
                 <div className="flex items-center gap-3 text-primary font-bold tracking-widest text-sm uppercase opacity-90 mb-4 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 text-foreground">
+                    <User className="w-4 h-4 text-primary" />
                     {String(lead?.contact || 'Sin contacto')}
                   </div>
-                  <span className="w-2 h-[2px] bg-white/20 hidden sm:inline" />
+                  <span className="w-2 h-[2px] bg-border hidden sm:inline" />
                   <button
                     onClick={() => {
                       setNewClientCode(lead.activity_status?.client_code || '');
                       setIsEditingClientCode(true);
                     }}
-                    className="flex items-center gap-2 px-3 py-1 rounded-md text-xs font-black tracking-widest border transition-all duration-200 cursor-pointer bg-[#0047FF]/20 border-[#00D4FF]/50 text-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.4)] hover:bg-[#0047FF]/40 hover:border-[#00D4FF]/80 active:scale-95"
+                    className="flex items-center gap-2 px-3 py-1 rounded-md text-xs font-black tracking-widest border transition-all duration-200 cursor-pointer bg-[#0047FF]/10 border-[#00D4FF]/30 text-[#00D4FF] hover:bg-[#0047FF]/20 active:scale-95"
                     title="Editar número de cliente / cotización"
                   >
                     <FileText className="w-4 h-4 text-[#00D4FF]" />
@@ -452,12 +452,12 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                   </button>
                   {matchedCompany && (
                     <>
-                      <span className="w-2 h-[2px] bg-white/20 hidden sm:inline" />
-                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black tracking-widest border border-white/20 bg-white/5 text-white/90 shadow-[0_0_8px_rgba(255,255,255,0.05)]">
+                      <span className="w-2 h-[2px] bg-border hidden sm:inline" />
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black tracking-widest border border-border bg-secondary text-foreground">
                         {matchedCompany.logo ? (
-                          <img src={matchedCompany.logo} alt={matchedCompany.name} className="w-3.5 h-3.5 rounded object-cover" />
+                          <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-4 w-auto max-w-[50px] object-contain rounded" />
                         ) : (
-                          <div className="w-3.5 h-3.5 rounded bg-white/10 flex items-center justify-center text-[7px] font-black">
+                          <div className="w-3.5 h-3.5 rounded bg-secondary text-muted-foreground flex items-center justify-center text-[7px] font-black">
                             {matchedCompany.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -470,27 +470,27 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
               {/* Metas/Stats Rápidas */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
-                <div className="bg-white/5 p-2 rounded-xl border border-white/10 text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
-                  <div className="text-[8px] uppercase tracking-widest text-white/50 mb-0.5">Score</div>
-                  <div className="text-lg font-bold text-green-400 drop-shadow-[0_0_10px_rgba(34,197,94,0.4)]">{lead.score}/100</div>
+                <div className="bg-secondary/40 p-2 rounded-xl border border-border text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
+                  <div className="text-[8px] uppercase tracking-widest text-muted-foreground mb-0.5">Score</div>
+                  <div className="text-lg font-bold text-green-600 dark:text-green-400">{lead.score}/100</div>
                 </div>
-                <div className="bg-white/5 p-2 rounded-xl border border-white/10 text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
-                  <div className="text-[8px] uppercase tracking-widest text-white/50 mb-0.5">Venta</div>
-                  <div className="text-lg font-bold text-primary drop-shadow-[0_0_10px_rgba(var(--primary),0.4)]">${(lead.value || 0).toLocaleString()} USD</div>
+                <div className="bg-secondary/40 p-2 rounded-xl border border-border text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
+                  <div className="text-[8px] uppercase tracking-widest text-muted-foreground mb-0.5">Venta</div>
+                  <div className="text-lg font-bold text-primary">${(lead.value || 0).toLocaleString()} USD</div>
                 </div>
-                <div className="bg-white/5 p-2 rounded-xl border border-white/10 text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
-                  <div className="text-[8px] uppercase tracking-widest text-white/50 mb-0.5">Utilidad</div>
-                  <div className="text-lg font-bold text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">${(lead.commission || 0).toLocaleString()} USD</div>
+                <div className="bg-secondary/40 p-2 rounded-xl border border-border text-center flex sm:flex-col justify-between items-center sm:justify-center px-4 sm:px-2">
+                  <div className="text-[8px] uppercase tracking-widest text-muted-foreground mb-0.5">Utilidad</div>
+                  <div className="text-lg font-bold text-yellow-600 dark:text-yellow-500">${(lead.commission || 0).toLocaleString()} USD</div>
                 </div>
               </div>
             </div>
 
             {/* Contenido Scrollable */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6 bg-black/10 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6 bg-secondary/10 custom-scrollbar">
               {/* Radiografía de Notas/Avance (Chat Bubble Style) */}
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2 font-mono">
-                  <MessageSquare className="w-3 h-3" /> SEGUIMIENTO
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 flex items-center gap-2 font-mono">
+                  <MessageSquare className="w-3 h-3 text-primary" /> SEGUIMIENTO
                 </h3>
                 {(() => {
                   const lastNote = lead.notes ? (() => {
@@ -512,12 +512,12 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                           {lastNote.date ? safeFormatDate(lastNote.date, "iii dd, HH:mm") : ''}
                         </span>
                       </div>
-                      <div className="bg-gradient-to-br from-white/[0.05] to-transparent p-6 rounded-3xl border border-white/10 shadow-2xl relative group-hover:bg-white/[0.08] transition-colors overflow-hidden">
+                      <div className="bg-card p-6 rounded-3xl border border-border shadow-md relative group-hover:bg-secondary/40 transition-colors overflow-hidden">
                         <div className="absolute top-0 left-0 w-1 h-full bg-primary/30 group-hover:bg-primary transition-all" />
-                        <p className="text-lg font-bold text-yellow-500 leading-tight mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                        <p className="text-lg font-bold text-foreground leading-tight mb-2">
                           {typeof lastNote.text === 'string' ? lastNote.text : (typeof lastNote.text === 'object' ? 'Ver detalles en edición...' : String(lastNote.text))}
                         </p>
-                        <div className="flex items-center gap-2 opacity-40">
+                        <div className="flex items-center gap-2 opacity-40 text-muted-foreground">
                           <Activity className="w-3 h-3" />
                           <span className="text-[10px] uppercase font-bold tracking-widest">Toca para abrir bitácora completa</span>
                         </div>
@@ -525,10 +525,10 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                     </div>
                   ) : (
                     <div
-                      className="p-6 rounded-3xl border border-dashed border-white/10 text-center cursor-pointer hover:bg-white/5 transition-colors"
+                      className="p-6 rounded-3xl border border-dashed border-border text-center cursor-pointer hover:bg-secondary/40 transition-colors"
                       onClick={() => onOpenConversation(lead)}
                     >
-                      <span className="text-xs text-white/30 italic">No hay notas registradas. Toca para añadir una.</span>
+                      <span className="text-xs text-muted-foreground/60 italic">No hay notas registradas. Toca para añadir una.</span>
                     </div>
                   );
                 })()}
@@ -536,35 +536,35 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
               {/* Información de Contacto */}
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
-                  <Target className="w-3 h-3" /> Ficha de Enlace
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 flex items-center gap-2">
+                  <Target className="w-3 h-3 text-primary" /> Ficha de Enlace
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 group hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-4 bg-card p-4 rounded-2xl border border-border group hover:bg-secondary/40 transition-colors cursor-pointer" onClick={() => handleCopy(lead.email, 'email')}>
                     <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
                       <Mail className="w-5 h-5 text-primary" />
                     </div>
-                    <div className="overflow-hidden flex-1 group/copy cursor-pointer" onClick={() => handleCopy(lead.email, 'email')}>
+                    <div className="overflow-hidden flex-1 group/copy cursor-pointer">
                       <div className="flex items-center justify-between">
-                        <div className="text-[9px] uppercase font-bold text-white/40 mb-1">E-mail Principal</div>
-                        {copied === 'email' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/20 group-hover/copy:text-primary transition-colors" />}
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground mb-1">E-mail Principal</div>
+                        {copied === 'email' ? <Check className="w-3 h-3 text-green-600 dark:text-green-400" /> : <Copy className="w-3 h-3 text-muted-foreground/35 group-hover/copy:text-primary transition-colors" />}
                       </div>
-                      <div className="text-sm text-white/90 font-medium break-all">{lead.email || 'N/A'}</div>
+                      <div className="text-sm text-foreground font-medium break-all">{lead.email || 'N/A'}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 group hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-4 bg-card p-4 rounded-2xl border border-border group hover:bg-secondary/40 transition-colors cursor-pointer" onClick={() => handleCopy(lead.phone, 'phone')}>
                     <div className="p-3 bg-green-500/10 rounded-xl group-hover:bg-green-500/20 transition-colors">
-                      <Phone className="w-5 h-5 text-green-400" />
+                      <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <div className="overflow-hidden flex-1 group/copy cursor-pointer" onClick={() => handleCopy(lead.phone, 'phone')}>
+                    <div className="overflow-hidden flex-1 group/copy cursor-pointer">
                       <div className="flex items-center justify-between">
-                        <div className="text-[9px] uppercase font-bold text-white/40 mb-1">Teléfono Directo</div>
-                        {copied === 'phone' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/20 group-hover/copy:text-primary transition-colors" />}
+                        <div className="text-[9px] uppercase font-bold text-muted-foreground mb-1">Teléfono Directo</div>
+                        {copied === 'phone' ? <Check className="w-3 h-3 text-green-600 dark:text-green-400" /> : <Copy className="w-3 h-3 text-muted-foreground/35 group-hover/copy:text-primary transition-colors" />}
                       </div>
-                      <div className="text-sm text-white/90 font-medium break-all flex items-center gap-1.5 flex-wrap">
+                      <div className="text-sm text-foreground font-medium break-all flex items-center gap-1.5 flex-wrap">
                         <span>{lead.phone || 'N/A'}</span>
                         {lead.source && lead.source !== 'Manual Entry' && lead.source !== 'Excel Import' && lead.source !== 'Convertido de Contacto' && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-green-500/20 border border-green-500/30 text-green-400 rounded-md font-bold uppercase tracking-wider">
+                          <span className="text-[10px] px-1.5 py-0.5 bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 rounded-md font-bold uppercase tracking-wider">
                             {lead.source}
                           </span>
                         )}
@@ -576,28 +576,28 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
               {/* Proyectos/Máquinas */}
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
-                  <Package className="w-3 h-3" /> Especificaciones de Interés
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 flex items-center gap-2">
+                  <Package className="w-3 h-3 text-primary" /> Especificaciones de Interés
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {lead.machines && lead.machines.length > 0 ? (
                     lead.machines.filter(Boolean).map((m, i) => (
-                      <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-white/5 to-transparent p-5 rounded-2xl border-l-[6px] border-l-primary border border-white/5 shadow-lg group hover:from-white/10 transition-all gap-4">
+                      <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between bg-card p-5 rounded-2xl border-l-[6px] border-l-primary border border-border shadow group hover:bg-secondary/40 transition-all gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="p-2 bg-black/20 rounded-lg group-hover:scale-110 transition-transform">
+                          <div className="p-2 bg-secondary rounded-lg group-hover:scale-110 transition-transform">
                             <Package className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <div className="font-black text-white text-base tracking-tight uppercase">{m?.name || 'Máquina'}</div>
+                            <div className="font-black text-foreground text-base tracking-tight uppercase">{m?.name || 'Máquina'}</div>
                             {m?.costChina !== undefined && (
-                              <div className="text-[10px] text-white/50 font-mono mt-0.5">
+                              <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
                                 Costo Base: ${Number(m.costChina).toLocaleString()} USD | TC: ${m.exchangeRate || 18.0} {m.divideByTwo ? ' (TC/2)' : ''}
                               </div>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-3 justify-between sm:justify-end">
-                          <div className="text-primary font-black text-lg drop-shadow-[0_0_8px_rgba(var(--primary),0.5)] mr-2">
+                          <div className="text-primary font-black text-lg mr-2">
                             ${Number(m?.price || 0).toLocaleString()} USD
                           </div>
                           
@@ -622,10 +622,10 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                                 e.stopPropagation();
                                 setPdfExportMachineIndex(i);
                               }}
-                              className="bg-primary hover:bg-primary/80 text-black h-8 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                              className="bg-primary hover:bg-primary/80 text-primary-foreground h-8 px-2.5 rounded-lg flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
                               title="Exportar Radiografía Interna a PDF"
                             >
-                              <FileText className="w-3.5 h-3.5 text-black" />
+                              <FileText className="w-3.5 h-3.5 text-primary-foreground" />
                               PDF
                             </Button>
                           </div>
@@ -633,7 +633,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-white/40 italic">
+                    <div className="p-4 rounded-2xl bg-card border border-border text-xs text-muted-foreground/60 italic">
                       No hay máquinas o proyectos vinculados.
                     </div>
                   )}
@@ -642,8 +642,8 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
               {/* Status de Actividad - Pipeline */}
               <div className="space-y-4">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
-                  <Activity className="w-3 h-3" /> Progreso del Cierre
+                <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 flex items-center gap-2">
+                  <Activity className="w-3 h-3 text-primary" /> Progreso del Cierre
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
                   {activitySteps.map(({ id, label, Icon }) => {
@@ -653,25 +653,25 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                         key={id}
                         onClick={() => handleStatusChange(id)}
                         className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-300 group ${isChecked
-                          ? 'bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(var(--primary),0.1)]'
-                          : 'bg-white/5 border-white/10 opacity-50 hover:opacity-100 hover:bg-white/10'
+                          ? 'bg-primary/10 border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.05)] text-foreground'
+                          : 'bg-card border-border opacity-60 hover:opacity-100 hover:bg-secondary/40 text-foreground/80'
                           }`}
                       >
                         <div className="flex items-center gap-4">
-                          <Icon className={`w-5 h-5 ${isChecked ? 'text-primary' : 'text-white/40 group-hover:text-white'}`} />
-                          <span className={`text-sm font-bold tracking-tight ${isChecked ? 'text-white' : 'text-white/40'}`}>
+                          <Icon className={`w-5 h-5 ${isChecked ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                          <span className={`text-sm font-bold tracking-tight ${isChecked ? 'text-foreground' : 'text-muted-foreground'}`}>
                             {label}
                           </span>
                         </div>
                         {isChecked ? (
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-primary/70 font-mono">
+                            <span className="text-[10px] text-primary font-mono">
                               {safeFormatDate(activityStatus[id]?.date)}
                             </span>
                             <CheckCircle className="w-5 h-5 text-primary" />
                           </div>
                         ) : (
-                          <Circle className="w-5 h-5 text-white/20 group-hover:text-white/40" />
+                          <Circle className="w-5 h-5 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
                         )}
                       </div>
                     );
@@ -682,23 +682,23 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
               {/* Cotizaciones */}
               {quotations && quotations.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/30 flex items-center gap-2">
-                    <FileText className="w-3 h-3" /> Documentos Adjuntos
+                  <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 flex items-center gap-2">
+                    <FileText className="w-3 h-3 text-primary" /> Documentos Adjuntos
                   </h3>
                   <div className="grid grid-cols-1 gap-2">
                     {quotations.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10 hover:bg-white/10 transition-all group">
+                      <div key={index} className="flex items-center justify-between bg-card p-4 rounded-xl border border-border hover:bg-secondary/40 transition-all group">
                         <div className="flex items-center gap-3 overflow-hidden mr-2">
                           <div className="p-2 bg-primary/10 rounded-lg">
                             <File className="w-4 h-4 text-primary" />
                           </div>
-                          <span className="text-xs font-bold text-white/90 truncate tracking-tight">{file?.fileName || 'Documento'}</span>
+                          <span className="text-xs font-bold text-foreground/90 truncate tracking-tight">{file?.fileName || 'Documento'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleViewPdf(file)} className="text-primary hover:bg-primary/10">
                             <ExternalLink className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => downloadPdf(file)} className="text-white/50 hover:text-white">
+                          <Button variant="ghost" size="sm" onClick={() => downloadPdf(file)} className="text-muted-foreground hover:text-foreground">
                             <Download className="w-4 h-4" />
                           </Button>
                         </div>
@@ -710,11 +710,11 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
             </div>
 
             {/* Footer de la Ficha */}
-            <div className="p-6 border-t border-white/10 bg-white/[0.04] flex-shrink-0">
+            <div className="p-6 border-t border-border bg-secondary/10 flex-shrink-0">
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={handleSaveStatus}
-                  className="bg-primary text-primary-foreground font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_4px_20px_rgba(var(--primary),0.3)] hover:scale-[1.02] active:scale-95 transition-all text-xs"
+                  className="bg-primary text-primary-foreground font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_4px_20px_rgba(var(--primary),0.2)] hover:scale-[1.02] active:scale-95 transition-all text-xs"
                 >
                   Confirmar Cambios
                 </Button>
@@ -726,7 +726,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                       window.dispatchEvent(new CustomEvent('open-edit-lead', { detail: lead }));
                     }, 100);
                   }}
-                  className="border-white/20 text-white font-black uppercase tracking-widest py-5 rounded-2xl hover:bg-white/10 hover:border-white/40 transition-all text-xs"
+                  className="border-border text-foreground font-black uppercase tracking-widest py-5 rounded-2xl hover:bg-secondary transition-all text-xs"
                 >
                   <Edit className="w-4 h-4 mr-2" /> Editar
                 </Button>
@@ -757,16 +757,16 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
         />
       )}
       <Dialog open={isEditingClientCode} onOpenChange={setIsEditingClientCode}>
-        <DialogContent className="sm:max-w-[400px] glass-bevel border-white/10 shadow-2xl p-6 bg-black text-white z-[60]">
+        <DialogContent className="sm:max-w-[400px] glass-bevel border-border shadow-2xl p-6 bg-card text-foreground z-[60]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black uppercase tracking-wider text-white">Numeración del Cliente</DialogTitle>
-            <DialogDescription className="text-white/60 text-xs">
+            <DialogTitle className="text-lg font-black uppercase tracking-wider text-foreground">Numeración del Cliente</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs">
               Introduce el número de cotización o de cliente para este prospecto.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="popup_client_code" className="text-xs uppercase tracking-widest text-white/50 font-bold">Nº de Cotización / Cliente</Label>
+              <Label htmlFor="popup_client_code" className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Nº de Cotización / Cliente</Label>
               <div className="relative">
                 <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
                 <Input
@@ -774,7 +774,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                   value={newClientCode}
                   onChange={(e) => setNewClientCode(e.target.value)}
                   placeholder="Ej: C-1002"
-                  className="pl-10 bg-white/5 border-white/10 focus:border-primary/50 text-white rounded-lg h-10 w-full"
+                  className="pl-10 bg-secondary/50 border-border focus:border-primary/50 text-foreground rounded-lg h-10 w-full"
                   autoFocus
                 />
               </div>
@@ -784,14 +784,14 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
             <Button
               variant="outline"
               onClick={() => setIsEditingClientCode(false)}
-              className="border-white/15 text-white hover:bg-white/10 h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
+              className="border-border text-foreground hover:bg-secondary h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSaveClientCode}
               disabled={isSavingClientCode}
-              className="bg-primary hover:bg-primary/80 text-black h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
+              className="bg-primary hover:bg-primary/80 text-primary-foreground h-10 font-bold uppercase tracking-wider text-[10px] rounded-lg"
             >
               {isSavingClientCode ? 'Guardando...' : 'Guardar'}
             </Button>

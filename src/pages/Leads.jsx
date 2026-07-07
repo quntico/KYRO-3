@@ -14,6 +14,7 @@ import DeleteLeadDialog from '@/components/leads/DeleteLeadDialog';
 import NewLeadDialog from '@/components/leads/NewLeadDialog';
 import FollowUpDialog from '@/components/leads/FollowUpDialog';
 import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
+import LeadQuoteCalculator from '@/components/leads/LeadQuoteCalculator';
 import ModernLeadsDashboard from '@/components/leads/ModernLeadsDashboard';
 import ManageCompaniesDialog from '@/components/leads/ManageCompaniesDialog';
 import jsPDF from 'jspdf';
@@ -39,8 +40,34 @@ const Leads = () => {
   ], []);
 
   const [companies, setCompanies] = useState(() => {
-    const saved = localStorage.getItem('kyro_crm_companies_v5.5');
-    return saved ? JSON.parse(saved) : [
+    const keys = [
+      'kyro_crm_companies_v5.5',
+      'kyro_crm_companies_v5.0',
+      'kyro_crm_companies',
+      'pandora_companies_data',
+      'kyro_companies',
+      'companies'
+    ];
+    for (const key of keys) {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const standardized = parsed.map((item, idx) => ({
+              id: item.id || `comp-${idx + 1}`,
+              name: item.name || item.company_name || `Empresa ${idx + 1}`,
+              logo: item.logo || item.logo_url || ''
+            }));
+            localStorage.setItem('kyro_crm_companies_v5.5', JSON.stringify(standardized));
+            return standardized;
+          }
+        } catch (e) {
+          console.error(`Error parsing companies from localStorage key ${key}:`, e);
+        }
+      }
+    }
+    return [
       { id: 'comp-1', name: 'Empresa 1', logo: '' },
       { id: 'comp-2', name: 'Empresa 2', logo: '' },
       { id: 'comp-3', name: 'Empresa 3', logo: '' },
@@ -66,6 +93,7 @@ const Leads = () => {
     });
   };
   const [manageCompaniesOpen, setManageCompaniesOpen] = useState(false);
+  const [isStandaloneCalcOpen, setIsStandaloneCalcOpen] = useState(false);
 
   const handleSaveCompanies = (updatedCompanies) => {
     setCompanies(updatedCompanies);
@@ -232,7 +260,7 @@ const Leads = () => {
     await removeLead(leadToConvert.id);
     toast({
       title: "¡Prospecto convertido a Venta!",
-      description: `"${leadToConvert.name}" ahora está en tu pipeline de ventas.`,
+      description: `"${leadToConvert.name}" ahora está en tu flujo de ventas.`,
     });
     navigate('/deals');
   }, [user, removeLead, navigate]);
@@ -654,7 +682,7 @@ const Leads = () => {
     );
   }
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       <Helmet>
         <title>Prospectos | Consola Estratégica KYRO</title>
       </Helmet>
@@ -662,14 +690,14 @@ const Leads = () => {
       {/* Futuristic Background System */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         {/* Digital Grid */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
+        <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:40px_40px]" />
         
         {/* Ambient Glows */}
-        <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-cyan-400/10 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[150px]" />
+        <div className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
         
         {/* Scanning Line Effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-400/10 to-transparent h-[2px] w-full animate-scan shadow-[0_0_15px_rgba(34,211,238,0.5)]" style={{ top: '-100%' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-[2px] w-full animate-scan" style={{ top: '-100%' }} />
       </div>
 
       <div className="relative z-10 p-4 md:p-10 max-w-[1700px] mx-auto space-y-10">
@@ -693,23 +721,24 @@ const Leads = () => {
           selectedCompanyIds={selectedCompanyIds}
           onToggleCompany={handleToggleCompany}
           onManageCompanies={() => setManageCompaniesOpen(true)}
+          onOpenCalculator={() => setIsStandaloneCalcOpen(true)}
         />
 
         {/* Buscador de mejor tamaño justo arriba de los leads */}
         <div className="flex justify-start pt-2">
           <div className="relative w-full max-w-2xl group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/40 group-focus-within:text-cyan-400 transition-colors" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
               placeholder="Buscar Vectores / Prospectos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/15 rounded-2xl h-14 pl-14 pr-12 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-cyan-400/40 focus:bg-white/[0.06] focus:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all font-mono tracking-wider"
+              className="w-full bg-secondary/40 border border-border rounded-2xl h-14 pl-14 pr-12 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-card focus:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all font-mono tracking-wider"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-md transition-all text-white/40 hover:text-white cursor-pointer"
+                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary rounded-md transition-all text-muted-foreground/60 hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -847,6 +876,24 @@ const Leads = () => {
         companies={companies}
         onSave={handleSaveCompanies}
       />
+
+      {isStandaloneCalcOpen && (
+        <LeadQuoteCalculator
+          isOpen={isStandaloneCalcOpen}
+          onClose={() => setIsStandaloneCalcOpen(false)}
+          machine={{}}
+          clientCompany="Simulación Independiente"
+          clientName="Usuario Interno"
+          location="No especificada"
+          onApply={() => {
+            setIsStandaloneCalcOpen(false);
+            toast({
+              title: "Simulación Cerrada",
+              description: "Los datos de la simulación no se guardan ya que es un cálculo independiente.",
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

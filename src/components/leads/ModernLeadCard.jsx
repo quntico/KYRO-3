@@ -11,8 +11,142 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTheme } from '@/contexts/ThemeContext.jsx';
+
+const getStatusColor = (status, isLightTheme) => {
+  switch (status) {
+    case 'hot': return 'from-red-500 to-orange-500';
+    case 'closing': return 'from-blue-600 to-cyan-500 dark:from-[#0047FF] dark:to-[#00D4FF]';
+    case 'warming': return 'from-emerald-500 to-teal-500';
+    case 'warm': return 'from-orange-500 to-amber-500';
+    case 'cooling': return 'from-cyan-500 to-blue-500';
+    case 'cold': return 'from-blue-500 to-indigo-500';
+    case 'new': return 'from-purple-500 to-pink-500';
+    case 'declined': return 'from-[#8B4513] to-[#A0522D]';
+    default: return 'from-gray-500 to-slate-500';
+  }
+};
+
+const getHoverEffects = (status, isLightTheme) => {
+  if (isLightTheme) {
+    return { 
+      glow: 'from-transparent', 
+      shadow: 'hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:border-primary/30 border-border bg-card' 
+    };
+  }
+  switch (status) {
+    case 'hot': return { glow: 'from-red-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] border-transparent hover:border-red-500/50' };
+    case 'closing': return { glow: 'from-[#0047FF]/20', shadow: 'hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] border-transparent hover:border-[#00D4FF]/50' };
+    case 'warming': return { glow: 'from-emerald-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] border-transparent hover:border-emerald-500/50' };
+    case 'warm': return { glow: 'from-orange-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] border-transparent hover:border-orange-500/50' };
+    case 'cooling': return { glow: 'from-cyan-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] border-transparent hover:border-cyan-500/50' };
+    case 'cold': return { glow: 'from-blue-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] border-transparent hover:border-blue-500/50' };
+    case 'new': return { glow: 'from-purple-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] border-transparent hover:border-purple-500/50' };
+    case 'declined': return { glow: 'from-[#8B4513]/20', shadow: 'hover:shadow-[0_0_30px_rgba(139,69,19,0.15)] border-transparent hover:border-[#8B4513]/50' };
+    default: return { glow: 'from-white/5', shadow: 'hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:border-white/20' };
+  }
+};
+
+const getStatusPill = (status, isLightTheme) => {
+  if (isLightTheme) {
+    switch (status) {
+      case 'hot': return 'border-red-200 bg-red-50 text-red-600';
+      case 'closing': return 'border-blue-200 bg-blue-50 text-blue-600';
+      case 'warming': return 'border-emerald-200 bg-emerald-50 text-emerald-600';
+      case 'warm': return 'border-orange-200 bg-orange-50 text-orange-600';
+      case 'cooling': return 'border-cyan-200 bg-cyan-50 text-cyan-700';
+      case 'cold': return 'border-blue-200 bg-blue-50 text-blue-600';
+      case 'new': return 'border-purple-200 bg-purple-50 text-purple-600';
+      case 'declined': return 'border-amber-200 bg-amber-50 text-amber-700';
+      default: return 'border-gray-200 bg-gray-50 text-gray-600';
+    }
+  }
+  switch (status) {
+    case 'hot': return 'border-red-500/30 bg-red-500/10 text-red-400';
+    case 'closing': return 'border-[#00D4FF]/30 bg-[#00D4FF]/10 text-[#00D4FF]';
+    case 'warming': return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400';
+    case 'warm': return 'border-orange-500/30 bg-orange-500/10 text-orange-400';
+    case 'cooling': return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400';
+    case 'cold': return 'border-blue-500/30 bg-blue-500/10 text-blue-400';
+    case 'new': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
+    case 'declined': return 'border-[#8B4513]/30 bg-[#8B4513]/10 text-[#D2691E]';
+    default: return 'border-gray-500/30 bg-gray-500/10 text-gray-400';
+  }
+};
+
+const getScoreGradient = (status) => {
+  switch (status) {
+    case 'hot': return 'from-red-400 to-red-600';
+    case 'closing': return 'from-[#00D4FF] to-[#0047FF]';
+    case 'warming': return 'from-emerald-400 to-emerald-600';
+    case 'warm': return 'from-orange-400 to-orange-600';
+    case 'cooling': return 'from-cyan-400 to-cyan-600';
+    case 'cold': return 'from-blue-400 to-blue-600';
+    case 'new': return 'from-purple-400 to-purple-600';
+    case 'declined': return 'from-[#D2691E] to-[#8B4513]';
+    default: return 'from-gray-400 to-gray-600';
+  }
+};
+
+const getStatusName = (status) => {
+  switch (status) {
+    case 'closing': return 'Cierre';
+    case 'hot': return 'Caliente';
+    case 'warming': return 'Avanzando';
+    case 'warm': return 'Tibio';
+    case 'cooling': return 'Enfriando';
+    case 'cold': return 'Frío';
+    case 'new': return 'Nuevo';
+    case 'declined': return 'Perdido';
+    default: return status ? status.toUpperCase() : 'SIN DEFINIR';
+  }
+};
+
+const getDerivedScore = (status, originalScore) => {
+  switch (status) {
+    case 'closing': return 98;
+    case 'hot': return 88;
+    case 'warming': return 75;
+    case 'warm': return 60;
+    case 'cooling': return 45;
+    case 'cold': return 25;
+    case 'declined': return 10;
+    case 'new': return 0;
+    default: return originalScore || 0;
+  }
+};
+
+const getStatusTextColor = (status, isLightTheme) => {
+  if (isLightTheme) {
+    switch (status) {
+      case 'hot': return 'text-red-600';
+      case 'closing': return 'text-[#005AB5]';
+      case 'warming': return 'text-emerald-600';
+      case 'warm': return 'text-orange-600';
+      case 'cooling': return 'text-cyan-700';
+      case 'cold': return 'text-blue-600';
+      case 'new': return 'text-purple-600';
+      case 'declined': return 'text-[#8B4513]';
+      default: return 'text-foreground';
+    }
+  }
+  switch (status) {
+    case 'hot': return 'text-red-400';
+    case 'closing': return 'text-[#00D4FF]';
+    case 'warming': return 'text-emerald-400';
+    case 'warm': return 'text-orange-400';
+    case 'cooling': return 'text-cyan-400';
+    case 'cold': return 'text-blue-400';
+    case 'new': return 'text-purple-400';
+    case 'declined': return 'text-[#D2691E]';
+    default: return 'text-white';
+  }
+};
 
 const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, onUpdateField, companies = [] }) => {
+  const { theme } = useTheme();
+  const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+
   const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
   const [quotationNumber, setQuotationNumber] = useState(lead.quotationNumber || '');
   const [isEditingQT, setIsEditingQT] = useState(!lead.quotationNumber);
@@ -58,111 +192,13 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     doc.save(`Generales_${(lead.name || 'Cliente').replace(/\s+/g, '_')}.pdf`);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'hot': return 'from-red-500/20 to-orange-500/20 border-red-500/30 text-red-400';
-      case 'closing': return 'from-[#0047FF]/30 to-[#00D4FF]/30 border-[#0047FF]/50 text-[#00D4FF] font-black tracking-widest';
-      case 'warming': return 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-400';
-      case 'warm': return 'from-orange-500/20 to-amber-500/20 border-orange-500/30 text-orange-400';
-      case 'cooling': return 'from-cyan-500/20 to-blue-500/20 border-cyan-500/30 text-cyan-400';
-      case 'cold': return 'from-blue-500/20 to-indigo-500/20 border-blue-500/30 text-blue-400';
-      case 'new': return 'from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-400';
-      case 'declined': return 'from-[#8B4513]/20 to-[#A0522D]/20 border-[#8B4513]/30 text-[#D2691E]';
-      default: return 'from-gray-500/20 to-slate-500/20 border-gray-500/30 text-gray-400';
-    }
-  };
-
-  const getHoverEffects = (status) => {
-    switch (status) {
-      case 'hot': return { glow: 'from-red-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] border-transparent hover:border-red-500/50' };
-      case 'closing': return { glow: 'from-[#0047FF]/20', shadow: 'hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] border-transparent hover:border-[#00D4FF]/50' };
-      case 'warming': return { glow: 'from-emerald-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] border-transparent hover:border-emerald-500/50' };
-      case 'warm': return { glow: 'from-orange-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] border-transparent hover:border-orange-500/50' };
-      case 'cooling': return { glow: 'from-cyan-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] border-transparent hover:border-cyan-500/50' };
-      case 'cold': return { glow: 'from-blue-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] border-transparent hover:border-blue-500/50' };
-      case 'new': return { glow: 'from-purple-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] border-transparent hover:border-purple-500/50' };
-      case 'declined': return { glow: 'from-[#8B4513]/20', shadow: 'hover:shadow-[0_0_30px_rgba(139,69,19,0.15)] border-transparent hover:border-[#8B4513]/50' };
-      default: return { glow: 'from-white/5', shadow: 'hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:border-white/20' };
-    }
-  };
-
-  const getStatusPill = (status) => {
-    switch (status) {
-      case 'hot': return 'border-red-500/30 bg-red-500/10 text-red-400';
-      case 'closing': return 'border-[#00D4FF]/30 bg-[#00D4FF]/10 text-[#00D4FF]';
-      case 'warming': return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400';
-      case 'warm': return 'border-orange-500/30 bg-orange-500/10 text-orange-400';
-      case 'cooling': return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400';
-      case 'cold': return 'border-blue-500/30 bg-blue-500/10 text-blue-400';
-      case 'new': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
-      case 'declined': return 'border-[#8B4513]/30 bg-[#8B4513]/10 text-[#D2691E]';
-      default: return 'border-gray-500/30 bg-gray-500/10 text-gray-400';
-    }
-  };
-
-  const getScoreGradient = (status) => {
-    switch (status) {
-      case 'hot': return 'from-red-400 to-red-600';
-      case 'closing': return 'from-[#00D4FF] to-[#0047FF]';
-      case 'warming': return 'from-emerald-400 to-emerald-600';
-      case 'warm': return 'from-orange-400 to-orange-600';
-      case 'cooling': return 'from-cyan-400 to-cyan-600';
-      case 'cold': return 'from-blue-400 to-blue-600';
-      case 'new': return 'from-purple-400 to-purple-600';
-      case 'declined': return 'from-[#D2691E] to-[#8B4513]';
-      default: return 'from-gray-400 to-gray-600';
-    }
-  };
-
-  const getStatusName = (status) => {
-    switch (status) {
-      case 'closing': return 'Cierre';
-      case 'hot': return 'Caliente';
-      case 'warming': return 'Avanzando';
-      case 'warm': return 'Tibio';
-      case 'cooling': return 'Enfriando';
-      case 'cold': return 'Frío';
-      case 'new': return 'Nuevo';
-      case 'declined': return 'Perdido';
-      default: return status ? status.toUpperCase() : 'UNDEFINED';
-    }
-  };
-
-  const getDerivedScore = (status, originalScore) => {
-    switch (status) {
-      case 'closing': return 98;
-      case 'hot': return 88;
-      case 'warming': return 75;
-      case 'warm': return 60;
-      case 'cooling': return 45;
-      case 'cold': return 25;
-      case 'declined': return 10;
-      case 'new': return 0;
-      default: return originalScore || 0;
-    }
-  };
-
-  const getStatusTextColor = (status) => {
-    switch (status) {
-      case 'hot': return 'text-red-400';
-      case 'closing': return 'text-[#00D4FF]';
-      case 'warming': return 'text-emerald-400';
-      case 'warm': return 'text-orange-400';
-      case 'cooling': return 'text-cyan-400';
-      case 'cold': return 'text-blue-400';
-      case 'new': return 'text-purple-400';
-      case 'declined': return 'text-[#D2691E]';
-      default: return 'text-white';
-    }
-  };
-
-  const statusGradient = getStatusColor(lead.status);
-  const statusPill = getStatusPill(lead.status);
+  const statusGradient = getStatusColor(lead.status, isLightTheme);
+  const statusPill = getStatusPill(lead.status, isLightTheme);
   const scoreGradient = getScoreGradient(lead.status);
-  const hoverFx = getHoverEffects(lead.status);
+  const hoverFx = getHoverEffects(lead.status, isLightTheme);
   const statusName = getStatusName(lead.status);
   const displayScore = getDerivedScore(lead.status, lead.score);
-  const statusTextColor = getStatusTextColor(lead.status);
+  const statusTextColor = getStatusTextColor(lead.status, isLightTheme);
 
   const lastUpdateRaw = lead.lastActivity || lead.updated_at || lead.updatedAt || lead.created_at || new Date().toISOString();
   const formattedDate = new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
@@ -173,7 +209,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       animate={{ opacity: 1 }}
       transition={{ delay: index * 0.02 }}
       onClick={() => onView(lead)}
-      className={`relative px-4 pt-4 pb-14 cursor-pointer border border-white/5 bg-[#080808] transition-all duration-300 group flex flex-col h-full rounded-2xl overflow-hidden ${hoverFx.shadow}`}
+      className={`relative px-4 pt-4 pb-14 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col h-full rounded-2xl overflow-hidden ${hoverFx.shadow}`}
     >
       <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${statusGradient.split(' ')[0]} ${statusGradient.split(' ')[1]}`} />
       
@@ -183,32 +219,32 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="pr-2">
           <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-             <span className="text-[10px] font-black text-white/40 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-cyan-400">{String(lead.id || '').substring(0,6)}</span></span>
-             <span className="w-1 h-1 rounded-full bg-white/10" />
-             <span className="text-[8px] font-black text-white/20 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
+             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.id || '').substring(0,6)}</span></span>
+             <span className="w-1 h-1 rounded-full bg-border" />
+             <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
                <Clock className="w-2.5 h-2.5" /> {formattedDate}
              </span>
           </div>
           <h3 className={`text-2xl font-black tracking-tight uppercase mb-0.5 line-clamp-1 ${statusTextColor}`}>
             {lead.name}
           </h3>
-          <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.15em] truncate mt-1 flex items-center gap-2">
+          <p className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] truncate mt-1 flex items-center gap-2">
             <span>{lead.contact}</span>
             {matchedCompany && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <button className="inline-flex items-center justify-center p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                  <button className="inline-flex items-center justify-center p-1 rounded bg-secondary/40 border border-border hover:bg-secondary transition-all cursor-pointer">
                     {matchedCompany.logo ? (
                       <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-5 w-auto max-w-[50px] object-contain rounded" />
                     ) : (
-                      <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40 uppercase">
+                      <div className="w-5 h-5 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80 uppercase">
                         {matchedCompany.name.slice(0, 2)}
                       </div>
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="bg-[#050505] border border-white/10 text-white/80 p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
-                  <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-white/40 uppercase border-b border-white/5 mb-1">
+                <DropdownMenuContent align="start" className="bg-popover border border-border text-popover-foreground p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-muted-foreground uppercase border-b border-border mb-1">
                     Asignar Empresa Gestora
                   </div>
                   {(companies || []).map(c => (
@@ -225,26 +261,26 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                           onUpdateField(lead.id, { activity_status: updatedActivityStatus });
                         }
                       }}
-                      className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/10 hover:text-white rounded-lg cursor-pointer transition-colors"
+                      className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-secondary rounded-lg cursor-pointer transition-colors"
                     >
                       {c.logo ? (
                         <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
                       ) : (
-                        <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40">
+                        <div className="w-4 h-4 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80">
                           {c.name.slice(0, 2).toUpperCase()}
                         </div>
                       )}
                       <span>{c.name}</span>
-                      {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-cyan-400" />}
+                      {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
                     </DropdownMenuRadioItem>
                   ))}
-                  <div className="border-t border-white/5 my-1" />
+                  <div className="border-t border-border my-1" />
                   <DropdownMenuRadioItem
                     value="manage"
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent('open-manage-companies'));
                     }}
-                    className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 rounded-lg cursor-pointer transition-colors"
+                    className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-primary hover:bg-primary/10 hover:text-primary rounded-lg cursor-pointer transition-colors"
                   >
                     ⚙️ Gestionar Empresas
                   </DropdownMenuRadioItem>
@@ -269,7 +305,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
             <DropdownMenuContent 
               onClick={(e) => e.stopPropagation()}
               align="end" 
-              className="bg-[#050505] border-white/10 text-white/70 z-50 font-black text-[10px] uppercase tracking-widest rounded-xl"
+              className="bg-popover border border-border text-popover-foreground z-50 font-black text-[10px] uppercase tracking-widest rounded-xl"
             >
               <DropdownMenuRadioGroup value={lead.status} onValueChange={(newStatus) => onStatusChange(lead.id, newStatus)}>
                 <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
@@ -303,72 +339,72 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
-        <div className="p-3 bg-[#0A0A0A] border border-white/5 flex flex-col relative group-hover:border-white/10 transition-colors rounded-xl">
+        <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase font-black text-white/40 tracking-widest">% de Conversión</span>
-            <Target className="w-3 h-3 text-white/20" />
+            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">% de Conversión</span>
+            <Target className="w-3 h-3 text-muted-foreground/30" />
           </div>
           <span className={`text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r ${scoreGradient}`}>
             {displayScore}%
           </span>
           <div className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r ${scoreGradient} rounded-b-xl`} style={{width: `${displayScore}%`}} />
         </div>
-        <div className="p-3 bg-[#0A0A0A] border border-white/5 flex flex-col relative group-hover:border-white/10 transition-colors rounded-xl">
+        <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase font-black text-white/40 tracking-widest">Valoración</span>
-            <Banknote className="w-3 h-3 text-white/20" />
+            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">Valoración</span>
+            <Banknote className="w-3 h-3 text-muted-foreground/30" />
           </div>
-          <span className="text-2xl font-black text-white tracking-tight mt-1">
+          <span className="text-2xl font-black text-foreground tracking-tight mt-1">
             ${(lead.value || 0).toLocaleString()}
           </span>
         </div>
       </div>
 
       <div className="space-y-2 text-[11px] font-black tracking-[0.15em] relative z-10 flex-1">
-        <div className="flex items-center text-white/50 hover:text-white transition-colors px-3 py-2 bg-[#0A0A0A] border border-white/5 rounded-full">
-           <Mail className="w-4 h-4 mr-3 text-cyan-400/50" />
+        <div className="flex items-center text-muted-foreground hover:text-foreground transition-colors px-3 py-2 bg-secondary/30 border border-border rounded-full">
+           <Mail className="w-4 h-4 mr-3 text-primary/50" />
            <span className="truncate uppercase">{lead.email || 'NO_DATA'}</span>
         </div>
         
-        <div className="flex items-center text-white/50 hover:text-white transition-colors px-3 py-2 bg-[#0A0A0A] border border-white/5 rounded-full">
-           <Phone className="w-4 h-4 mr-3 text-cyan-400/50" />
+        <div className="flex items-center text-muted-foreground hover:text-foreground transition-colors px-3 py-2 bg-secondary/30 border border-border rounded-full">
+           <Phone className="w-4 h-4 mr-3 text-primary/50" />
            <span className="uppercase">{lead.phone || 'NO_DATA'}</span>
         </div>
 
         {(lead.machines && lead.machines.length > 0) && (
-          <div className="flex items-center text-cyan-400 px-3 py-2 bg-[#00E5FF]/5 border border-[#00E5FF]/20 rounded-full">
+          <div className="flex items-center text-primary px-3 py-2 bg-primary/5 border border-primary/20 rounded-full">
              <Package className="w-4 h-4 mr-3" />
              <span className="truncate uppercase">{lead.machines[0]?.name} {lead.machines.length > 1 ? `[+${lead.machines.length - 1}]` : ''}</span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
           <div 
-            className={`flex-1 flex items-center bg-[#0A0A0A] border border-white/5 rounded-full px-3 py-2 transition-all ${isEditingQT ? 'focus-within:border-cyan-400/50' : 'cursor-pointer hover:border-white/20'}`}
+            className={`flex-1 flex items-center bg-secondary/30 border border-border rounded-full px-3 py-2 transition-all ${isEditingQT ? 'focus-within:border-primary/50' : 'cursor-pointer hover:border-border/80'}`}
             onClick={(e) => { e.stopPropagation(); if (!isEditingQT) setIsEditingQT(true); }}
           >
-            <span className="text-[10px] text-white/40 tracking-[0.15em] mr-2 uppercase shrink-0">QT//</span>
+            <span className="text-[10px] text-muted-foreground/60 tracking-[0.15em] mr-2 uppercase shrink-0">QT//</span>
             {isEditingQT ? (
               <>
                 <input 
                    value={quotationNumber}
                    onChange={(e) => setQuotationNumber(e.target.value)}
-                   placeholder="UNDEFINED"
-                   className="bg-transparent border-none outline-none text-cyan-400 font-black text-[11px] w-full focus:ring-0 p-0 tracking-[0.15em] placeholder:text-white/10 uppercase"
+                   placeholder="SIN DEFINIR"
+                   className="bg-transparent border-none outline-none text-primary font-black text-[11px] w-full focus:ring-0 p-0 tracking-[0.15em] placeholder:text-muted-foreground/30 uppercase"
                    onClick={(e) => e.stopPropagation()}
                    onKeyDown={(e) => { if(e.key === 'Enter') { handleQuotationSave(e); } }}
-                />
+                 />
                 <button 
                   onClick={handleQuotationSave}
-                  className="w-5 h-5 rounded flex items-center justify-center bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/40 ml-1 shrink-0 transition-colors"
+                  className="w-5 h-5 rounded flex items-center justify-center bg-primary/20 text-primary hover:bg-primary/40 ml-1 shrink-0 transition-colors"
                   title="Guardar Cotización"
                 >
                   <Check className="w-3 h-3" />
                 </button>
               </>
             ) : (
-              <span className="text-cyan-400 font-black text-[13px] tracking-[0.2em] uppercase truncate w-full">
-                 {quotationNumber || 'UNDEFINED'}
+              <span className="text-primary font-black text-[13px] tracking-[0.2em] uppercase truncate w-full">
+                 {quotationNumber || 'SIN DEFINIR'}
               </span>
             )}
           </div>
@@ -378,8 +414,8 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
             disabled={!(lead.quotations && lead.quotations.length > 0)}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${
               lead.quotations && lead.quotations.length > 0
-                ? 'bg-[#00E5FF]/10 border border-[#00E5FF]/30 text-[#00E5FF] hover:bg-[#00E5FF]/20'
-                : 'bg-[#0A0A0A] border border-white/5 text-white/10 cursor-not-allowed'
+                ? 'bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20'
+                : 'bg-secondary/30 border border-border text-muted-foreground/20 cursor-not-allowed'
             }`}
             onClick={(e) => {
               e.stopPropagation();
@@ -394,7 +430,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
           
           <button
             title="Exportar Generales"
-            className="w-9 h-9 rounded-full bg-[#0A0A0A] border border-white/5 flex items-center justify-center text-white/40 hover:bg-[#00E5FF]/10 hover:border-[#00E5FF]/30 hover:text-[#00E5FF] transition-all shrink-0"
+            className="w-9 h-9 rounded-full bg-secondary/30 border border-border flex items-center justify-center text-muted-foreground/60 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all shrink-0"
             onClick={handleExportGenerals}
           >
             <FileDown className="w-4 h-4" />
@@ -403,20 +439,20 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       </div>
 
       {/* Action Overlay */}
-      <div className="absolute bottom-0 left-0 w-full h-14 bg-gradient-to-t from-[#080808] via-[#080808]/80 to-transparent flex items-center justify-center gap-2 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-[#0A0A0A] border border-white/10 hover:border-white/30 text-white/60 hover:text-white shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
+      <div className="absolute bottom-0 left-0 w-full h-14 bg-gradient-to-t from-background via-background/80 to-transparent flex items-center justify-center gap-2 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-secondary border border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
            <Edit className="w-4 h-4" />
          </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead); }} title="Convertir a Venta">
+         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead); }} title="Convertir a Venta">
            <HeartHandshake className="w-4 h-4" />
          </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onQuickFollowUp(lead, 'Llamada'); }} title="Seguimiento">
+         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onQuickFollowUp(lead, 'Llamada'); }} title="Seguimiento">
            <CalendarPlus className="w-4 h-4" />
          </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-[#00E5FF]/10 border border-[#00E5FF]/30 hover:bg-[#00E5FF]/20 text-[#00E5FF] shadow-lg" onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }} title="Bitácora">
+         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary shadow-lg" onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }} title="Bitácora">
            <MessageSquare className="w-4 h-4" />
          </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} title="Eliminar">
+         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-600 dark:text-red-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} title="Eliminar">
            <Trash2 className="w-4 h-4" />
          </Button>
       </div>

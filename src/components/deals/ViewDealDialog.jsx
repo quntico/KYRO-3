@@ -217,7 +217,7 @@ const ViewDealDialog = ({ isOpen, setIsOpen, deal, onUpdate, onRevert }) => {
               </Button>
               <Button
                 onClick={handleSaveStatus}
-                className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-cyan-400 to-purple-500 text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'}
+                className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-cyan-400 to-purple-500 text-white' : 'bg-primary text-primary-foreground hover:bg-primary/90'}
               >
                 Guardar Estado
               </Button>

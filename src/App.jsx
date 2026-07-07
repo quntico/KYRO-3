@@ -1,12 +1,12 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import Sidebar from '@/components/Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext.jsx';
 import MobileNav from '@/components/MobileNav';
 import Header from '@/components/Header';
-import { Command as KyroRune } from 'lucide-react';
+import { Command as KyroRune, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 import { useData } from '@/contexts/DataContext';
@@ -62,6 +62,8 @@ const AppContent = () => {
   const { user } = useAuth();
   const { loading: dataLoading } = useData();
   const [showSplash, setShowSplash] = React.useState(true);
+  const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const scrollContainerRef = React.useRef(null);
 
   React.useEffect(() => {
     // Reducimos el tiempo de splash screen para una carga más rápida
@@ -70,6 +72,21 @@ const AppContent = () => {
     }, 500); // Antes era 1000
     return () => clearTimeout(timer);
   }, []);
+
+  const handleScroll = (e) => {
+    if (e.currentTarget.scrollTop > 300) {
+      setShowScrollTop(true);
+    } else {
+      setShowScrollTop(false);
+    }
+  };
+
+  const scrollToTop = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  };
 
   if (!user) return <Navigate to="/login" replace />;
 
@@ -85,7 +102,11 @@ const AppContent = () => {
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 md:pl-20 overflow-hidden relative">
         <Header />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-24 md:pb-0">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide pb-24 md:pb-0"
+        >
           <Suspense fallback={<ViewFallback />}>
             <Routes>
               <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -108,6 +129,21 @@ const AppContent = () => {
             </Routes>
           </Suspense>
         </div>
+        <AnimatePresence>
+          {showScrollTop && (
+            <motion.button
+              id="scroll-to-top"
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              onClick={scrollToTop}
+              className="fixed bottom-20 md:bottom-6 right-6 z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg border border-primary/20 hover:brightness-110 transition-all flex items-center justify-center cursor-pointer group"
+              title="Subir al inicio"
+            >
+              <ChevronUp className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </main>
       <MobileNav className="md:hidden" />
     </div>

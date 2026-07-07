@@ -336,7 +336,7 @@ const ClientFileViewerDialog = ({ isOpen, onClose, deal, onUpdate }) => {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-cyan-400 to-purple-500 text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'}>Guardar Expediente</Button>
+          <Button onClick={handleSave} className={theme === 'futuristic' ? 'button-glow bg-gradient-to-r from-cyan-400 to-purple-500 text-white' : 'bg-primary text-primary-foreground hover:bg-primary/90'}>Guardar Expediente</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

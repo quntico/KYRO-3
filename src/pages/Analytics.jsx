@@ -81,7 +81,7 @@ const Analytics = () => {
 
   const kpis = [
     {
-      title: 'Valor Total del Pipeline',
+      title: 'Valor Total del Flujo',
       value: `$${metrics.totalValue.toLocaleString()}`,
       subtitle: 'Todos los prospectos activos',
       icon: DollarSign,
@@ -105,9 +105,9 @@ const Analytics = () => {
       bg: 'bg-purple-500/10',
     },
     {
-      title: 'Score Promedio',
+      title: 'Puntuación Promedio',
       value: `${metrics.avgScore}/100`,
-      subtitle: 'Calidad general de los leads',
+      subtitle: 'Calidad general de los prospectos',
       icon: Target,
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
@@ -125,7 +125,7 @@ const Analytics = () => {
     <div className="h-full overflow-y-auto scrollbar-hide bg-background text-foreground">
       <Helmet>
         <title>Analíticas - KYRO</title>
-        <meta name="description" content="Analíticas reales de tu pipeline." />
+        <meta name="description" content="Analíticas reales de tu flujo." />
       </Helmet>
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         
@@ -138,7 +138,7 @@ const Analytics = () => {
         >
           <div>
             <h1 className="text-3xl md:text-4xl font-black mb-2 bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent tracking-tight">
-              Analíticas del Pipeline
+              Analíticas del Flujo de Ventas
             </h1>
             <p className="text-muted-foreground">Datos reales en vivo basados en tus prospectos</p>
           </div>
@@ -252,7 +252,7 @@ const Analytics = () => {
             className="bg-black/20 rounded-[2rem] p-6 shadow-xl border border-white/5 backdrop-blur-xl flex flex-col"
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-white tracking-tight">Desglose de Pipeline</h2>
+              <h2 className="text-xl font-bold text-white tracking-tight">Desglose del Flujo de Ventas</h2>
               <Button variant="ghost" size="sm" className="opacity-50 hover:opacity-100">
                 <Target className="w-4 h-4" />
               </Button>

@@ -241,14 +241,15 @@ const ToDo = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden border-t border-white/5">
+    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden border-t border-border">
       <Helmet>
         <title>KYRO | Notas y Tareas</title>
         <style>
           {`
             [contenteditable]:empty:before {
               content: attr(data-placeholder);
-              color: rgba(255, 255, 255, 0.2);
+              color: var(--muted-foreground, rgba(128, 128, 128, 0.5));
+              opacity: 0.5;
             }
             .group:has(input[type="checkbox"]:checked) span {
               text-decoration: line-through;
@@ -262,17 +263,17 @@ const ToDo = () => {
       </Helmet>
 
       {/* COLUMN 1: NAVIGATION SIDEBAR */}
-      <div className="w-16 lg:w-64 flex flex-col border-r border-white/10 bg-card/30 backdrop-blur-md flex-shrink-0">
+      <div className="w-16 lg:w-64 flex flex-col border-r border-border bg-card flex-shrink-0">
         <div className="p-4 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-            <BookOpen className="w-5 h-5 text-white" />
+            <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-bold text-xl hidden lg:block text-glow">NOTAS</span>
         </div>
 
         <Button
           onClick={handleCreateNew}
-          className="mx-4 mt-2 mb-6 hidden lg:flex items-center gap-2 rounded-full py-6 text-lg font-medium shadow-xl hover:scale-105 transition-all bg-gradient-to-r from-primary to-blue-600 border-none"
+          className="mx-4 mt-2 mb-6 hidden lg:flex items-center gap-2 rounded-full py-6 text-lg font-medium shadow-xl hover:scale-105 transition-all bg-primary text-primary-foreground hover:bg-primary/90 border-none"
         >
           <Plus className="w-6 h-6" /> Nuevo
         </Button>
@@ -290,7 +291,7 @@ const ToDo = () => {
             icon={<Calendar />} label="Calendario" active={activeView === 'calendar'}
             onClick={() => setActiveView('calendar')}
           />
-          <div className="h-px bg-white/5 my-4 mx-2" />
+          <div className="h-px bg-border my-4 mx-2" />
           <NavButton icon={<Star className="text-yellow-500" />} label="Atajos" />
           <NavButton icon={<Tag />} label="Etiquetas" />
           <NavButton icon={<Trash2 />} label="Papelera" />
@@ -299,14 +300,14 @@ const ToDo = () => {
 
       {/* COLUMN 2: SEARCH & LIST */}
       {activeView !== 'calendar' && !isMaximized && (
-        <div className="w-full sm:w-80 lg:w-96 flex flex-col border-r border-white/10 bg-card/10 flex-shrink-0">
-          <div className="p-4 border-b border-white/10">
+        <div className="w-full sm:w-80 lg:w-96 flex flex-col border-r border-border bg-secondary/15 flex-shrink-0">
+          <div className="p-4 border-b border-border">
             <h2 className="text-xl font-bold mb-4 px-2 capitalize">{activeView === 'notes' ? 'Mis Notas' : 'Mis Tareas'}</h2>
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Buscar en todo..."
-                className="pl-10 bg-white/5 border-white/10 focus:bg-white/10 rounded-xl"
+                className="pl-10 bg-background border-border text-foreground rounded-xl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -326,8 +327,8 @@ const ToDo = () => {
                     onClick={() => setSelectedItem(item)}
                     className={`p-4 rounded-xl cursor-pointer transition-all border group relative
                       ${selectedItem?.id === item.id
-                        ? 'bg-primary/20 border-primary shadow-lg shadow-primary/5'
-                        : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}`}
+                        ? 'bg-primary/10 border-primary shadow-lg shadow-primary/5'
+                        : 'bg-transparent border-transparent hover:bg-secondary hover:border-border'}`}
                   >
                     <div className="flex items-start gap-3">
                       {activeView === 'tasks' && (
@@ -355,7 +356,7 @@ const ToDo = () => {
                     <div className="flex items-center justify-between mt-3 text-[10px] uppercase tracking-wider text-muted-foreground/60">
                       <span>{safeFormat(item.updated_at || item.created_at || item.due, "d MMM, HH:mm")}</span>
                       {item.attachments?.length > 0 && (
-                        <span className="flex items-center gap-1 bg-white/5 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 bg-secondary px-2 py-0.5 rounded-full border border-border">
                           <Paperclip className="w-3 h-3" /> {item.attachments.length}
                         </span>
                       )}
@@ -386,7 +387,7 @@ const ToDo = () => {
         ) : selectedItem ? (
           <div className="h-full flex flex-col">
             {/* Editor Toolbar */}
-            <div className="p-4 flex items-center justify-between border-b border-white/10 bg-background/50 backdrop-blur-sm">
+            <div className="p-4 flex items-center justify-between border-b border-border bg-card/50 backdrop-blur-sm">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4" />
                 <span>Editado {safeFormatDistance(selectedItem.updated_at || selectedItem.created_at || selectedItem.due)}</span>
@@ -398,20 +399,20 @@ const ToDo = () => {
                       <Paperclip className="w-4 h-4" /> Adjuntar
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-48 p-1 bg-card border-white/10" align="end">
-                    <label className="flex items-center gap-2 p-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm transition-colors w-full">
-                      <ImageIcon className="w-4 h-4 text-blue-400" /> Imágenes
+                  <PopoverContent className="w-48 p-1 bg-card border-border" align="end">
+                    <label className="flex items-center gap-2 p-2 hover:bg-secondary cursor-pointer rounded-lg text-sm transition-colors w-full">
+                      <ImageIcon className="w-4 h-4 text-blue-500" /> Imágenes
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'image')} />
                     </label>
-                    <label className="flex items-center gap-2 p-2 hover:bg-white/5 cursor-pointer rounded-lg text-sm transition-colors w-full">
-                      <Video className="w-4 h-4 text-purple-400" /> Videos
+                    <label className="flex items-center gap-2 p-2 hover:bg-secondary cursor-pointer rounded-lg text-sm transition-colors w-full">
+                      <Video className="w-4 h-4 text-purple-500" /> Videos
                       <input type="file" className="hidden" accept="video/*" onChange={(e) => handleFileUpload(e, 'video')} />
                     </label>
                   </PopoverContent>
                 </Popover>
 
                 {activeView === 'notes' && (
-                  <div className="flex items-center gap-1 mr-4 px-2 py-1 bg-white/5 rounded-full border border-white/10">
+                  <div className="flex items-center gap-1 mr-4 px-2 py-1 bg-secondary rounded-full border border-border">
                     <Button
                       variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary transition-colors"
                       onClick={() => {
@@ -536,7 +537,7 @@ const ToDo = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full text-xs text-muted-foreground border border-white/5">
+                  <div className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full text-xs text-muted-foreground border border-border">
                     <User className="w-3 h-3" />
                     {selectedItem.client_name || selectedItem.client || 'Sin cliente asignado'}
                   </div>
@@ -550,7 +551,7 @@ const ToDo = () => {
                   </Button>
                 </div>
 
-                <div className="h-px bg-white/10 w-full" />
+                <div className="h-px bg-border w-full" />
 
                 {activeView === 'notes' ? (
                   <NoteContentEditor
@@ -559,7 +560,7 @@ const ToDo = () => {
                   />
                 ) : (
                   <textarea
-                    className="w-full h-auto min-h-[500px] bg-transparent text-lg leading-relaxed border-none focus:outline-none resize-none placeholder:text-muted-foreground/20"
+                    className="w-full h-auto min-h-[500px] bg-transparent text-lg leading-relaxed border-none focus:outline-none resize-none placeholder:text-muted-foreground/20 text-foreground"
                     placeholder="Escribe algo increíble..."
                     value={selectedItem.content || selectedItem.description || ''}
                     onChange={(e) => setSelectedItem(prev => ({ ...prev, content: e.target.value, description: e.target.value }))}
@@ -574,7 +575,7 @@ const ToDo = () => {
                     </h4>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                       {selectedItem.attachments.map((file, idx) => (
-                        <div key={idx} className="group relative rounded-xl overflow-hidden aspect-video bg-black/40 border border-white/10 hover:border-primary/50 transition-all">
+                        <div key={idx} className="group relative rounded-xl overflow-hidden aspect-video bg-secondary border border-border hover:border-primary/50 transition-all">
                           {file.type === 'image' ? (
                             <img src={file.url} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                           ) : (
@@ -598,7 +599,7 @@ const ToDo = () => {
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-6 animate-pulse border border-white/10">
+            <div className="w-24 h-24 rounded-3xl bg-secondary flex items-center justify-center mb-6 animate-pulse border border-border">
               <FileText className="w-12 h-12 text-muted-foreground/30" />
             </div>
             <h2 className="text-2xl font-bold mb-2">Selecciona una {activeView === 'notes' ? 'nota' : 'tarea'} para leerla</h2>
@@ -621,15 +622,15 @@ const ToDo = () => {
       />
 
       <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
-        <AlertDialogContent className="bg-card/80 backdrop-blur-lg border-white/10">
+        <AlertDialogContent className="bg-card border border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-muted-foreground">
               ¿Estás seguro de que deseas eliminar "{itemToDelete?.title}"? Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-border text-foreground hover:bg-secondary">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (activeView === 'notes') deleteNote(itemToDelete.id);
@@ -638,7 +639,7 @@ const ToDo = () => {
                 setItemToDelete(null);
                 toast({ title: "Eliminado con éxito" });
               }}
-              className="bg-destructive hover:bg-destructive/80"
+              className="bg-destructive hover:bg-destructive/80 text-destructive-foreground"
             >
               Eliminar Definitivamente
             </AlertDialogAction>
@@ -654,7 +655,7 @@ const NavButton = ({ icon, label, active, onClick }) => (
     variant="ghost"
     onClick={onClick}
     className={`w-full justify-start gap-4 px-4 py-3 h-auto rounded-xl transition-all group relative overflow-hidden
-      ${active ? 'bg-primary/10 text-primary shadow-inner shadow-primary/5' : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'}`}
+      ${active ? 'bg-primary/10 text-primary shadow-inner shadow-primary/5' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
   >
     <div className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
       {React.cloneElement(icon, { className: "w-5 h-5" })}
@@ -677,15 +678,15 @@ const CalendarView = () => {
           <h2 className="text-3xl font-bold tracking-tight text-glow">Agenda Semanal</h2>
           <p className="text-muted-foreground capitalize">{format(weekStart, "MMMM yyyy", { locale: es })}</p>
         </div>
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
+        <div className="flex items-center gap-2 bg-secondary p-1 rounded-xl border border-border">
           <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9" onClick={() => setCurrentDate(subWeeks(currentDate, 1))}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="ghost" className="rounded-lg h-9 px-4 text-xs font-semibold uppercase tracking-wider" onClick={() => setCurrentDate(new Date())}>Hoy</Button>
           <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9" onClick={() => setCurrentDate(addWeeks(currentDate, 1))}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
 
-      <div className="flex-grow bg-card/40 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col">
-        <div className="grid grid-cols-7 border-b border-white/10 bg-white/5">
+      <div className="flex-grow bg-card rounded-3xl border border-border shadow-2xl overflow-hidden flex flex-col">
+        <div className="grid grid-cols-7 border-b border-border bg-secondary/30">
           {weekDays.map(day => (
             <div key={day.toString()} className="py-4 text-center">
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 block mb-1">
@@ -698,7 +699,7 @@ const CalendarView = () => {
           ))}
         </div>
         <ScrollArea className="flex-grow">
-          <div className="grid grid-cols-7 divide-x divide-white/5 h-full min-h-[500px]">
+          <div className="grid grid-cols-7 divide-x divide-border/30 h-full min-h-[500px]">
             {weekDays.map(day => {
               const dayTasks = tasks.filter(t => {
                 try {
@@ -708,10 +709,10 @@ const CalendarView = () => {
                 }
               });
               return (
-                <div key={day.toString()} className={`p-3 hover:bg-white/5 transition-colors group relative ${isToday(day) ? 'bg-primary/5' : ''}`}>
+                <div key={day.toString()} className={`p-3 hover:bg-secondary transition-colors group relative ${isToday(day) ? 'bg-primary/5' : ''}`}>
                   <div className="space-y-2">
                     {dayTasks.map(task => (
-                      <div key={task.id} className="p-2 bg-card/60 rounded-lg border border-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer group/item">
+                      <div key={task.id} className="p-2 bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-all cursor-pointer group/item">
                         <div className="flex items-center gap-2 mb-1">
                           <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-red-500' : 'bg-primary'}`} />
                           <span className="text-[10px] font-mono opacity-50">{safeFormat(task.due, 'HH:mm')}</span>

@@ -107,6 +107,20 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
   };
 
   const getStatusBadge = (status) => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    if (isLightTheme) {
+      switch (status) {
+        case 'closing': return { label: 'Cierre', color: 'bg-blue-100 text-blue-800 border-blue-200', rowColor: 'border-l-4 border-l-[#005AB5] hover:bg-blue-50/50' };
+        case 'hot': return { label: 'Caliente', color: 'bg-red-100 text-red-800 border-red-200', rowColor: 'border-l-4 border-l-red-500 hover:bg-red-50/50' };
+        case 'warming': return { label: 'Avanzando', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', rowColor: 'border-l-4 border-l-emerald-500 hover:bg-emerald-50/50' };
+        case 'warm': return { label: 'Tibio', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', rowColor: 'border-l-4 border-l-orange-500 hover:bg-yellow-50/50' };
+        case 'cooling': return { label: 'Enfriando', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', rowColor: 'border-l-4 border-l-cyan-500 hover:bg-cyan-50/50' };
+        case 'cold': return { label: 'Frío', color: 'bg-blue-100 text-blue-800 border-blue-200', rowColor: 'border-l-4 border-l-blue-500 hover:bg-blue-50/50' };
+        case 'new': return { label: 'Nuevo', color: 'bg-purple-100 text-purple-800 border-purple-200', rowColor: 'border-l-4 border-l-purple-500 hover:bg-purple-50/50' };
+        case 'declined': return { label: 'Declinado', color: 'bg-amber-100 text-amber-800 border-amber-200', rowColor: 'border-l-4 border-l-[#8B4513] hover:bg-amber-50/50' };
+        default: return { label: 'Nuevo', color: 'bg-purple-100 text-purple-800 border-purple-200', rowColor: 'border-l-4 border-l-purple-500 hover:bg-purple-50/50' };
+      }
+    }
     switch (status) {
       case 'closing': return { label: 'Cierre', color: 'bg-[#0047FF]/20 text-[#00D4FF] border-[#00D4FF]/30', rowColor: 'border-l-4 border-l-[#00D4FF] hover:bg-[#00D4FF]/10 hover:shadow-[0_0_15px_rgba(0,212,255,0.1)]' };
       case 'hot': return { label: 'Caliente', color: 'bg-red-500/20 text-red-400 border-red-500/30', rowColor: 'border-l-4 border-l-red-500 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]' };
@@ -121,6 +135,20 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
   };
 
   const getStatusTextColor = (status) => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    if (isLightTheme) {
+      switch (status) {
+        case 'hot': return 'text-red-600';
+        case 'closing': return 'text-[#005AB5]';
+        case 'warming': return 'text-emerald-600';
+        case 'warm': return 'text-orange-600';
+        case 'cooling': return 'text-cyan-700';
+        case 'cold': return 'text-blue-600';
+        case 'new': return 'text-purple-600';
+        case 'declined': return 'text-[#8B4513]';
+        default: return 'text-foreground';
+      }
+    }
     switch (status) {
       case 'hot': return 'text-red-400';
       case 'closing': return 'text-[#00D4FF]';
@@ -134,6 +162,51 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
     }
   };
 
+  const getSalePriceColor = () => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    return isLightTheme ? 'text-[#005AB5]' : 'text-[#00D4FF]';
+  };
+
+  const getSalePriceMutedColor = () => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    return isLightTheme ? 'text-[#005AB5]/70' : 'text-[#00D4FF]/70';
+  };
+
+  const getStatusOptionClass = (optionStatus) => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    if (isLightTheme) {
+      switch (optionStatus) {
+        case 'closing': return 'text-[#005AB5] focus:bg-blue-50';
+        case 'hot': return 'text-red-600 focus:bg-red-50';
+        case 'warming': return 'text-emerald-600 focus:bg-emerald-50';
+        case 'warm': return 'text-orange-600 focus:bg-orange-50';
+        case 'cooling': return 'text-cyan-700 focus:bg-cyan-50';
+        case 'cold': return 'text-blue-600 focus:bg-blue-50';
+        case 'new': return 'text-purple-600 focus:bg-purple-50';
+        case 'declined': return 'text-[#8B4513] focus:bg-amber-50';
+        default: return 'text-foreground focus:bg-secondary';
+      }
+    }
+    switch (optionStatus) {
+      case 'closing': return 'text-[#00D4FF] focus:bg-[#0047FF]/20';
+      case 'hot': return 'text-red-400 focus:bg-red-500/20';
+      case 'warming': return 'text-emerald-400 focus:bg-emerald-500/20';
+      case 'warm': return 'text-orange-400 focus:bg-orange-500/20';
+      case 'cooling': return 'text-cyan-400 focus:bg-cyan-500/20';
+      case 'cold': return 'text-blue-400 focus:bg-blue-500/20';
+      case 'new': return 'text-purple-400 focus:bg-purple-500/20';
+      case 'declined': return 'text-[#D2691E] focus:bg-[#8B4513]/20';
+      default: return 'text-primary focus:bg-secondary';
+    }
+  };
+
+  const getClientCodeBadgeClass = () => {
+    const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
+    return isLightTheme
+      ? 'bg-blue-50 border border-blue-200 text-[#005AB5]'
+      : 'bg-[#0047FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.3)]';
+  };
+
   const sortedLeads = leads || [];
 
   return (
@@ -145,14 +218,14 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
     >
       <div className={`bg-card rounded-2xl border border-border overflow-visible ${theme === 'nova' ? 'hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]' : ''}`}>
         <Table wrapperClassName="overflow-visible" className="[&_td]:py-1.5 [&_td]:px-3 [&_th]:py-2 [&_th]:px-3">
-          <TableHeader className="bg-[#00D4FF] sticky top-0 z-40 shadow-lg shadow-black/50 [&>tr>th:first-child]:rounded-tl-2xl [&>tr>th:last-child]:rounded-tr-2xl">
+          <TableHeader className="bg-primary sticky top-0 z-40 shadow-sm [&>tr>th:first-child]:rounded-tl-2xl [&>tr>th:last-child]:rounded-tr-2xl">
             <TableRow className="border-b-0 hover:bg-transparent">
-              <TableHead className="w-[50px] text-center uppercase text-[12px] tracking-widest font-black text-black">#</TableHead>
-              <TableHead className="w-[300px] text-center uppercase text-[12px] tracking-widest font-black text-black">Empresa / Contacto</TableHead>
-              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Proyecto / Equipo</TableHead>
-              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Status</TableHead>
-              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Finanzas</TableHead>
-              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-black">Seguimiento</TableHead>
+              <TableHead className="w-[50px] text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">#</TableHead>
+              <TableHead className="w-[300px] text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Empresa / Contacto</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Proyecto / Equipo</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Status</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Finanzas</TableHead>
+              <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Seguimiento</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,7 +258,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           {lead.name}
                         </span>
                         {lead.activity_status?.client_code && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-[#0047FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] text-[9.5px] font-black tracking-wider shadow-[0_0_8px_rgba(0,212,255,0.3)]">
+                          <span className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-black tracking-wider ${getClientCodeBadgeClass()}`}>
                             Nº {lead.activity_status.client_code}
                           </span>
                         )}
@@ -240,25 +313,25 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1.5 items-start">
+                    <div className="flex flex-col gap-1.5 items-center justify-center text-center w-full">
                       {(() => {
                         const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
                         if (!matchedCompany) return null;
                         return (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <button className="flex items-center justify-center p-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                              <button className="flex items-center justify-center p-1 rounded bg-secondary/40 border border-border hover:bg-secondary transition-all cursor-pointer mx-auto">
                                 {matchedCompany.logo ? (
                                   <img src={matchedCompany.logo} alt={matchedCompany.name} className="h-5 w-auto max-w-[60px] object-contain rounded" />
                                 ) : (
-                                  <div className="w-5 h-5 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40 uppercase">
+                                  <div className="w-5 h-5 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80 uppercase">
                                     {matchedCompany.name.slice(0, 2)}
                                   </div>
                                 )}
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="bg-[#050505] border border-white/10 text-white/80 p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
-                              <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-white/40 uppercase border-b border-white/5 mb-1">
+                            <DropdownMenuContent align="center" className="bg-popover border border-border text-popover-foreground p-1 rounded-xl min-w-[180px] z-[50]" onClick={(e) => e.stopPropagation()}>
+                              <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-muted-foreground uppercase border-b border-border mb-1">
                                 Asignar Empresa Gestora
                               </div>
                               {(companies || []).map(c => (
@@ -267,26 +340,26 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                                   value={c.id}
                                   checked={c.id === matchedCompany.id}
                                   onClick={() => handleCompanyChange(lead, c.id)}
-                                  className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 hover:bg-white/10 hover:text-white rounded-lg cursor-pointer transition-colors"
+                                  className="flex items-center gap-2 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-secondary rounded-lg cursor-pointer transition-colors"
                                 >
                                   {c.logo ? (
                                     <img src={c.logo} alt={c.name} className="w-4 h-4 rounded object-cover" />
                                   ) : (
-                                    <div className="w-4 h-4 rounded bg-white/10 flex items-center justify-center text-[8px] font-black text-white/40">
+                                    <div className="w-4 h-4 rounded bg-secondary flex items-center justify-center text-[8px] font-black text-muted-foreground/80">
                                       {c.name.slice(0, 2).toUpperCase()}
                                     </div>
                                   )}
                                   <span>{c.name}</span>
-                                  {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-cyan-400" />}
+                                  {c.id === matchedCompany.id && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
                                 </DropdownMenuRadioItem>
                               ))}
-                              <div className="border-t border-white/5 my-1" />
+                              <div className="border-t border-border my-1" />
                               <DropdownMenuRadioItem
                                 value="manage"
                                 onClick={() => {
                                   window.dispatchEvent(new CustomEvent('open-manage-companies'));
                                 }}
-                                className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300 rounded-lg cursor-pointer transition-colors"
+                                className="flex items-center gap-2 px-2.5 py-2 text-[9px] font-black uppercase tracking-wider text-primary hover:bg-primary/10 hover:text-primary rounded-lg cursor-pointer transition-colors"
                               >
                                   ⚙️ Gestionar Empresas
                               </DropdownMenuRadioItem>
@@ -295,9 +368,9 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                         );
                       })()}
                       {lead.machines && lead.machines.length > 0 ? (
-                        <div className="flex flex-col">
-                          <div className="flex items-start gap-1.5">
-                            <div className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-[8px] font-black uppercase text-primary tracking-tighter mt-0.5 shrink-0">
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <div className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-[8px] font-black uppercase text-primary tracking-tighter shrink-0">
                               EQUIPO
                             </div>
                             <span className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight max-w-[185px] break-words">
@@ -305,7 +378,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                             </span>
                           </div>
                           {lead.machines.length > 1 && (
-                            <span className="text-[9px] text-muted-foreground/60 mt-0.5 ml-1">
+                            <span className="text-[9px] text-muted-foreground/60 mt-0.5">
                               + {lead.machines.length - 1} unidades adicionales
                             </span>
                           )}
@@ -332,33 +405,36 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                         className={theme === 'nova' ? 'glass-bevel' : ''}
                       >
                         <DropdownMenuRadioGroup value={lead.status} onValueChange={(newStatus) => onStatusChange(lead.id, newStatus)}>
-                          <DropdownMenuRadioItem value="closing" className="text-[10px] font-bold uppercase text-[#00D4FF] focus:bg-[#0047FF]/20">Próximo Cierre</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="hot" className="text-[10px] font-bold uppercase text-red-400 focus:bg-red-500/20">Caliente</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="warming" className="text-[10px] font-bold uppercase text-emerald-400 focus:bg-emerald-500/20">Avanzando</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="warm" className="text-[10px] font-bold uppercase text-orange-400 focus:bg-orange-500/20">Tibio</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="cooling" className="text-[10px] font-bold uppercase text-cyan-400 focus:bg-cyan-500/20">Enfriando</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="cold" className="text-[10px] font-bold uppercase text-blue-400 focus:bg-blue-500/20">Frío</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="new" className="text-[10px] font-bold uppercase text-purple-400 focus:bg-purple-500/20">Nuevo</DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="declined" className="text-[10px] font-bold uppercase text-[#D2691E] focus:bg-[#8B4513]/20">Declinado</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="closing" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('closing')}`}>Próximo Cierre</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="hot" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('hot')}`}>Caliente</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="warming" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('warming')}`}>Avanzando</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="warm" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('warm')}`}>Tibio</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="cooling" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('cooling')}`}>Enfriando</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="cold" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('cold')}`}>Frío</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="new" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('new')}`}>Nuevo</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="declined" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('declined')}`}>Declinado</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-white">
-                        ${value.toLocaleString()} <span className="text-[10px] text-white/70">USD</span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-xs font-bold ${getSalePriceColor()}`}>
+                        ${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} <span className={`text-[10px] ${getSalePriceMutedColor()}`}>USD</span>
                       </span>
                       {utilities > 0 && (() => {
                         const tc = lead.machines && lead.machines.length > 0 ? (lead.machines[0].exchangeRate || 18.0) : 18.0;
                         const utilMXN = utilities * tc;
                         return (
-                          <div className="flex flex-col mt-0.5 gap-0.5">
-                            <span className="text-[10px] text-white font-bold uppercase">
-                              Utilidad: ${utilities.toLocaleString()} <span className="text-[8px] text-white/70">USD</span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-bold text-muted-foreground uppercase">
+                              UTILIDAD:
                             </span>
-                            <span className="text-[9px] text-white/80 font-bold uppercase">
-                              ${utilMXN.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[7px] text-white/50">MXN</span>
+                            <span className="text-xs font-bold text-foreground">
+                              ${utilities.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[10px] text-muted-foreground">USD</span>
+                            </span>
+                            <span className="text-xs font-bold text-muted-foreground/80 uppercase">
+                              ${utilMXN.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-[10px] text-muted-foreground/50">MXN</span>
                             </span>
                           </div>
                         );
@@ -367,25 +443,25 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                   </TableCell>
                   <TableCell>
                     <div 
-                      className="flex flex-col min-w-[280px] max-w-[500px] cursor-pointer group/note p-1 rounded-xl hover:bg-white/5 transition-colors"
+                      className="flex flex-col min-w-[280px] max-w-[500px] cursor-pointer group/note p-1 rounded-xl hover:bg-secondary transition-colors"
                       onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }}
                     >
                       <span 
-                        className="text-xs font-bold leading-snug text-white group-hover/note:text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] transition-colors mb-0.5"
+                        className="text-xs font-bold leading-snug text-foreground transition-colors mb-0.5"
                         title={getLastNote(lead)}
                       >
                         {getLastNote(lead)}
                       </span>
-                      <span className="text-[10px] text-white/40 group-hover/note:text-white/60 uppercase tracking-wider font-bold transition-colors">
+                      <span className="text-[10px] text-muted-foreground/60 group-hover/note:text-muted-foreground/80 uppercase tracking-wider font-bold transition-colors">
                         {lead.last_activity && isValid(parseISO(lead.last_activity)) 
                           ? format(parseISO(lead.last_activity), "dd MMM yyyy • HH:mm", { locale: es }) 
                           : 'N/A'}
                       </span>
                       
-                      <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-border" onClick={(e) => e.stopPropagation()}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => onOpenConversation(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                            <Button variant="ghost" size="sm" onClick={() => onOpenConversation(lead)} className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-foreground hover:bg-secondary rounded-lg">
                               <MessageSquare className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -394,7 +470,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
 
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => onView(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                            <Button variant="ghost" size="sm" onClick={() => onView(lead)} className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-foreground hover:bg-secondary rounded-lg">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -403,7 +479,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
 
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => onEdit(lead)} className="h-7 w-7 p-0 text-white/50 hover:text-white hover:bg-white/10 rounded-lg">
+                            <Button variant="ghost" size="sm" onClick={() => onEdit(lead)} className="h-7 w-7 p-0 text-muted-foreground/60 hover:text-foreground hover:bg-secondary rounded-lg">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>

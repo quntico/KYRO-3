@@ -27,21 +27,21 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
             transition={{ delay: i * 0.1 }}
             className="relative group cursor-default"
           >
-            <div className={`absolute -inset-px bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="bg-[#0d1117] border border-white/12 p-6 relative overflow-hidden flex flex-col justify-between h-32 shadow-2xl transition-all duration-300 group-hover:border-white/25">
+            <div className={`absolute -inset-px bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className="bg-card border border-border p-6 relative overflow-hidden flex flex-col justify-between h-32 shadow-xl transition-all duration-300 group-hover:border-primary/40">
               {/* Corner Accents */}
               <div className={`absolute top-0 right-0 w-8 h-[1px] ${metric.accent} opacity-80`} />
               <div className={`absolute top-0 right-0 h-8 w-[1px] ${metric.accent} opacity-80`} />
               
               <div className="flex justify-between items-start">
-                <p className="text-[9px] font-black text-white/65 uppercase tracking-[0.3em] leading-none">
+                <p className="text-[9px] font-black text-muted-foreground/80 uppercase tracking-[0.3em] leading-none">
                   {metric.label}
                 </p>
                 <metric.icon className={`w-4 h-4 ${metric.color} opacity-80 group-hover:opacity-100 transition-opacity`} />
               </div>
               
               <div className="flex items-baseline gap-2">
-                <h4 className={`text-4xl font-black text-white tracking-tighter tabular-nums ${metric.glow} drop-shadow-lg`}>
+                <h4 className={`text-4xl font-black text-foreground tracking-tighter tabular-nums ${metric.glow} drop-shadow-md`}>
                   {metric.value}
                 </h4>
                 <div className={`w-1 h-1 rounded-full ${metric.accent} animate-pulse`} />
@@ -81,10 +81,10 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
       )}
       
       {filteredLeads.length === 0 && (
-         <div className="text-center py-20 bg-black/10 rounded-3xl border border-white/5 backdrop-blur-sm">
-           <Target className="w-16 h-16 text-white/20 mx-auto mb-4" />
-           <h3 className="text-xl font-bold text-white/60 mb-2">No se encontraron prospectos</h3>
-           <p className="text-white/40">Intenta cambiar los filtros o agrega un nuevo prospecto.</p>
+         <div className="text-center py-20 bg-secondary/20 rounded-3xl border border-border backdrop-blur-sm">
+           <Target className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+           <h3 className="text-xl font-bold text-foreground/80 mb-2">No se encontraron prospectos</h3>
+           <p className="text-muted-foreground">Intenta cambiar los filtros o agrega un nuevo prospecto.</p>
          </div>
       )}
     </div>
