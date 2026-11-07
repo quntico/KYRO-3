@@ -66,7 +66,8 @@ const LeadsHeader = ({
   selectedCompanyIds = ['all'],
   onToggleCompany,
   onManageCompanies,
-  onOpenCalculator
+  onOpenCalculator,
+  onOpenFilters
 }) => {
   const { theme } = useTheme();
   const fileInputRef = React.useRef(null);
@@ -127,7 +128,7 @@ const LeadsHeader = ({
                   </div>
                   <div className="relative z-10 flex flex-col justify-center">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-foreground/75 leading-none mb-2">
-                      Capital Proyectado
+                      Venta potencial
                     </p>
                     <div className="text-xl font-black text-primary-foreground tabular-nums leading-none tracking-tighter flex items-baseline gap-1">
                       <span>${(totalSales || 0).toLocaleString()}</span>
@@ -138,7 +139,7 @@ const LeadsHeader = ({
               </TooltipTrigger>
               <TooltipContent side="bottom" className="bg-popover border border-border text-popover-foreground p-3 rounded-xl max-w-xs shadow-2xl backdrop-blur-md">
                 <p className="text-xs font-bold leading-relaxed">
-                  Suma del valor total de todos los prospectos activos. Representa el valor potencial estimado de las cotizaciones en proceso.
+                  Suma de los precios registrados en KYRO para los prospectos que coinciden con la consulta actual, en USD. Las referencias documentales se muestran por separado en el resumen.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -273,6 +274,7 @@ const LeadsHeader = ({
 
           <Button
             variant="outline"
+            onClick={onOpenFilters}
             className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 min-h-11 md:min-h-0 px-3 hover:bg-secondary hover:text-primary hover:border-primary/40 transition-all text-[10px] font-black uppercase tracking-[0.12em] gap-2"
           >
             <Filter className="w-4 h-4" />
@@ -285,7 +287,7 @@ const LeadsHeader = ({
                title="Color de tarjetas">
                 <Palette className="w-5 h-5" />
              </button>
-             <button className="px-3 min-h-11 md:min-h-0 text-muted-foreground hover:text-foreground transition-colors" aria-label="Fechas de tarjetas" title="Fechas de tarjetas">
+             <button className="px-3 min-h-11 md:min-h-0 text-muted-foreground hover:text-foreground transition-colors" onClick={onOpenFilters} aria-label="Fechas de tarjetas" title="Fechas de tarjetas">
                 <Clock className="w-5 h-5" />
              </button>
              <button className="px-3 min-h-11 md:min-h-0 text-muted-foreground hover:text-foreground transition-colors" aria-label="Tipografía de tarjetas" title="Tipografía de tarjetas">
@@ -313,6 +315,7 @@ const LeadsHeader = ({
           <button
             key={opt.value}
             onClick={() => setSelectedStatus(opt.value)}
+            aria-pressed={selectedStatus === opt.value}
             className={`px-3 py-2 min-h-11 md:min-h-0 md:py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap border ${
               selectedStatus === opt.value 
                 ? 'bg-primary border-primary text-primary-foreground shadow-[0_4px_12px_rgba(var(--primary),0.2)] scale-105' 

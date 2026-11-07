@@ -1,3 +1,4 @@
+import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -217,12 +218,13 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
       className="mt-6"
     >
       <div className={`bg-card rounded-2xl border border-border overflow-visible ${theme === 'nova' ? 'hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]' : ''}`}>
-        <Table wrapperClassName="overflow-visible" className="[&_td]:py-1.5 [&_td]:px-3 [&_th]:py-2 [&_th]:px-3">
+        <Table wrapperClassName="overflow-x-auto" className="[&_td]:py-1.5 [&_td]:px-3 [&_th]:py-2 [&_th]:px-3">
           <TableHeader className="bg-primary sticky top-0 z-40 shadow-sm [&>tr>th:first-child]:rounded-tl-2xl [&>tr>th:last-child]:rounded-tr-2xl">
             <TableRow className="border-b-0 hover:bg-transparent">
               <TableHead className="w-[50px] text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">#</TableHead>
               <TableHead className="w-[300px] text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Empresa / Contacto</TableHead>
               <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Proyecto / Equipo</TableHead>
+              <TableHead className="min-w-[180px] text-primary-foreground">Fecha y utilidad</TableHead>
               <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Status</TableHead>
               <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Finanzas</TableHead>
               <TableHead className="text-center uppercase text-[12px] tracking-widest font-black text-primary-foreground">Seguimiento</TableHead>
@@ -388,6 +390,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                       )}
                     </div>
                   </TableCell>
+                  <TableCell><LeadAnalysisDetails lead={lead} /></TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

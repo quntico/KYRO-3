@@ -1,3 +1,4 @@
+import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown } from 'lucide-react';
@@ -200,8 +201,8 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
   const displayScore = getDerivedScore(lead.status, lead.score);
   const statusTextColor = getStatusTextColor(lead.status, isLightTheme);
 
-  const lastUpdateRaw = lead.lastActivity || lead.updated_at || lead.updatedAt || lead.created_at || new Date().toISOString();
-  const formattedDate = new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+  const lastUpdateRaw = lead.created_at || null;
+  const formattedDate = lastUpdateRaw ? new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase() : 'SIN FECHA';
 
   return (
     <motion.div
@@ -222,7 +223,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
              <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.id || '').substring(0,6)}</span></span>
              <span className="w-1 h-1 rounded-full bg-border" />
              <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
-               <Clock className="w-2.5 h-2.5" /> {formattedDate}
+               <Clock className="w-2.5 h-2.5" /> Alta: {formattedDate}
              </span>
           </div>
           <h3 className={`text-2xl font-black tracking-tight uppercase mb-0.5 line-clamp-1 ${statusTextColor}`}>
@@ -338,6 +339,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
       </div>
 
+      <LeadAnalysisDetails lead={lead} />
       <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
         <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
           <div className="flex items-center justify-between mb-2">
@@ -351,11 +353,11 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
         <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">Valoración</span>
+            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">Valor KYRO · USD</span>
             <Banknote className="w-3 h-3 text-muted-foreground/30" />
           </div>
           <span className="text-2xl font-black text-foreground tracking-tight mt-1">
-            ${(lead.value || 0).toLocaleString()}
+            {lead.financial && lead.reportBasis === 'registered' && lead.financial.value === null ? 'Por revisar' : `$${(lead.value || 0).toLocaleString()}`}
           </span>
         </div>
       </div>

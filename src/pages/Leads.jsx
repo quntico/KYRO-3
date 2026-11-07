@@ -4,6 +4,9 @@ import { Helmet } from 'react-helmet';
 import { Target, Plus, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import LeadFilters, { LeadFilterButton, activeFilterCount } from '@/components/leads/LeadFilters';
+import LeadFinancialSummary from '@/components/leads/LeadFinancialSummary';
+import { DEFAULT_FILTERS, DATE_FIELDS, analyzeLeads, summarizeLeads, displayDate, leadDate } from '@/lib/leadAnalysis';
 import LeadsHeader from '@/components/leads/LeadsHeader';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadsTable from '@/components/leads/LeadsTable';
@@ -101,6 +104,9 @@ const Leads = () => {
   };
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [scenarioMargin, setScenarioMargin] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [dialogState, setDialogState] = useState({
     view: false,
@@ -120,43 +126,20 @@ const Leads = () => {
 
 
 
-  const filteredLeads = useMemo(() => {
-    if (!Array.isArray(leads)) return [];
-
-    return leads.filter(l => l && typeof l === 'object').map(lead => {
-      const totalValue = (lead.machines || []).reduce((sum, m) => sum + (Number(m?.price) || 0), 0);
-      const totalCommission = (lead.machines || []).reduce((sum, m) => sum + (Number(m?.commission) || 0), 0);
-      return { ...lead, value: totalValue, commission: totalCommission };
-    }).filter(lead => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch =
-        (lead.name?.toLowerCase() || '').includes(search) ||
-        (lead.contact?.toLowerCase() || '').includes(search) ||
-        (lead.email?.toLowerCase() || '').includes(search);
-      const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
-      const leadCompanyId = lead.activity_status?.managingCompanyId || 'comp-1';
-      const matchesCompany = selectedCompanyIds.includes('all') || selectedCompanyIds.includes(leadCompanyId);
-      return matchesSearch && matchesStatus && matchesCompany;
-    }).sort((a, b) => {
-      if (sortMode === 'date') {
-        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-      }
-      if (sortMode === 'status') {
-        const priority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
-        const pA = priority[a.status] || 99;
-        const pB = priority[b.status] || 99;
-        if (pA !== pB) return pA - pB;
-        return (b.value || 0) - (a.value || 0);
-      }
-      if (sortMode === 'alpha') {
-        return (a.name || '').localeCompare(b.name || '');
-      }
-      if (sortMode === 'value') {
-        return (b.value || 0) - (a.value || 0);
-      }
-      return 0;
-    });
-  }, [leads, searchTerm, selectedStatus, sortMode, selectedCompanyIds]);
+  const filteredLeads = useMemo(() => analyzeLeads(leads, {
+    filters, search: searchTerm, status: selectedStatus, companies: selectedCompanyIds,
+    sort: sortMode, margin: scenarioMargin,
+  }), [leads, filters, searchTerm, selectedStatus, selectedCompanyIds, sortMode, scenarioMargin]);
+  const availableMonths = useMemo(() => [...new Set((leads || []).map(lead => leadDate(lead, filters.dateField).slice(0, 7)).filter(Boolean))].sort().reverse(), [leads, filters.dateField]);
+  const analysisSummary = useMemo(() => summarizeLeads(filteredLeads), [filteredLeads]);
+  const filterCount = activeFilterCount(filters, searchTerm, selectedStatus, selectedCompanyIds);
+  const resetFilters = () => {
+    setFilters({ ...DEFAULT_FILTERS }); setSearchTerm(''); setSelectedStatus('all');
+    setSelectedCompanyIds(['all']); setSortMode('status'); setScenarioMargin('');
+  };
+  const dateSelection = filters.undated ? 'Sin fecha' : filters.month
+    ? new Date(`${filters.month}-15T12:00:00Z`).toLocaleDateString('es-MX', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    : filters.from || filters.to ? `${filters.from ? displayDate(filters.from) : 'Inicio'} → ${filters.to ? displayDate(filters.to) : 'Hoy y futuras'}` : '';
 
   const totalPossibleSales = useMemo(() => {
     return filteredLeads.reduce((sum, lead) => sum + lead.value, 0);
@@ -722,10 +705,11 @@ const Leads = () => {
           onToggleCompany={handleToggleCompany}
           onManageCompanies={() => setManageCompaniesOpen(true)}
           onOpenCalculator={() => setIsStandaloneCalcOpen(true)}
+          onOpenFilters={() => setFiltersOpen(true)}
         />
 
         {/* Buscador de mejor tamaño justo arriba de los leads */}
-        <div className="flex justify-start">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="relative w-full max-w-2xl group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
             <input
@@ -746,7 +730,14 @@ const Leads = () => {
               </button>
             )}
           </div>
+          <LeadFilterButton open={filtersOpen} onClick={() => setFiltersOpen(open => !open)} count={filterCount} />
         </div>
+        <LeadFilters open={filtersOpen} filters={filters} setFilters={setFilters}
+          status={selectedStatus} setStatus={setSelectedStatus} sort={sortMode} setSort={setSortMode}
+          margin={scenarioMargin} setMargin={setScenarioMargin} onReset={resetFilters} months={availableMonths} />
+        <LeadFinancialSummary summary={analysisSummary} total={leads.length} basis={filters.basis}
+          dateLabel={DATE_FIELDS[filters.dateField]} dateSelection={dateSelection} margin={scenarioMargin}
+          onReset={resetFilters} active={filterCount} />
 
         {dashboardStyle === 'modern' ? (
           <ModernLeadsDashboard

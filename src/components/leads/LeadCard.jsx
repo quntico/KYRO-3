@@ -1,3 +1,4 @@
+import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Target, TrendingUp, TrendingDown, Clock, MoreVertical, Eye, Edit, Trash2, Flame, Sun, Snowflake, Banknote, BookUser, HeartHandshake, Package, Phone, Mail, Video, FileText, Sparkles, CalendarPlus, Send, FileSearch, Calendar, Gem, MessageSquare, PlusCircle, Copy, Check, Link as LinkIcon, ExternalLink, File, Building, ChevronDown } from 'lucide-react';
@@ -183,6 +184,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
             </div>
             <div className="flex items-center justify-between gap-2 mt-1">
               <p className="text-xs text-muted-foreground">{lead.contact}</p>
+              <LeadAnalysisDetails lead={lead} />
               {matchedCompany && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

@@ -1,3 +1,4 @@
+import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -52,6 +53,7 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
 
             <div className="flex items-center justify-between gap-2 mb-3">
                 <p className="text-xs text-muted-foreground">{lead.contact}</p>
+                <LeadAnalysisDetails lead={lead} />
                 {matchedCompany && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -122,7 +124,7 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
                 <div className="flex items-center space-x-1.5">
                     <TrendingUp className="w-3 h-3 text-muted-foreground" />
                     <span className="text-[11px] font-bold">
-                        ${(lead.value || 0).toLocaleString()}
+                        Valor KYRO: ${(lead.value || 0).toLocaleString()} USD
                     </span>
                 </div>
                 <div className="flex -space-x-1">
@@ -145,16 +147,20 @@ const LeadsKanban = ({ leads, onView, onOpenConversation, companies = [], onUpda
 
     const columns = [
         { id: 'new', title: 'Nuevos', icon: Plus, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+        { id: 'closing', title: 'Próximo cierre', icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+        { id: 'warming', title: 'Avanzando', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         { id: 'hot', title: 'Calientes', icon: Flame, color: 'text-red-400', bg: 'bg-red-400/10' },
         { id: 'warm', title: 'Tibios', icon: Sun, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-        { id: 'cold', title: 'Fríos', icon: Snowflake, color: 'text-blue-400', bg: 'bg-blue-400/10' }
+        { id: 'cooling', title: 'Enfriando', icon: Snowflake, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+        { id: 'cold', title: 'Fríos', icon: Snowflake, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { id: 'declined', title: 'Declinados / riesgo', icon: MoreVertical, color: 'text-orange-400', bg: 'bg-orange-400/10' }
     ];
 
     const getLeadsByStatus = (status) => leads.filter(l => l.status === status);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pb-8 overflow-x-auto min-h-[600px]">
-            {columns.map((column) => (
+            {columns.filter(column => leads.some(lead => lead.status === column.id)).map((column) => (
                 <div key={column.id} className="flex flex-col h-full min-w-[280px]">
                     <div className="flex items-center justify-between mb-4 px-2">
                         <div className="flex items-center space-x-2">
