@@ -71,6 +71,8 @@ const LeadsHeader = ({
   const { theme } = useTheme();
   const fileInputRef = React.useRef(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = React.useState(false);
+  const [toolsOpen, setToolsOpen] = React.useState(false);
+  const [viewOptionsOpen, setViewOptionsOpen] = React.useState(false);
 
   const statusOptions = [
     { value: 'all', label: 'Todos' },
@@ -145,63 +147,28 @@ const LeadsHeader = ({
           {/* Action Buttons Container */}
           <div className="flex flex-wrap items-center justify-end gap-2 w-full lg:w-auto">
             <input type="file" ref={fileInputRef} onChange={onImportExcel} accept=".csv, .xlsx, .xls" className="hidden" />
-            
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={onManageCompanies}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <Building className="w-4 h-4 text-primary" />
-                <span className="uppercase tracking-widest">Empresas</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={onOpenCalculator}
-                className="bg-primary/20 border-primary/50 text-primary rounded-lg h-10 px-3 hover:bg-primary hover:text-primary-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <Calculator className="w-4 h-4" />
-                <span className="uppercase tracking-widest">Simulador</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                <span className="uppercase tracking-widest">Importar</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={onExportDataExcel}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                <span className="uppercase tracking-widest">Excel</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={onExportExcel}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="uppercase tracking-widest">Plantilla</span>
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={onExportPDF}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="uppercase tracking-widest">PDF</span>
-              </Button>
-            </div>
-
+            <button
+              type="button"
+              onClick={() => setToolsOpen((open) => !open)}
+              aria-expanded={toolsOpen}
+              aria-controls="leads-tools-panel"
+              className="flex items-center gap-2 min-h-11 md:min-h-0 h-10 rounded-lg border border-primary/30 bg-secondary/50 px-3 text-[10px] font-black uppercase tracking-[0.12em] text-foreground transition-all hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,0.8)]" />
+              <span>Herramientas</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${toolsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewOptionsOpen((open) => !open)}
+              aria-expanded={viewOptionsOpen}
+              aria-controls="leads-view-options-panel"
+              className="flex items-center gap-2 min-h-11 md:min-h-0 h-10 rounded-lg border border-primary/30 bg-secondary/50 px-3 text-[10px] font-black uppercase tracking-[0.12em] text-foreground transition-all hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-pink-300 shadow-[0_0_8px_rgba(244,114,182,0.8)]" />
+              <span>Visualización</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${viewOptionsOpen ? 'rotate-180' : ''}`} />
+            </button>
             <Button
               onClick={onNewLead}
               className="bg-primary hover:bg-primary/95 text-primary-foreground rounded-xl h-10 px-4 font-black shadow-[0_4px_12px_rgba(var(--primary),0.3)] border-0 gap-2 w-auto text-xs"
@@ -213,8 +180,33 @@ const LeadsHeader = ({
         </div>
       </div>
 
+      {toolsOpen && (
+        <div id="leads-tools-panel" className="flex w-full flex-wrap items-center justify-end gap-2 rounded-xl border border-primary/20 bg-card/80 p-2 shadow-[0_0_18px_rgba(var(--primary),0.08)]">
+          <Button variant="outline" onClick={onManageCompanies} className="bg-secondary/40 border-cyan-400/40 text-muted-foreground rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(34,211,238,0.12)] hover:bg-cyan-400/10 hover:text-foreground hover:border-cyan-300/70 transition-all font-bold text-[11px] gap-2">
+            <Building className="w-4 h-4 text-cyan-300" /><span className="uppercase tracking-widest">Empresas</span>
+          </Button>
+          <Button variant="outline" onClick={onOpenCalculator} className="bg-pink-400/10 border-pink-300/50 text-pink-200 rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(244,114,182,0.14)] hover:bg-pink-400/20 hover:border-pink-300/80 hover:text-pink-100 transition-all font-bold text-[11px] gap-2">
+            <Calculator className="w-4 h-4" /><span className="uppercase tracking-widest">Simulador</span>
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="bg-secondary/40 border-emerald-300/40 text-muted-foreground rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(110,231,183,0.12)] hover:bg-emerald-300/10 hover:text-foreground hover:border-emerald-200/70 transition-all font-bold text-[11px] gap-2">
+            <Upload className="w-4 h-4 text-emerald-300" /><span className="uppercase tracking-widest">Importar</span>
+          </Button>
+          <Button variant="outline" onClick={onExportDataExcel} className="bg-secondary/40 border-blue-400/40 text-muted-foreground rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(96,165,250,0.12)] hover:bg-blue-400/10 hover:text-foreground hover:border-blue-300/70 transition-all font-bold text-[11px] gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-blue-300" /><span className="uppercase tracking-widest">Excel</span>
+          </Button>
+          <Button variant="outline" onClick={onExportExcel} className="bg-secondary/40 border-orange-300/40 text-muted-foreground rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(251,146,60,0.12)] hover:bg-orange-300/10 hover:text-foreground hover:border-orange-200/70 transition-all font-bold text-[11px] gap-2">
+            <FileText className="w-4 h-4 text-orange-300" /><span className="uppercase tracking-widest">Plantilla</span>
+          </Button>
+          <Button variant="outline" onClick={onExportPDF} className="bg-secondary/40 border-sky-400/40 text-muted-foreground rounded-lg h-10 px-3 shadow-[0_0_10px_rgba(56,189,248,0.12)] hover:bg-sky-400/10 hover:text-foreground hover:border-sky-300/70 transition-all font-bold text-[11px] gap-2">
+            <FileText className="w-4 h-4 text-sky-300" /><span className="uppercase tracking-widest">PDF</span>
+          </Button>
+        </div>
+      )}
+
       {/* Middle Row: Strategic Controls */}
       <div className="flex flex-wrap items-center justify-end gap-2 w-full">
+        {viewOptionsOpen && (
+          <div id="leads-view-options-panel" className="flex w-full flex-wrap items-center justify-start gap-2 rounded-xl border border-primary/20 bg-card/80 p-2 shadow-[0_0_18px_rgba(var(--primary),0.08)]">
         <div className="flex flex-wrap items-center gap-2 w-full justify-start lg:justify-end">
           <DropdownMenu open={filterDropdownOpen} onOpenChange={setFilterDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -329,6 +321,8 @@ const LeadsHeader = ({
              </button>
           </div>
         </div>
+          </div>
+        )}
       </div>
 
       {/* Bottom Row: Status Tabs */}
