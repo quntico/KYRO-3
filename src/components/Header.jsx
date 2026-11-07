@@ -134,7 +134,7 @@ const Header = () => {
         initialPrompt={initialPrompt} 
       />
       <div className="flex items-center gap-3">
-        <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v5.5</span>
+        <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v6.0</span>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

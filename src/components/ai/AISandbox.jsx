@@ -1070,7 +1070,7 @@ Historial reciente de chat:\n${historyCtx}`;
                 </button>
                 <div className="flex items-center gap-2 opacity-30">
                   <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                  <span className="text-[7px] font-bold text-white/40 uppercase tracking-widest">KYRO-X v5.5</span>
+                  <span className="text-[7px] font-bold text-white/40 uppercase tracking-widest">KYRO-X v6.0</span>
                 </div>
                 <button
                   onClick={handleClearChat}

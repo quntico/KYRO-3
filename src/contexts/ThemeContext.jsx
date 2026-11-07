@@ -12,33 +12,19 @@ const defaultThemeSettings = {
 export const ThemeProvider = ({ children }) => {
   const { settings, saveSettingsToCloud } = useSettings();
 
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('kyro-theme');
-    const savedVersion = localStorage.getItem('kyro-version');
-
-    if (savedVersion !== '4.0.0') {
-      localStorage.setItem('kyro-version', '4.0.0');
-      localStorage.setItem('kyro-theme', JSON.stringify('nova'));
-      return 'nova';
-    }
-
-    return saved ? JSON.parse(saved) : 'nova';
-  });
+  const [theme, setTheme] = useState('futuristic');
 
   const [themeSettings, setThemeSettings] = useState(() => {
     const saved = localStorage.getItem('kyro-theme-settings');
     return saved ? JSON.parse(saved) : defaultThemeSettings;
   });
 
-  // Sync theme from cloud settings when they load
+  // Cloud settings keep intensity and related theme preferences without overriding the session's startup theme.
   useEffect(() => {
-    if (settings && settings.theme) {
-      setTheme(settings.theme);
-      if (settings.themeSettings) {
-        setThemeSettings(settings.themeSettings);
-      }
+    if (settings?.themeSettings) {
+      setThemeSettings(settings.themeSettings);
     }
-  }, [settings?.theme, settings?.themeSettings]);
+  }, [settings?.themeSettings]);
 
   const changeTheme = (newTheme) => {
     if (['light', 'dark', 'futuristic', 'play', 'nova', 'recilogic'].includes(newTheme)) {
