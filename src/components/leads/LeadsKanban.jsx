@@ -39,9 +39,9 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
             className={`bg-card p-4 rounded-xl border border-border shadow-sm mb-3 group relative cursor-pointer select-none hover:shadow-md transition-all ${theme === 'nova' ? 'hover:border-primary/50' : ''
                 }`}
         >
-            <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-sm line-clamp-1 flex-1">{lead.name}</h4>
-                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex justify-between items-start gap-2 mb-2">
+                <h4 className="min-w-0 flex-1 font-bold text-base leading-snug whitespace-normal [overflow-wrap:anywhere]">{lead.name}</h4>
+                <div className="flex shrink-0 space-x-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                         onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }}
                         className="p-1 hover:text-primary transition-colors"

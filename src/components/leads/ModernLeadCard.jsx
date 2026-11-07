@@ -217,19 +217,19 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       {/* Glow effect on hover */}
       <div className={`absolute inset-0 bg-gradient-to-br ${hoverFx.glow} to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none mix-blend-screen`} />
 
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="pr-2">
-          <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-2 mb-4 relative z-10">
+        <div className="contents">
+          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-3 gap-y-1 flex-wrap">
              <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.id || '').substring(0,6)}</span></span>
              <span className="w-1 h-1 rounded-full bg-border" />
              <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
                <Clock className="w-2.5 h-2.5" /> Alta: {formattedDate}
              </span>
           </div>
-          <h3 className={`text-2xl font-black tracking-tight uppercase mb-0.5 line-clamp-1 ${statusTextColor}`}>
+          <h3 className={`col-span-2 row-start-2 min-w-0 text-2xl leading-tight font-black tracking-tight uppercase whitespace-normal [overflow-wrap:anywhere] ${statusTextColor}`}>
             {lead.name}
           </h3>
-          <p className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] truncate mt-1 flex items-center gap-2">
+          <p className="col-span-2 row-start-3 min-w-0 text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] flex flex-wrap items-center gap-2">
             <span>{lead.contact}</span>
             {matchedCompany && (
               <DropdownMenu>
@@ -291,7 +291,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
           </p>
         </div>
         
-        <div onClick={(e) => e.stopPropagation()}>
+        <div className="col-start-2 row-start-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 

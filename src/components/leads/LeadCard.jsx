@@ -171,9 +171,9 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
     >
       <div className="flex-grow">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className={`font-semibold mb-1 ${getStatusTextColor(lead.status)} ${theme === 'futuristic' ? 'text-glow' : ''}`}>{lead.name}</h3>
+              <h3 className={`min-w-0 whitespace-normal [overflow-wrap:anywhere] font-semibold mb-1 ${getStatusTextColor(lead.status)} ${theme === 'futuristic' ? 'text-glow' : ''}`}>{lead.name}</h3>
               {lead.quotations && lead.quotations.length > 0 && (
                 <div className="flex items-center justify-center w-6 h-6 rounded-full bg-red-500/10 text-red-500 hover:scale-110 transition-transform cursor-pointer shadow-[0_0_10px_rgba(239,68,68,0.3)]"
                   onClick={(e) => { e.stopPropagation(); onView(lead); }}
