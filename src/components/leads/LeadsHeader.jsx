@@ -280,25 +280,6 @@ const LeadsHeader = ({
           </Button>
 
           <div className="bg-secondary/40 border border-border p-1 rounded-lg flex items-center h-10 min-h-11 md:min-h-0">
-            {[
-              { id: 'grid', icon: LayoutGrid, label: '01' },
-              { id: 'list', icon: List, label: '02' },
-              { id: 'kanban', icon: Columns, label: '03' }
-            ].map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setViewMode(v.id)}
-                className={`px-3 h-full rounded-md flex items-center gap-2 transition-all ${viewMode === v.id ? 'bg-primary/10 text-primary shadow-[0_0_20px_rgba(var(--primary),0.05)]' : 'text-muted-foreground hover:text-foreground'}`}
-                aria-label={`Vista ${v.label}`}
-                aria-pressed={viewMode === v.id}
-              >
-                <v.icon className="w-4 h-4" />
-                <span className="text-[10px] font-black">{v.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="bg-secondary/40 border border-border p-1 rounded-lg flex items-center h-10 min-h-11 md:min-h-0">
              <button className="px-3 min-h-11 md:min-h-0 text-yellow-500/70 hover:text-yellow-500 transition-colors"
                aria-label="Color de tarjetas"
                title="Color de tarjetas">
@@ -325,8 +306,9 @@ const LeadsHeader = ({
         )}
       </div>
 
-      {/* Bottom Row: Status Tabs */}
-      <div className="flex flex-wrap items-center gap-2 w-full pb-1">
+      {/* Always-visible status filters and quick view switcher */}
+      <div className="flex flex-wrap items-center justify-between gap-2 w-full pb-1">
+        <div className="flex flex-wrap items-center gap-2">
         {statusOptions.map((opt) => (
           <button
             key={opt.value}
@@ -340,6 +322,28 @@ const LeadsHeader = ({
             {opt.label} <span className={`ml-2 ${selectedStatus === opt.value ? 'text-primary-foreground/60' : 'opacity-40'}`}>[{getStatusCount(opt.value)}]</span>
           </button>
         ))}
+        </div>
+
+        <div role="group" aria-label="Vista de prospectos" className="bg-secondary/40 border border-border p-1 rounded-xl flex shrink-0 items-center h-12 md:h-10">
+            {[
+              { id: 'grid', icon: LayoutGrid, label: '01', name: 'Cuadrícula' },
+              { id: 'list', icon: List, label: '02', name: 'Lista' },
+              { id: 'kanban', icon: Columns, label: '03', name: 'Kanban' }
+            ].map((v) => (
+              <button
+                type="button"
+                key={v.id}
+                onClick={() => setViewMode(v.id)}
+                className={`px-3 min-h-11 md:min-h-0 h-full rounded-lg flex items-center gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${viewMode === v.id ? 'bg-primary/10 text-primary shadow-[0_0_20px_rgba(var(--primary),0.05)]' : 'text-muted-foreground hover:text-foreground'}`}
+                aria-label={`Vista ${v.label}: ${v.name}`}
+                title={v.name}
+                aria-pressed={viewMode === v.id}
+              >
+                <v.icon className="w-4 h-4" />
+                <span className="text-[10px] font-black">{v.label}</span>
+              </button>
+            ))}
+          </div>
       </div>
     </motion.div>
   );
