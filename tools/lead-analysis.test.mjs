@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_FILTERS, analyzeLeads, financials, summarizeLeads, calendarDate, leadDate } from '../src/lib/leadAnalysis.js';
+import { DEFAULT_FILTERS, analyzeLeads, financials, summarizeLeads, calendarDate, leadDate, datePreset } from '../src/lib/leadAnalysis.js';
 const make = (id, name, date, machines, status='new', extra={}) => ({ id, name, status, machines, created_at: '2026-11-07T18:00:00Z', activity_status: {clientDirectory:{amountDate: date}}, ...extra });
 const leads = [make(1,'Álamo','2026-10-31',[{price:100,commission:0}]),make(2,'Beta','2026-11-01',[{price:200,commission:-20}],'hot'),make(3,'Ñandú','',[{price:'',commission:''}]),make(4,'Norte','2026-11-30',[{price:300,commission:'',estimated_commission:60}])];
 const query = (patch={},options={}) => analyzeLeads(leads,{filters:{...DEFAULT_FILTERS,...patch},...options});
@@ -53,4 +53,11 @@ test('sorting respects missing dates, numeric values and stable alphabetic order
 test('analysis never mutates source records or converts leads',()=>{
  const snapshot=JSON.stringify(leads); query({month:'2026-11'},{margin:'30'});
  assert.equal(JSON.stringify(leads),snapshot);
+});
+
+test('period shortcuts keep calendar months and cross the year correctly',()=>{
+ assert.deepEqual(datePreset('last-month','2026-01-05'),{month:'2025-12'});
+ assert.deepEqual(datePreset('this-month','2026-11-07'),{month:'2026-11'});
+ assert.deepEqual(datePreset('this-year','2026-11-07'),{from:'2026-01-01',to:'2026-12-31'});
+ assert.deepEqual(datePreset('all','2026-11-07'),{});
 });

@@ -146,3 +146,12 @@ export function summarizeLeads(leads) {
   }
   return { count: leads.length, groups: Object.values(groups).sort((a, b) => a.currency.localeCompare(b.currency)), unpriced, pendingProfit, undated, unknownCurrency, partialPrice };
 }
+
+// Calendar shortcuts use the business date in Mexico City, including year rollovers.
+export function datePreset(kind, today = calendarDate(new Date().toISOString())) {
+  const [year, month] = today.split('-').map(Number);
+  if (kind === 'this-month') return { month: today.slice(0, 7) };
+  if (kind === 'last-month') return { month: `${month === 1 ? year - 1 : year}-${String(month === 1 ? 12 : month - 1).padStart(2, '0')}` };
+  if (kind === 'this-year') return { from: `${year}-01-01`, to: `${year}-12-31` };
+  return {};
+}

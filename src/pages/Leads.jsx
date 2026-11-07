@@ -734,9 +734,9 @@ const Leads = () => {
         </div>
         <LeadFilters open={filtersOpen} filters={filters} setFilters={setFilters}
           status={selectedStatus} setStatus={setSelectedStatus} sort={sortMode} setSort={setSortMode}
-          margin={scenarioMargin} setMargin={setScenarioMargin} onReset={resetFilters} months={availableMonths} />
+          margin={scenarioMargin} setMargin={setScenarioMargin} onReset={resetFilters} months={availableMonths} resultCount={filteredLeads.length} />
         <LeadFinancialSummary summary={analysisSummary} total={leads.length} basis={filters.basis}
-          dateLabel={DATE_FIELDS[filters.dateField]} dateSelection={dateSelection} margin={scenarioMargin}
+          dateLabel={DATE_FIELDS[filters.dateField]} dateSelection={dateSelection} margin={scenarioMargin} setMargin={setScenarioMargin}
           onReset={resetFilters} active={filterCount} />
 
         {dashboardStyle === 'modern' ? (
