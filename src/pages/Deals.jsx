@@ -14,7 +14,7 @@ import { SALE_STAGES, saleAsCard } from '@/lib/dealConversion';
 import { money, normalizeText, displayDate, calendarDate } from '@/lib/leadAnalysis';
 
 const Deals = () => {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const { deals, loading, updateDeal, revertDeal } = useData();
   const [viewingId, setViewingId] = useState(null);
   const [fileId, setFileId] = useState(null);
@@ -66,7 +66,6 @@ const Deals = () => {
         <div className="border-l-4 border-primary pl-3"><h1 className="text-2xl font-black uppercase tracking-tight">Ventas</h1><p className="text-xs text-muted-foreground">Tus fichas, desde el cierre hasta la entrega.</p></div>
         <Link to="/leads" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary"><ArrowLeft className="h-4 w-4" /> Ver prospectos</Link>
       </header>
-      {session?.access_token === 'mock-token' && <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-400/30 bg-amber-400/5 p-3 text-sm"><span>Inicia sesión con tu cuenta de KYRO para registrar y actualizar ventas.</span><Link to="/login" className="rounded-lg border border-primary/30 px-3 py-2 font-semibold text-primary">Iniciar sesión</Link></div>}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Etapa de venta">{[['all','Todas'],...SALE_STAGES].map(([id,label])=><button key={id} type="button" aria-pressed={stage===id} onClick={()=>setStage(id)} className={`min-h-9 rounded-full border px-3 text-[11px] font-semibold focus-visible:ring-2 focus-visible:ring-primary ${stage===id?'border-primary bg-primary text-primary-foreground':'border-border bg-card text-muted-foreground hover:text-foreground'}`}>{label} <span className="ml-1 opacity-70">{id==='all'?deals.length:deals.filter(d=>d.stage===id).length}</span></button>)}</div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-60 flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/><input aria-label="Buscar ventas" placeholder="Buscar empresa, contacto o proyecto…" value={search} onChange={e=>setSearch(e.target.value)} className="h-10 w-full rounded-xl border border-border bg-card pl-10 pr-3 text-sm focus-visible:ring-2 focus-visible:ring-primary" /></div>

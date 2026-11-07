@@ -32,3 +32,9 @@ test('unknown profit remains unknown and a recorded loss survives conversion',()
  const noProfit={...lead,machines:[{price:100,commission:''}]};assert.equal(saleAsCard(buildDealFromLead(noProfit)).financial.profit,null);
  assert.equal(saleAsCard(buildDealFromLead({...lead,machines:[{price:100,commission:-10}]})).financial.profit,-10);
 });
+
+test('database access errors preserve the lead without requesting a login',async()=>{
+ const db=mock([{data:[],error:null},{data:lead,error:null},{data:null,error:{code:'42501',message:'RLS blocked'}}]);
+ await assert.rejects(convertLeadToSale(db,'owner',7),error=>error.code==='42501'&&error.message.includes('prospecto sigue intacto')&&!error.message.includes('Inicia sesión'));
+ assert.equal(db.calls.some(c=>c.ops.some(o=>o[0]==='delete'||o[0]==='update')),false);
+});

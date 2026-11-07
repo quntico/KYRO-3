@@ -38,7 +38,7 @@ export function saleAsCard(deal) {
 }
 const result = response => {
   if (response.error?.code === '42501') {
-    const error = new Error('La sesión actual no tiene permiso para guardar ventas. Inicia sesión con tu cuenta de KYRO; el prospecto se conserva.');
+    const error = new Error('La base de datos bloqueó el guardado en Ventas. Es necesario corregir los permisos de KYRO; tu prospecto sigue intacto.');
     error.code = '42501'; throw error;
   }
   if (response.error) throw response.error;
