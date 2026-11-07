@@ -93,41 +93,41 @@ const LeadsHeader = ({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mb-10 space-y-8"
+      className="mb-4 space-y-3"
     >
       {/* Top Row: Strategic Title and Stats */}
-      <div className="flex flex-col xl:flex-row items-center justify-between gap-6 overflow-visible">
-        <div className="flex items-center gap-6 w-full xl:w-auto">
-          <div className="w-1.5 h-12 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] hidden md:block" />
+      <div className="flex flex-wrap items-center justify-between gap-3 overflow-visible">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-1 h-9 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] hidden md:block" />
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl md:text-5xl font-black text-foreground tracking-tighter uppercase leading-none">Prospectos</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tighter uppercase leading-none">Prospectos</h1>
               <div className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded text-[9px] font-bold text-primary tracking-[0.2em] animate-pulse">
                 OPS EN VIVO
               </div>
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.4em] flex items-center gap-2">
+            <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-[0.25em] flex items-center gap-2">
               Consola Estratégica de IA <span className="w-8 h-[1px] bg-border" /> v6.0
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-center gap-4 w-full xl:w-auto flex-wrap justify-center lg:justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2 w-full lg:w-auto">
           <TooltipProvider>
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-primary px-6 py-6 rounded-2xl flex items-center justify-center gap-4.5 shadow-[0_4px_20px_rgba(var(--primary),0.2)] border-0 relative overflow-hidden group w-full sm:w-auto min-w-[350px] cursor-help"
+                  className="bg-primary px-3 py-2.5 rounded-xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(var(--primary),0.2)] border-0 relative overflow-hidden group w-auto min-w-0 cursor-help"
                 >
-                  <div className="bg-primary-foreground/15 p-3 rounded-xl border border-primary-foreground/5 relative z-10 shrink-0">
-                    <TrendingUp className="w-7 h-7 text-primary-foreground" />
+                  <div className="bg-primary-foreground/15 p-2 rounded-lg border border-primary-foreground/5 relative z-10 shrink-0">
+                    <TrendingUp className="w-5 h-5 text-primary-foreground" />
                   </div>
                   <div className="relative z-10 flex flex-col justify-center">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-foreground/75 leading-none mb-2">
                       Capital Proyectado
                     </p>
-                    <div className="text-3xl font-black text-primary-foreground tabular-nums leading-none tracking-tighter flex items-baseline gap-1">
+                    <div className="text-xl font-black text-primary-foreground tabular-nums leading-none tracking-tighter flex items-baseline gap-1">
                       <span>${(totalSales || 0).toLocaleString()}</span>
                       <span className="text-xs font-black opacity-60">USD</span>
                     </div>
@@ -143,59 +143,59 @@ const LeadsHeader = ({
           </TooltipProvider>
 
           {/* Action Buttons Container */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center justify-end gap-2 w-full lg:w-auto">
             <input type="file" ref={fileInputRef} onChange={onImportExcel} accept=".csv, .xlsx, .xls" className="hidden" />
             
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 onClick={onManageCompanies}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-xl h-12 px-5 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <Building className="w-4 h-4 text-primary" />
-                <span className="hidden xl:inline uppercase tracking-widest">Empresas</span>
+                <span className="uppercase tracking-widest">Empresas</span>
               </Button>
 
               <Button
                 variant="outline"
                 onClick={onOpenCalculator}
-                className="bg-primary/20 border-primary/50 text-primary rounded-xl h-12 px-5 hover:bg-primary hover:text-primary-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-primary/20 border-primary/50 text-primary rounded-lg h-10 px-3 hover:bg-primary hover:text-primary-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <Calculator className="w-4 h-4" />
-                <span className="hidden xl:inline uppercase tracking-widest">Simulador</span>
+                <span className="uppercase tracking-widest">Simulador</span>
               </Button>
 
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-xl h-12 px-5 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <Upload className="w-4 h-4" />
-                <span className="hidden xl:inline uppercase tracking-widest">Importar</span>
+                <span className="uppercase tracking-widest">Importar</span>
               </Button>
 
               <Button
                 variant="outline"
                 onClick={onExportDataExcel}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-xl h-12 px-5 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                <span className="hidden xl:inline uppercase tracking-widest">Excel</span>
+                <span className="uppercase tracking-widest">Excel</span>
               </Button>
 
               <Button
                 variant="outline"
                 onClick={onExportExcel}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-xl h-12 px-5 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <FileText className="w-4 h-4" />
-                <span className="hidden xl:inline uppercase tracking-widest">Plantilla</span>
+                <span className="uppercase tracking-widest">Plantilla</span>
               </Button>
 
               <Button
                 variant="outline"
                 onClick={onExportPDF}
-                className="bg-secondary/40 border-border text-muted-foreground rounded-xl h-12 px-5 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
+                className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 px-3 hover:bg-secondary hover:text-foreground transition-all font-bold text-[11px] gap-2"
               >
                 <FileText className="w-4 h-4" />
                 <span className="uppercase tracking-widest">PDF</span>
@@ -204,9 +204,9 @@ const LeadsHeader = ({
 
             <Button
               onClick={onNewLead}
-              className="bg-primary hover:bg-primary/95 text-primary-foreground rounded-2xl h-14 px-8 font-black shadow-[0_4px_12px_rgba(var(--primary),0.3)] border-0 gap-3 w-full sm:w-auto text-sm"
+              className="bg-primary hover:bg-primary/95 text-primary-foreground rounded-xl h-10 px-4 font-black shadow-[0_4px_12px_rgba(var(--primary),0.3)] border-0 gap-2 w-auto text-xs"
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="w-4 h-4" />
               <span className="uppercase tracking-tighter">NUEVO</span>
             </Button>
           </div>
@@ -214,11 +214,11 @@ const LeadsHeader = ({
       </div>
 
       {/* Middle Row: Strategic Controls */}
-      <div className="flex flex-col md:flex-row items-center justify-end gap-4 w-full">
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2 w-full">
+        <div className="flex flex-wrap items-center gap-2 w-full justify-start lg:justify-end">
           <DropdownMenu open={filterDropdownOpen} onOpenChange={setFilterDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <Button className="bg-secondary/40 border border-border hover:border-primary/50 text-muted-foreground hover:bg-secondary hover:text-primary rounded-2xl h-14 w-[210px] text-[10px] font-black uppercase tracking-[0.2em] justify-between flex items-center px-5 transition-all">
+              <Button className="bg-secondary/40 border border-border hover:border-primary/50 text-muted-foreground hover:bg-secondary hover:text-primary rounded-lg h-10 min-h-11 md:min-h-0 w-auto min-w-[190px] max-w-full text-[10px] font-black uppercase tracking-[0.12em] justify-between flex items-center px-3 transition-all">
                 <span>Empresa: {selectedCompanyIds.includes('all') ? 'Todas' : (selectedCompanyIds.length === 1 ? (companies.find(c => c.id === selectedCompanyIds[0])?.name || 'Seleccionada') : `${selectedCompanyIds.length} Sel.`)}</span>
                 <ChevronDown className="w-3.5 h-3.5 opacity-60 ml-2" />
               </Button>
@@ -227,6 +227,8 @@ const LeadsHeader = ({
               <div className="flex items-center justify-between px-3 py-2 border-b border-border mb-1" onClick={(e) => e.stopPropagation()}>
                 <span className="text-muted-foreground/60 text-[8px] font-black tracking-widest">FILTRAR EMPRESAS</span>
                 <button
+                  aria-label="Cerrar selector de empresas"
+                  title="Cerrar selector de empresas"
                   onClick={(e) => {
                     e.stopPropagation();
                     setFilterDropdownOpen(false);
@@ -271,7 +273,7 @@ const LeadsHeader = ({
           <Button
             variant="outline"
             onClick={() => setDashboardStyle(dashboardStyle === 'classic' ? 'modern' : 'classic')}
-            className="bg-secondary/40 border-border text-muted-foreground rounded-2xl h-14 px-6 hover:bg-secondary hover:text-primary hover:border-primary/40 transition-all text-[11px] font-black uppercase tracking-[0.2em] gap-3"
+            className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 min-h-11 md:min-h-0 px-3 hover:bg-secondary hover:text-primary hover:border-primary/40 transition-all text-[10px] font-black uppercase tracking-[0.12em] gap-2"
           >
             {dashboardStyle === 'classic' ? <Sparkles className="w-4 h-4 text-primary" /> : <LayoutGrid className="w-4 h-4" />}
             <span>Modo Consola</span>
@@ -279,13 +281,13 @@ const LeadsHeader = ({
 
           <Button
             variant="outline"
-            className="bg-secondary/40 border-border text-muted-foreground rounded-2xl h-14 px-6 hover:bg-secondary hover:text-primary hover:border-primary/40 transition-all text-[11px] font-black uppercase tracking-[0.2em] gap-3"
+            className="bg-secondary/40 border-border text-muted-foreground rounded-lg h-10 min-h-11 md:min-h-0 px-3 hover:bg-secondary hover:text-primary hover:border-primary/40 transition-all text-[10px] font-black uppercase tracking-[0.12em] gap-2"
           >
             <Filter className="w-4 h-4" />
             <span>Filtros</span>
           </Button>
 
-          <div className="bg-secondary/40 border border-border p-1.5 rounded-2xl flex items-center h-14">
+          <div className="bg-secondary/40 border border-border p-1 rounded-lg flex items-center h-10 min-h-11 md:min-h-0">
             {[
               { id: 'grid', icon: LayoutGrid, label: '01' },
               { id: 'list', icon: List, label: '02' },
@@ -294,7 +296,9 @@ const LeadsHeader = ({
               <button
                 key={v.id}
                 onClick={() => setViewMode(v.id)}
-                className={`px-5 h-full rounded-xl flex items-center gap-3 transition-all ${viewMode === v.id ? 'bg-primary/10 text-primary shadow-[0_0_20px_rgba(var(--primary),0.05)]' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`px-3 h-full rounded-md flex items-center gap-2 transition-all ${viewMode === v.id ? 'bg-primary/10 text-primary shadow-[0_0_20px_rgba(var(--primary),0.05)]' : 'text-muted-foreground hover:text-foreground'}`}
+                aria-label={`Vista ${v.label}`}
+                aria-pressed={viewMode === v.id}
               >
                 <v.icon className="w-4 h-4" />
                 <span className="text-[10px] font-black">{v.label}</span>
@@ -302,19 +306,24 @@ const LeadsHeader = ({
             ))}
           </div>
 
-          <div className="bg-secondary/40 border border-border p-1.5 rounded-2xl flex items-center h-14">
-             <button className="px-4 text-yellow-500/70 hover:text-yellow-500 transition-colors">
+          <div className="bg-secondary/40 border border-border p-1 rounded-lg flex items-center h-10 min-h-11 md:min-h-0">
+             <button className="px-3 min-h-11 md:min-h-0 text-yellow-500/70 hover:text-yellow-500 transition-colors"
+               aria-label="Color de tarjetas"
+               title="Color de tarjetas">
                 <Palette className="w-5 h-5" />
              </button>
-             <button className="px-4 text-muted-foreground hover:text-foreground transition-colors">
+             <button className="px-3 min-h-11 md:min-h-0 text-muted-foreground hover:text-foreground transition-colors" aria-label="Fechas de tarjetas" title="Fechas de tarjetas">
                 <Clock className="w-5 h-5" />
              </button>
-             <button className="px-4 text-muted-foreground hover:text-foreground transition-colors">
+             <button className="px-3 min-h-11 md:min-h-0 text-muted-foreground hover:text-foreground transition-colors" aria-label="Tipografía de tarjetas" title="Tipografía de tarjetas">
                 <Type className="w-5 h-5" />
              </button>
              <button
                onClick={() => setSortMode(sortMode === 'value' ? 'status' : 'value')}
-               className={`px-4 transition-colors ${sortMode === 'value' ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'}`}
+               className={`px-3 min-h-11 md:min-h-0 transition-colors ${sortMode === 'value' ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'}`}
+                 aria-label="Ordenar prospectos"
+                 title="Ordenar prospectos"
+                 aria-pressed={sortMode === 'value'}
              >
                 <SortAsc className="w-5 h-5" />
              </button>
@@ -323,12 +332,12 @@ const LeadsHeader = ({
       </div>
 
       {/* Bottom Row: Status Tabs */}
-      <div className="flex flex-wrap items-center gap-3 w-full pb-2">
+      <div className="flex flex-wrap items-center gap-2 w-full pb-1">
         {statusOptions.map((opt) => (
           <button
             key={opt.value}
             onClick={() => setSelectedStatus(opt.value)}
-            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap border ${
+            className={`px-3 py-2 min-h-11 md:min-h-0 md:py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all whitespace-nowrap border ${
               selectedStatus === opt.value 
                 ? 'bg-primary border-primary text-primary-foreground shadow-[0_4px_12px_rgba(var(--primary),0.2)] scale-105' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60 hover:border-border/80 border-border bg-secondary/30'

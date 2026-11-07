@@ -11,9 +11,9 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
   const avgScore = filteredLeads.length ? Math.round(filteredLeads.reduce((acc, l) => acc + (l.score || 0), 0) / filteredLeads.length) : 0;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-4">
       {/* Strategic Console Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: 'Universo Prospectos', value: filteredLeads.length, icon: Users, color: 'text-cyan-400', glow: 'shadow-cyan-500/20', accent: 'bg-cyan-500' },
           { label: 'Vectores de Cierre', value: hotLeadsCount, icon: Zap, color: 'text-amber-400', glow: 'shadow-amber-500/20', accent: 'bg-amber-500' },
@@ -28,7 +28,7 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
             className="relative group cursor-default"
           >
             <div className={`absolute -inset-px bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-            <div className="bg-card border border-border p-6 relative overflow-hidden flex flex-col justify-between h-32 shadow-xl transition-all duration-300 group-hover:border-primary/40">
+            <div className="bg-card border border-border p-3 relative overflow-hidden flex flex-col justify-between h-20 shadow-xl transition-all duration-300 group-hover:border-primary/40">
               {/* Corner Accents */}
               <div className={`absolute top-0 right-0 w-8 h-[1px] ${metric.accent} opacity-80`} />
               <div className={`absolute top-0 right-0 h-8 w-[1px] ${metric.accent} opacity-80`} />
@@ -41,7 +41,7 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
               </div>
               
               <div className="flex items-baseline gap-2">
-                <h4 className={`text-4xl font-black text-foreground tracking-tighter tabular-nums ${metric.glow} drop-shadow-md`}>
+                <h4 className={`text-2xl font-black text-foreground tracking-tighter tabular-nums ${metric.glow} drop-shadow-md`}>
                   {metric.value}
                 </h4>
                 <div className={`w-1 h-1 rounded-full ${metric.accent} animate-pulse`} />
@@ -73,7 +73,7 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
           onUpdateField={cardProps.onUpdateField}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {filteredLeads.map((lead, index) => (
             <ModernLeadCard key={lead.id} lead={lead} index={index} {...cardProps} />
           ))}

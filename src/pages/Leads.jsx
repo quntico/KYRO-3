@@ -700,7 +700,7 @@ const Leads = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-[2px] w-full animate-scan" style={{ top: '-100%' }} />
       </div>
 
-      <div className="relative z-10 p-4 md:p-10 max-w-[1700px] mx-auto space-y-10">
+      <div className="relative z-10 p-4 md:p-6 max-w-[1700px] mx-auto space-y-4">
         <LeadsHeader
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}
@@ -725,7 +725,7 @@ const Leads = () => {
         />
 
         {/* Buscador de mejor tamaño justo arriba de los leads */}
-        <div className="flex justify-start pt-2">
+        <div className="flex justify-start">
           <div className="relative w-full max-w-2xl group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
             <input
@@ -733,12 +733,14 @@ const Leads = () => {
               placeholder="Buscar Vectores / Prospectos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary/40 border border-border rounded-2xl h-14 pl-14 pr-12 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-card focus:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all font-mono tracking-wider"
+              className="w-full bg-secondary/40 border border-border rounded-xl h-10 min-h-11 md:min-h-0 pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-card focus:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all font-mono tracking-wider"
             />
             {searchTerm && (
               <button
+                aria-label="Limpiar búsqueda"
+                title="Limpiar búsqueda"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 hover:bg-secondary rounded-md transition-all text-muted-foreground/60 hover:text-foreground cursor-pointer"
+                className="absolute right-5 top-1/2 -translate-y-1/2 p-2 hover:bg-secondary rounded-md transition-all text-muted-foreground/60 hover:text-foreground cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
