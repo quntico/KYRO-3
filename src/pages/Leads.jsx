@@ -683,7 +683,7 @@ const Leads = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-[2px] w-full animate-scan" style={{ top: '-100%' }} />
       </div>
 
-      <div className="relative z-10 p-4 md:p-6 max-w-[1700px] mx-auto space-y-4">
+      <div className="relative z-10 p-3 md:p-4 max-w-[1700px] mx-auto space-y-2">
         <LeadsHeader
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}

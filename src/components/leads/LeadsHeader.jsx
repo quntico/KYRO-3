@@ -96,7 +96,7 @@ const LeadsHeader = ({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mb-4 space-y-3"
+      className="space-y-2"
     >
       {/* Top Row: Strategic Title and Stats */}
       <div className="flex flex-wrap items-center justify-between gap-3 overflow-visible">
@@ -104,7 +104,7 @@ const LeadsHeader = ({
           <div className="w-1 h-9 bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] hidden md:block" />
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tighter uppercase leading-none">Prospectos</h1>
+              <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tighter uppercase leading-none">Prospectos</h1>
               <div className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded text-[9px] font-bold text-primary tracking-[0.2em] animate-pulse">
                 OPS EN VIVO
               </div>
@@ -121,7 +121,7 @@ const LeadsHeader = ({
               <TooltipTrigger asChild>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-primary px-3 py-2.5 rounded-xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(var(--primary),0.2)] border-0 relative overflow-hidden group w-auto min-w-0 cursor-help"
+                  className="bg-primary px-3 py-1.5 rounded-xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(var(--primary),0.2)] border-0 relative overflow-hidden group w-auto min-w-0 cursor-help"
                 >
                   <div className="bg-primary-foreground/15 p-2 rounded-lg border border-primary-foreground/5 relative z-10 shrink-0">
                     <TrendingUp className="w-5 h-5 text-primary-foreground" />

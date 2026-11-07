@@ -12,7 +12,7 @@ export default function LeadFinancialSummary({ summary, basis, total, dateLabel,
     { label:simulated?'Utilidad con simulación':'Utilidad posible', lines:summary.groups.map(g=>g.profitCount?money(g.profit,g.currency):`Por revisar (${g.currency})`), detail:`${summary.pendingProfit} con utilidad pendiente`, icon:Wallet, color:'text-pink-400', glow:'from-pink-400/10', accent:'bg-pink-400' },
     { label:'Margen sobre venta', lines:summary.groups.map(g=>g.coveredValue>0?`${(g.profit/g.coveredValue*100).toLocaleString('es-MX',{maximumFractionDigits:1})}% ${g.currency}`:`— ${g.currency}`), detail:'Solo proyectos con utilidad disponible', icon:Percent, color:'text-violet-400', glow:'from-violet-400/10', accent:'bg-violet-400' },
   ];
-  return <section aria-label="Resumen financiero del filtro" className="space-y-3">
+  return <section aria-label="Resumen financiero del filtro" className="space-y-1.5">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Tu selección</span><span className="mx-2 text-border">/</span>{dateSelection||'Todas las fechas'}<span className="ml-2 text-[11px]">· {dateLabel.toLowerCase()}{summary.undated>0?` · ${summary.undated} sin fecha`:''}</span></p>
       <Popover><PopoverTrigger asChild><button type="button" className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-pink-400/25 bg-pink-400/5 px-3 text-xs font-medium hover:border-pink-400/60 hover:bg-pink-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Sparkles className="h-3.5 w-3.5 text-pink-400" />{margin!==''?`Simulación: ${margin}%`:'Simular utilidad'}</button></PopoverTrigger>
@@ -26,12 +26,12 @@ export default function LeadFinancialSummary({ summary, basis, total, dateLabel,
         </PopoverContent>
       </Popover>
     </div>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {metrics.map(metric=><div key={metric.label} className="relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card/95 px-4 py-3.5">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      {metrics.map(metric=><div key={metric.label} className="relative min-w-0 overflow-hidden rounded-xl border border-border bg-card/95 px-3 py-2">
         <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${metric.glow} to-transparent`} />
-        <div className="relative"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-xs font-medium text-muted-foreground">{metric.label}</p><metric.icon className={`h-4 w-4 shrink-0 ${metric.color}`} /></div>
-        <div className="space-y-1 text-xl font-bold tracking-tight tabular-nums text-foreground">{(metric.lines.length?metric.lines:[summary.count?'Por revisar':'0']).map(line=><p key={line} className="break-words">{line}</p>)}</div>
-        <p className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground"><span className={`mt-1 h-1 w-1 shrink-0 rounded-full ${metric.accent}`} />{metric.detail}</p></div>
+        <div className="relative"><div className="mb-0.5 flex items-center justify-between gap-2"><p className="text-xs font-medium text-muted-foreground">{metric.label}</p><metric.icon className={`h-4 w-4 shrink-0 ${metric.color}`} /></div>
+        <div className="space-y-1 text-base font-bold tracking-tight tabular-nums text-foreground">{(metric.lines.length?metric.lines:[summary.count?'Por revisar':'0']).map(line=><p key={line} className="break-words">{line}</p>)}</div>
+        <p className="mt-0.5 flex items-start gap-1.5 text-[11px] text-muted-foreground"><span className={`mt-1 h-1 w-1 shrink-0 rounded-full ${metric.accent}`} />{metric.detail}</p></div>
       </div>)}
     </div>
     {summary.unknownCurrency>0&&<p className="text-xs text-amber-400">{summary.unknownCurrency} importes sin moneda confirmada, excluidos de las sumas.</p>}
