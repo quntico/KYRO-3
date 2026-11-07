@@ -211,7 +211,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       animate={{ opacity: 1 }}
       transition={{ delay: index * 0.02 }}
       onClick={() => onView(lead)}
-      className={`relative p-3 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col h-full rounded-2xl overflow-hidden ${hoverFx.shadow}`}
+      className={`relative p-3 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col self-start rounded-2xl overflow-hidden ${hoverFx.shadow}`}
     >
       <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${statusGradient.split(' ')[0]} ${statusGradient.split(' ')[1]}`} />
 
@@ -294,7 +294,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       </div>
       <details className="mt-2 relative z-10" onClick={e => e.stopPropagation()}>
         <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 text-[11px] font-semibold text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
-          Contacto, cotización y acciones <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+          Contacto y cotización <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </summary>
           <div className="min-w-0 text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] flex flex-wrap items-center gap-2">
             <span>{lead.contact}</span>
@@ -434,8 +434,10 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
       </div>
 
-      {/* Actions stay accessible when the details are expanded. */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-3">
+      </details>
+
+      {/* Primary actions are available without expanding the contact details. */}
+      <div role="group" aria-label={`Acciones de ${lead.name}`} onClick={e => e.stopPropagation()} className="relative z-10 mt-2 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-2">
          {sale ? <>
            <Button size="sm" variant="outline" onClick={() => onView(lead)}>Ver venta</Button>
            <Button size="sm" variant="outline" onClick={sale.onViewFile}>Expediente</Button>
@@ -458,7 +460,6 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
          </Button>
          </>}
       </div>
-      </details>
     </motion.div>
   );
 };

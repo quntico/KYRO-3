@@ -1,7 +1,7 @@
 import { calendarDate, financials, leadDate, numberOrNull } from './leadAnalysis.js';
 
 export const SALE_STAGES = [
-  ['registered', 'Venta registrada'], ['anticipo', 'Anticipo recibido'],
+  ['registered', 'Venta registrada'], ['discovery', 'En seguimiento'], ['anticipo', 'Anticipo recibido'],
   ['production', 'En producción'], ['shipment', 'Logística / envío'],
   ['installation', 'Instalación'], ['completed', 'Finalizada'], ['canceled', 'Cancelada'],
 ];
