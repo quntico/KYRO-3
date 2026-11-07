@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { partitionPipeline, convertLeadToSale, revertSaleToLead } from '@/lib/dealConversion';
 import { DEFAULT_STATUSES } from '@/constants/leadStatuses';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -64,7 +65,7 @@ export const DataProvider = ({ children }) => {
                 { data: contactsData, error: e4 },
                 { data: logisticsData, error: e6 },
             ] = await Promise.all([
-                supabase.from('leads').select('id, name, contact, position, email, phone, status, machines, follow_up_date, created_at, user_id, last_activity, score, dynamic_quotation_url, next_step, activity_status, source, notes').eq('user_id', user.id),
+                supabase.from('leads').select('*').eq('user_id', user.id),
                 supabase.from('deals').select('*').eq('user_id', user.id),
                 supabase.from('tasks').select('*').eq('user_id', user.id),
                 supabase.from('contacts').select('*').eq('user_id', user.id),
@@ -86,8 +87,9 @@ export const DataProvider = ({ children }) => {
 
             const safeData = (data) => Array.isArray(data) ? data : [];
 
-            const lData = safeData(leadsData);
-            const dData = safeData(dealsData);
+            const pipeline = partitionPipeline(safeData(leadsData), safeData(dealsData));
+            const lData = pipeline.leads;
+            const dData = pipeline.deals;
             const tData = safeData(tasksData);
             const cData = safeData(contactsData);
             const logData = safeData(logisticsData);
@@ -142,6 +144,18 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
+    const convertLead = useCallback(async (leadId) => {
+        const deal = await convertLeadToSale(supabase, user?.id, leadId);
+        setDeals(prev => [deal, ...prev.filter(d => d.id !== deal.id)]);
+        setLeads(prev => prev.filter(l => String(l.id) !== String(leadId)));
+        return deal;
+    }, [user?.id]);
+
+    const revertDeal = useCallback(async (dealId) => {
+        await revertSaleToLead(supabase, user?.id, dealId);
+        await fetchData();
+    }, [user?.id, fetchData]);
+
     const updateLead = useCallback(async (id, updates) => {
         try {
             const { error } = await supabase.from('leads').update(updates).eq('id', id);
@@ -169,9 +183,7 @@ export const DataProvider = ({ children }) => {
             return data;
         } catch (error) {
             console.error('Error adding deal:', error);
-            const localDeal = { ...deal, id: Date.now(), user_id: user?.id, created_at: new Date().toISOString() };
-            setDeals(prev => [localDeal, ...prev]);
-            return localDeal;
+            return null;
         }
     }, [user]);
 
@@ -335,6 +347,8 @@ export const DataProvider = ({ children }) => {
         updateDeal,
         removeDeal,
         addDeal,
+        convertLead,
+        revertDeal,
         setTasks,
         addTask,
         updateTask,
@@ -351,7 +365,7 @@ export const DataProvider = ({ children }) => {
         addLeadStatus,
         updateLeadStatus,
         deleteLeadStatus
-    }), [leads, deals, tasks, contacts, notes, logistics, loading, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
+    }), [leads, deals, tasks, contacts, notes, logistics, loading, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

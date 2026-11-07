@@ -77,7 +77,7 @@ const ViewDealDialog = ({ isOpen, setIsOpen, deal, onUpdate, onRevert }) => {
   const handleSaveStatus = async () => {
     const { data: updatedDeal, error } = await supabase
       .from('deals')
-      .update({ closing_status: activityStatus, last_activity: new Date().toISOString() })
+      .update({ closing_status: { ...deal.closing_status, ...Object.fromEntries(closingSteps.map(({id}) => [id, activityStatus[id] || { checked:false, date:null }])) }, last_activity: new Date().toISOString() })
       .eq('id', deal.id)
       .select()
       .single();

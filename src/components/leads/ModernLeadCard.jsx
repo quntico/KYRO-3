@@ -1,3 +1,4 @@
+import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -144,7 +145,7 @@ const getStatusTextColor = (status, isLightTheme) => {
   }
 };
 
-const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, onUpdateField, companies = [] }) => {
+const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, onUpdateField, companies = [], sale = null }) => {
   const { theme } = useTheme();
   const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
 
@@ -197,7 +198,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
   const statusPill = getStatusPill(lead.status, isLightTheme);
   const scoreGradient = getScoreGradient(lead.status);
   const hoverFx = getHoverEffects(lead.status, isLightTheme);
-  const statusName = getStatusName(lead.status);
+  const statusName = sale ? (SALE_STAGES.find(([id]) => id === sale.stage)?.[1] || sale.stage) : getStatusName(lead.status);
   const displayScore = getDerivedScore(lead.status, lead.score);
   const statusTextColor = getStatusTextColor(lead.status, isLightTheme);
 
@@ -220,7 +221,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 mb-2 relative z-10">
         <div className="contents">
           <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-3 gap-y-1 flex-wrap">
-             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.id || '').substring(0,6)}</span></span>
+             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.sourceLeadId || lead.id || '').substring(0,6)}</span></span>
              <span className="w-1 h-1 rounded-full bg-border" />
              <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
                <Clock className="w-2.5 h-2.5" /> Alta: {formattedDate}
@@ -249,7 +250,8 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
               align="end"
               className="bg-popover border border-border text-popover-foreground z-50 font-black text-[10px] uppercase tracking-widest rounded-xl"
             >
-              <DropdownMenuRadioGroup value={lead.status} onValueChange={(newStatus) => onStatusChange(lead.id, newStatus)}>
+              <DropdownMenuRadioGroup value={sale ? sale.stage : lead.status} onValueChange={(newStatus) => sale ? sale.onStageChange(newStatus) : onStatusChange(lead.id, newStatus)}>
+                {sale ? SALE_STAGES.map(([id,label]) => <DropdownMenuRadioItem key={id} value={id} className="cursor-pointer rounded-lg m-1">{label}</DropdownMenuRadioItem>) : <>
                 <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
                   <Zap className="w-3.5 h-3.5 mr-2 text-[#00D4FF]" /> Cierre
                 </DropdownMenuRadioItem>
@@ -274,6 +276,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                 <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
                   <TrendingDown className="w-3.5 h-3.5 mr-2 text-[#8B4513]" /> Perdido
                 </DropdownMenuRadioItem>
+                </>}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -287,7 +290,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 rounded-lg border border-border bg-secondary/20 px-2.5 py-2 relative z-10">
         <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.reportBasis === 'document' ? 'Referencia documental' : 'Venta · USD'}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.value ?? null, lead.financial?.currency || 'USD')}</p></div>
         <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.financial?.scenario ? 'Utilidad simulada' : 'Utilidad posible'}{lead.financial?.profit !== null && !lead.financial?.complete ? ' · parcial' : ''}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.profit ?? null, lead.financial?.currency || 'USD')}</p></div>
-        <div><p className="text-[9px] font-semibold text-muted-foreground">Conversión</p><p className={`text-sm leading-snug font-black ${statusTextColor}`}>{displayScore}%</p></div>
+        <div><p className="text-[9px] font-semibold text-muted-foreground">{sale ? 'Registro' : 'Conversión'}</p><p className={`text-sm leading-snug font-black ${statusTextColor}`}>{sale ? 'Venta' : `${displayScore}%`}</p></div>
       </div>
       <details className="mt-2 relative z-10" onClick={e => e.stopPropagation()}>
         <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 text-[11px] font-semibold text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
@@ -433,6 +436,11 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
 
       {/* Actions stay accessible when the details are expanded. */}
       <div className="mt-3 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-3">
+         {sale ? <>
+           <Button size="sm" variant="outline" onClick={() => onView(lead)}>Ver venta</Button>
+           <Button size="sm" variant="outline" onClick={sale.onViewFile}>Expediente</Button>
+           <Button size="sm" variant="ghost" onClick={sale.onRevert}>Volver a prospecto</Button>
+         </> : <>
          <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-secondary border border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
            <Edit className="w-4 h-4" />
          </Button>
@@ -448,6 +456,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
          <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-600 dark:text-red-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} title="Eliminar">
            <Trash2 className="w-4 h-4" />
          </Button>
+         </>}
       </div>
       </details>
     </motion.div>

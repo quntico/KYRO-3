@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { Target, Plus, Search, X } from 'lucide-react';
@@ -32,7 +32,7 @@ import * as XLSX from 'xlsx';
 const Leads = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { leads, loading, updateLead, removeLead, addLead, addDeal, addTask, updateTaskByLeadId, fetchData } = useData();
+  const { leads, loading, updateLead, removeLead, addLead, convertLead, addTask, updateTaskByLeadId, fetchData } = useData();
   
   const defaultCompanies = useMemo(() => [
     { id: 'comp-1', name: 'Empresa 1', logo: '' },
@@ -212,41 +212,18 @@ const Leads = () => {
     }
   }, [closeDialogs, user, updateLead, updateTaskByLeadId]);
 
+  const conversionInFlight = useRef(false);
   const handleConvertToDeal = useCallback(async (leadToConvert) => {
-    const totalValue = (leadToConvert.machines || []).reduce((sum, machine) => sum + (Number(machine?.price) || 0), 0);
-    const machineProjects = (leadToConvert.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
-
-    const newDeal = {
-      title: `Venta - ${leadToConvert.name}`,
-      client: leadToConvert.name,
-      contact: leadToConvert.contact,
-      contact_email: leadToConvert.email,
-      contact_phone: leadToConvert.phone,
-      value: totalValue,
-      stage: 'anticipo',
-      probability: 100,
-      close_date: new Date().toISOString().split('T')[0],
-      last_activity: new Date().toISOString(),
-      description: `Venta generada desde el prospecto: ${leadToConvert.name}. Proyectos: ${machineProjects || 'No especificado'}`,
-      quotations: leadToConvert.quotations || [],
-      machines: leadToConvert.machines || [],
-      notes: leadToConvert.notes || '[]',
-      closing_status: {},
-    };
-
-    const insertedDeal = await addDeal(newDeal);
-    if (!insertedDeal) {
-      toast({ title: "Error al convertir a venta", description: "Ocurrió un problema al crear la venta en la base de datos.", variant: "destructive" });
-      return;
-    }
-
-    await removeLead(leadToConvert.id);
-    toast({
-      title: "¡Prospecto convertido a Venta!",
-      description: `"${leadToConvert.name}" ahora está en tu flujo de ventas.`,
-    });
-    navigate('/deals');
-  }, [user, removeLead, navigate]);
+    if (conversionInFlight.current) return;
+    conversionInFlight.current = true;
+    try {
+      await convertLead(leadToConvert.id);
+      toast({ title: 'Prospecto convertido a venta', description: `${leadToConvert.name} conserva su ficha en Ventas.` });
+      navigate('/deals');
+    } catch (error) {
+      toast({ title: 'No se pudo convertir', description: error.message || 'El prospecto se conserva. Intenta de nuevo.', variant: 'destructive' });
+    } finally { conversionInFlight.current = false; }
+  }, [convertLead, navigate]);
 
   const handleCreateLead = useCallback(async (newLeadData) => {
     const leadToAdd = {
