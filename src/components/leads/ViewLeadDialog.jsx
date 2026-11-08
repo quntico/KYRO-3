@@ -50,7 +50,7 @@ const safeFormatDate = (dateSource, formatStr = "dd/MM/yy") => {
   }
 };
 
-const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation, initialPdf, companies = [] }) => {
+const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation, initialPdf, companies = [], detailsLoaded = false }) => {
   const { theme } = useTheme();
   const [activityStatus, setActivityStatus] = useState({});
   const [viewingPdf, setViewingPdf] = useState(null);
@@ -80,9 +80,9 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
             setQuotations(data.quotations);
         }
       };
-      fetchHeavyData();
+      if (!detailsLoaded) fetchHeavyData();
     }
-  }, [isOpen, lead]);
+  }, [isOpen, lead, detailsLoaded]);
 
   const handleCopy = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -103,7 +103,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
       setCalcMachineIndex(null);
       setPdfExportMachineIndex(null);
     }
-  }, [isOpen, lead]);
+  }, [isOpen, lead, detailsLoaded]);
 
   useEffect(() => {
     if (viewingPdf) {

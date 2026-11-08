@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import jsPDF from 'jspdf';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -168,8 +167,9 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     setIsEditingQT(false);
   };
 
-  const handleExportGenerals = (e) => {
+  const handleExportGenerals = async (e) => {
     e.stopPropagation();
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFillColor(30, 30, 30);
     doc.rect(0, 0, 210, 25, 'F');
@@ -207,9 +207,9 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.02 }}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 280px' }}
       onClick={() => onView(lead)}
       className={`relative p-3 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col self-start rounded-2xl overflow-hidden ${hoverFx.shadow}`}
     >
@@ -416,8 +416,9 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
             onClick={(e) => {
               e.stopPropagation();
               if (lead.quotations && lead.quotations.length > 0) {
-                const url = lead.quotations[lead.quotations.length - 1].url;
-                window.open(url, '_blank');
+                const file = lead.quotations[lead.quotations.length - 1];
+                if (file.deferred) onView(lead, file);
+                else if (file.url) window.open(file.url, '_blank');
               }
             }}
           >

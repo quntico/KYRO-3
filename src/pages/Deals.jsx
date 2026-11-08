@@ -17,7 +17,7 @@ import { money, normalizeText, displayDate, calendarDate } from '@/lib/leadAnaly
 
 const Deals = () => {
   const { user } = useAuth();
-  const { deals, deletedDeals, setDealDeleted, loading, updateDeal, revertDeal } = useData();
+  const { deals, deletedDeals, setDealDeleted, pipelineLoading: loading, updateDeal, revertDeal } = useData();
   const [viewingId, setViewingId] = useState(null);
   const [fileId, setFileId] = useState(null);
   const [search, setSearch] = useState('');

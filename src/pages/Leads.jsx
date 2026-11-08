@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
 import { Target, Plus, Search, X } from 'lucide-react';
@@ -11,28 +11,26 @@ import LeadsHeader from '@/components/leads/LeadsHeader';
 import LeadCard from '@/components/leads/LeadCard';
 import LeadsTable from '@/components/leads/LeadsTable';
 import LeadsKanban from '@/components/leads/LeadsKanban';
-import ViewLeadDialog from '@/components/leads/ViewLeadDialog';
-import EditLeadDialog from '@/components/leads/EditLeadDialog';
-import DeleteLeadDialog from '@/components/leads/DeleteLeadDialog';
-import NewLeadDialog from '@/components/leads/NewLeadDialog';
-import FollowUpDialog from '@/components/leads/FollowUpDialog';
-import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
-import LeadQuoteCalculator from '@/components/leads/LeadQuoteCalculator';
+const ViewLeadDialog = React.lazy(() => import('@/components/leads/ViewLeadDialog'));
+const EditLeadDialog = React.lazy(() => import('@/components/leads/EditLeadDialog'));
+const DeleteLeadDialog = React.lazy(() => import('@/components/leads/DeleteLeadDialog'));
+const NewLeadDialog = React.lazy(() => import('@/components/leads/NewLeadDialog'));
+const FollowUpDialog = React.lazy(() => import('@/components/leads/FollowUpDialog'));
+const LeadConversationDialog = React.lazy(() => import('@/components/leads/LeadConversationDialog'));
+const LeadQuoteCalculator = React.lazy(() => import('@/components/leads/LeadQuoteCalculator'));
 import ModernLeadsDashboard from '@/components/leads/ModernLeadsDashboard';
-import ManageCompaniesDialog from '@/components/leads/ManageCompaniesDialog';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+const ManageCompaniesDialog = React.lazy(() => import('@/components/leads/ManageCompaniesDialog'));
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
+import { loadLeadDetails } from '@/lib/workspaceLoader';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
-import * as XLSX from 'xlsx';
 
 const Leads = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { leads, loading, updateLead, removeLead, addLead, convertLead, addTask, updateTaskByLeadId, fetchData } = useData();
+  const { leads, pipelineLoading: loading, dataError, updateLead, removeLead, addLead, convertLead, addTask, updateTaskByLeadId, fetchData } = useData();
   
   const defaultCompanies = useMemo(() => [
     { id: 'comp-1', name: 'Empresa 1', logo: '' },
@@ -120,6 +118,8 @@ const Leads = () => {
   const [dashboardStyle, setDashboardStyle] = useState('modern'); // 'modern', 'classic'
   const [sortMode, setSortMode] = useState('status'); // 'date', 'status', 'alpha', 'value'
   const [selectedLead, setSelectedLead] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const detailRequest = useRef(0);
   const [followUpAction, setFollowUpAction] = useState(null);
   const [initialPdf, setInitialPdf] = useState(null);
   const navigate = useNavigate();
@@ -149,22 +149,32 @@ const Leads = () => {
     return filteredLeads.reduce((sum, lead) => sum + (lead.commission || 0), 0);
   }, [filteredLeads]);
 
-  const openDialog = useCallback((type, lead = null, actionOrPdf = null) => {
+  const openDialog = useCallback(async (type, lead = null, actionOrPdf = null) => {
+    const request = ++detailRequest.current;
+    if (lead && (type === 'view' || type === 'edit')) {
+      setDetailsLoading(true);
+      try {
+        const complete = await loadLeadDetails(supabase, user.id, lead.id);
+        if (request !== detailRequest.current) return;
+        if (actionOrPdf?.deferred) {
+          const index = lead.quotations?.indexOf(actionOrPdf);
+          actionOrPdf = complete.quotations?.[index] || complete.quotations?.find(q => q.fileName === actionOrPdf.fileName) || null;
+        }
+        lead = complete;
+      } catch (error) {
+        if (request === detailRequest.current) toast({title:'No se pudo abrir la ficha',description:error.message,variant:'destructive'});
+        return;
+      } finally { if (request === detailRequest.current) setDetailsLoading(false); }
+    } else { setDetailsLoading(false); }
     setSelectedLead(lead);
     if (type === 'followUp') setFollowUpAction(actionOrPdf);
     if (type === 'view') setInitialPdf(actionOrPdf);
-
-    // Si abrimos la bitácora desde la ficha, cerramos la ficha y abrimos la bitácora con un micro-delay
-    setDialogState(prev => {
-      if (type === 'conversation' && prev.view) {
-        setTimeout(() => setDialogState(s => ({ ...s, view: false, conversation: true })), 10);
-        return prev;
-      }
-      return { ...prev, [type]: true };
-    });
-  }, []);
+    setDialogState(prev => ({...prev, ...(type === 'conversation' ? {view:false} : {}), [type]:true}));
+  }, [user?.id]);
 
   const closeDialogs = useCallback(() => {
+    ++detailRequest.current;
+    setDetailsLoading(false);
     setDialogState({ view: false, edit: false, delete: false, followUp: false, new: false, conversation: false });
     setSelectedLead(null);
     setFollowUpAction(null);
@@ -307,7 +317,9 @@ const Leads = () => {
     return lead.notes || 'N/A';
   }, []);
 
-  const exportToPDF = useCallback(() => {
+  const exportToPDF = useCallback(async () => {
+    const { default: jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
     const doc = new jsPDF();
     const colors = {
       nova: { primary: [255, 204, 0], accent: [255, 255, 255], bg: [26, 26, 26] },
@@ -475,7 +487,8 @@ const Leads = () => {
     toast({ title: "¡Exportación Exitosa!", description: "Reporte generado con conversión a MXN (TC: 17.50)." });
   }, [filteredLeads, getNextStep, theme, totalPossibleSales, totalPossibleUtilities, companies, selectedCompanyIds]);
 
-  const exportExcelTemplate = useCallback(() => {
+  const exportExcelTemplate = useCallback(async () => {
+    const XLSX = await import('xlsx');
     const headers = [["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Notas", "Valor Estimado"]];
     const ws = XLSX.utils.aoa_to_sheet(headers);
     const wb = XLSX.utils.book_new();
@@ -489,7 +502,8 @@ const Leads = () => {
     });
   }, []);
 
-  const exportDataToExcel = useCallback(() => {
+  const exportDataToExcel = useCallback(async () => {
+    const XLSX = await import('xlsx');
     const headers = ["Empresa", "Contacto", "Cargo", "Email", "Teléfono", "Empresa Gestora", "Notas", "Valor Estimado"];
     const data = filteredLeads.map(lead => {
       const companyId = lead.activity_status?.managingCompanyId || 'comp-1';
@@ -526,6 +540,7 @@ const Leads = () => {
     reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target.result);
+        const XLSX = await import('xlsx');
         const workbook = XLSX.read(data, { type: 'array' });
 
         // Obtener la primera hoja
@@ -599,7 +614,7 @@ const Leads = () => {
 
         if (error) throw error;
 
-        await fetchData();
+        await fetchData({force: true});
         toast({
           title: "✅ Importación Exitosa",
           description: `Se han importado ${leadsToInsert.length} prospectos exitosamente.`
@@ -661,6 +676,7 @@ const Leads = () => {
       </div>
 
       <div className="relative z-10 p-3 md:p-4 max-w-[1700px] mx-auto space-y-2">
+        {dataError && <div role="alert" className="rounded-xl border border-amber-500/30 bg-card p-3 text-sm">{dataError} <Button variant="outline" size="sm" onClick={() => fetchData({force: true})}>Reintentar</Button></div>}
         <LeadsHeader
           selectedStatus={selectedStatus}
           setSelectedStatus={setSelectedStatus}
@@ -797,7 +813,10 @@ const Leads = () => {
         {/* LeadsTable removed from here as it is now controlled by viewMode */}
       </div>
 
-      <ViewLeadDialog
+      {detailsLoading && <div role="status" className="fixed bottom-5 right-5 z-50 rounded-xl border border-primary/30 bg-card p-4">Abriendo ficha y documentos…</div>}
+      <Suspense fallback={<div role="status" className="fixed bottom-5 right-5 z-50 rounded-xl border border-primary/30 bg-card p-4">Abriendo…</div>}>
+      {dialogState.view && (<ViewLeadDialog
+        detailsLoaded
         key={selectedLead?.id || 'none'}
         isOpen={dialogState.view}
         setIsOpen={(isOpen) => setDialogState(prev => ({ ...prev, view: isOpen }))}
@@ -806,46 +825,46 @@ const Leads = () => {
         onUpdate={updateLead}
         onOpenConversation={(lead) => openDialog('conversation', lead)}
         companies={companies}
-      />
-      <EditLeadDialog
+      />) }
+      {dialogState.edit && (<EditLeadDialog
         isOpen={dialogState.edit}
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, edit: isOpen }))}
         lead={selectedLead}
         onUpdate={updateLead}
         companies={companies}
-      />
-      <DeleteLeadDialog
+      />) }
+      {dialogState.delete && (<DeleteLeadDialog
         isOpen={dialogState.delete}
         setIsOpen={(isOpen) => setDialogState(prev => ({ ...prev, delete: isOpen }))}
         lead={selectedLead}
         onDelete={removeLead}
-      />
-      <NewLeadDialog
+      />) }
+      {dialogState.new && (<NewLeadDialog
         open={dialogState.new}
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, new: isOpen }))}
         onSubmit={handleCreateLead}
         companies={companies}
-      />
-      <FollowUpDialog
+      />) }
+      {dialogState.followUp && (<FollowUpDialog
         open={dialogState.followUp}
         onOpenChange={closeDialogs}
         lead={selectedLead}
         actionType={followUpAction}
         onSchedule={handleScheduleFollowUp}
         onUpdate={updateLeadAndLastActivity}
-      />
-      <LeadConversationDialog
+      />) }
+      {dialogState.conversation && (<LeadConversationDialog
         isOpen={dialogState.conversation}
         onOpenChange={(isOpen) => setDialogState(prev => ({ ...prev, conversation: isOpen }))}
         lead={selectedLead}
         onSave={updateLeadAndLastActivity}
-      />
-      <ManageCompaniesDialog
+      />) }
+      {manageCompaniesOpen && (<ManageCompaniesDialog
         isOpen={manageCompaniesOpen}
         onOpenChange={setManageCompaniesOpen}
         companies={companies}
         onSave={handleSaveCompanies}
-      />
+      />) }
 
       {isStandaloneCalcOpen && (
         <LeadQuoteCalculator
@@ -864,6 +883,7 @@ const Leads = () => {
           }}
         />
       )}
+      </Suspense>
     </div>
   );
 };
