@@ -5,10 +5,10 @@ export const SALE_STAGES = [
   ['production', 'En producción'], ['shipment', 'Logística / envío'],
   ['installation', 'Instalación'], ['completed', 'Finalizada'], ['canceled', 'Cancelada'],
 ];
-export const activeDeals = deals => (deals || []).filter(d => !d.closing_status?.reverted_at);
+export const activeDeals = deals => (deals || []).filter(d => !d.closing_status?.reverted_at && !d.closing_status?.deleted_at);
 export function partitionPipeline(leads, deals) {
   const sales = activeDeals(deals);
-  const moved = new Set(sales.map(d => d.closing_status?.source_lead_id).filter(id => id !== undefined && id !== null).map(String));
+  const moved = new Set((deals || []).filter(d => !d.closing_status?.reverted_at).map(d => d.closing_status?.source_lead_id).filter(id => id !== undefined && id !== null).map(String));
   return { leads: (leads || []).filter(l => !moved.has(String(l.id))), deals: sales };
 }
 export function buildDealFromLead(lead, now = new Date().toISOString()) {
@@ -50,6 +50,7 @@ export async function convertLeadToSale(db, userId, leadId, now = new Date().toI
   const active = activeDeals(existing);
   if (active.length > 1) throw new Error('Hay más de una venta vinculada. Revisa las ventas antes de continuar.');
   if (active.length === 1) return active[0];
+  if (existing.some(d => d.closing_status?.deleted_at && !d.closing_status?.reverted_at)) throw new Error('Esta venta está en la papelera. Restáurala desde Ventas.');
   const lead = result(await db.from('leads').select('*').eq('id',leadId).eq('user_id',userId).single());
   // Keep the origin intact for tasks, files and reversal. Visibility moves only after a confirmed insert.
   return result(await db.from('deals').insert(buildDealFromLead(lead,now)).select('*').single());
@@ -70,4 +71,12 @@ export async function revertSaleToLead(db, userId, dealId, now = new Date().toIS
   }
   // Archive the sale instead of deleting its history. If this fails, it remains visible and retryable.
   return result(await db.from('deals').update({closing_status:{...deal.closing_status,reverted_at:now},last_activity:now}).eq('id',dealId).eq('user_id',userId).select('*').single());
+}
+
+export async function setSaleDeleted(db, userId, dealId, deleted, now = new Date().toISOString()) {
+  if (!userId) throw new Error('No se pudo identificar la cuenta de KYRO.');
+  const deal = result(await db.from('deals').select('*').eq('id',dealId).eq('user_id',userId).single());
+  if (deal.closing_status?.reverted_at) throw new Error('Esta ficha ya regresó a Leads.');
+  const closing_status = {...deal.closing_status, deleted_at: deleted ? now : null};
+  return result(await db.from('deals').update({closing_status,last_activity:now}).eq('id',dealId).eq('user_id',userId).select('*').single());
 }

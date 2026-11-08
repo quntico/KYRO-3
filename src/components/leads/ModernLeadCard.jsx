@@ -2,7 +2,7 @@ import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown } from 'lucide-react';
+import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import jsPDF from 'jspdf';
@@ -441,7 +441,8 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
          {sale ? <>
            <Button size="sm" variant="outline" onClick={() => onView(lead)}>Ver venta</Button>
            <Button size="sm" variant="outline" onClick={sale.onViewFile}>Expediente</Button>
-           <Button size="sm" variant="ghost" onClick={sale.onRevert}>Volver a prospecto</Button>
+           <Button size="sm" variant="outline" className="border-cyan-400/40 bg-cyan-400/10 text-cyan-400" onClick={sale.onRevert}><Undo2 className="mr-1.5 h-4 w-4" />Regresar a Leads</Button>
+           <Button size="sm" variant="outline" className="border-red-400/40 bg-red-400/10 text-red-400 hover:bg-red-400/20" onClick={sale.onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Borrar venta</Button>
          </> : <>
          <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-secondary border border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
            <Edit className="w-4 h-4" />

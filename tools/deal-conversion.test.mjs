@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDealFromLead,partitionPipeline,saleAsCard,convertLeadToSale,revertSaleToLead} from '../src/lib/dealConversion.js';
+import {buildDealFromLead,partitionPipeline,saleAsCard,convertLeadToSale,revertSaleToLead,setSaleDeleted} from '../src/lib/dealConversion.js';
 const lead={id:7,user_id:'owner',name:'Empresa de prueba',contact:'Contacto',email:'test@example.test',phone:'123',status:'closing',score:98,created_at:'2026-01-01',machines:[{name:'Equipo',price:100,commission:0}],quotations:[{url:'test.pdf'}],notes:'[{"text":"Nota"}]',next_step:{type:'Llamada'},activity_status:{managingCompanyId:'c1',clientDirectory:{amountDate:'2026-10-01'}},quotationNumber:'Q-1'};
 function mock(responses){const calls=[];return {calls,from(table){const call={table,ops:[]};calls.push(call);const q=new Proxy({}, {get(_,key){if(key==='then')return (resolve,reject)=>Promise.resolve(responses.shift()).then(resolve,reject);return (...args)=>{call.ops.push([key,...args]);return q;};}});return q;}};}
 test('conversion preserves the entire source, documents, dates, notes and zero profit without claiming payment',()=>{
@@ -37,4 +37,30 @@ test('database access errors preserve the lead without requesting a login',async
  const db=mock([{data:[],error:null},{data:lead,error:null},{data:null,error:{code:'42501',message:'RLS blocked'}}]);
  await assert.rejects(convertLeadToSale(db,'owner',7),error=>error.code==='42501'&&error.message.includes('prospecto sigue intacto')&&!error.message.includes('Inicia sesión'));
  assert.equal(db.calls.some(c=>c.ops.some(o=>o[0]==='delete'||o[0]==='update')),false);
+});
+
+test('trash removes a sale from totals without returning its source to leads',()=>{
+ const sale={...buildDealFromLead(lead),id:99};sale.closing_status.deleted_at='now';
+ assert.deepEqual(partitionPipeline([lead],[sale]),{leads:[],deals:[]});
+ sale.closing_status.deleted_at=null;
+ assert.deepEqual(partitionPipeline([lead],[sale]),{leads:[],deals:[sale]});
+});
+test('trash and restoration preserve the full sale, never delete rows, and scope writes to owner',async()=>{
+ for(const deleted of [true,false]){
+  const sale={...buildDealFromLead(lead),id:99};sale.closing_status.depositReceived={checked:true};
+  const db=mock([{data:sale,error:null},{data:sale,error:null}]);
+  await setSaleDeleted(db,'owner',99,deleted,'now');
+  const patch=db.calls[1].ops.find(o=>o[0]==='update')[1];
+  assert.deepEqual(patch.closing_status.source_lead,lead);
+  assert.deepEqual(patch.closing_status.depositReceived,{checked:true});
+  assert.equal(patch.closing_status.deleted_at,deleted?'now':null);
+  assert(db.calls[1].ops.some(o=>o[0]==='eq'&&o[1]==='user_id'&&o[2]==='owner'));
+  assert.equal(db.calls.some(c=>c.ops.some(o=>o[0]==='delete')),false);
+ }
+});
+test('failed trash writes throw and a trashed conversion cannot create a duplicate',async()=>{
+ const sale={...buildDealFromLead(lead),id:99};
+ await assert.rejects(setSaleDeleted(mock([{data:sale,error:null},{data:null,error:new Error('offline')}]),'owner',99,true),/offline/);
+ sale.closing_status.deleted_at='now';const db=mock([{data:[sale],error:null}]);
+ await assert.rejects(convertLeadToSale(db,'owner',7),/papelera/);assert.equal(db.calls.length,1);
 });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { partitionPipeline, convertLeadToSale, revertSaleToLead } from '@/lib/dealConversion';
+import { partitionPipeline, convertLeadToSale, revertSaleToLead, setSaleDeleted } from '@/lib/dealConversion';
 import { DEFAULT_STATUSES } from '@/constants/leadStatuses';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -12,6 +12,7 @@ export const DataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [leads, setLeads] = useState([]);
     const [deals, setDeals] = useState([]);
+    const [deletedDeals, setDeletedDeals] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [contacts, setContacts] = useState([]);
     const [notes, setNotes] = useState([]);
@@ -34,6 +35,7 @@ export const DataProvider = ({ children }) => {
 
             loadCache('leads', setLeads);
             loadCache('deals', setDeals);
+            loadCache('deletedDeals', setDeletedDeals);
             loadCache('tasks', setTasks);
             loadCache('contacts', setContacts);
             loadCache('notes', setNotes);
@@ -96,6 +98,9 @@ export const DataProvider = ({ children }) => {
 
             setLeads(lData);
             setDeals(dData);
+            const trash = safeData(dealsData).filter(d => d.closing_status?.deleted_at && !d.closing_status?.reverted_at);
+            setDeletedDeals(trash);
+            saveToCache(`deletedDeals-${user.id}`, trash);
             setTasks(tData);
             setContacts(cData);
             setLogistics(logData);
@@ -153,6 +158,11 @@ export const DataProvider = ({ children }) => {
 
     const revertDeal = useCallback(async (dealId) => {
         await revertSaleToLead(supabase, user?.id, dealId);
+        await fetchData();
+    }, [user?.id, fetchData]);
+
+    const setDealDeleted = useCallback(async (dealId, deleted) => {
+        await setSaleDeleted(supabase, user?.id, dealId, deleted);
         await fetchData();
     }, [user?.id, fetchData]);
 
@@ -335,6 +345,8 @@ export const DataProvider = ({ children }) => {
     const value = useMemo(() => ({
         leads,
         deals,
+        deletedDeals,
+        setDealDeleted,
         tasks,
         contacts,
         notes,
@@ -365,7 +377,7 @@ export const DataProvider = ({ children }) => {
         addLeadStatus,
         updateLeadStatus,
         deleteLeadStatus
-    }), [leads, deals, tasks, contacts, notes, logistics, loading, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
+    }), [leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

@@ -2,6 +2,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { Search, LayoutGrid, List, Columns, ArrowLeft, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
 import { useData } from '@/contexts/DataContext';
 import ModernLeadCard from '@/components/leads/ModernLeadCard';
@@ -15,13 +17,16 @@ import { money, normalizeText, displayDate, calendarDate } from '@/lib/leadAnaly
 
 const Deals = () => {
   const { user } = useAuth();
-  const { deals, loading, updateDeal, revertDeal } = useData();
+  const { deals, deletedDeals, setDealDeleted, loading, updateDeal, revertDeal } = useData();
   const [viewingId, setViewingId] = useState(null);
   const [fileId, setFileId] = useState(null);
   const [search, setSearch] = useState('');
   const [stage, setStage] = useState('all');
   const [view, setView] = useState('grid');
   const [sort, setSort] = useState('recent');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [pendingId, setPendingId] = useState(null);
   const busy = useRef(new Set());
   const companies = useMemo(() => {
     for (const key of ['kyro_crm_companies_v5.5','kyro_crm_companies_v5.0','kyro_crm_companies','pandora_companies_data','kyro_companies','companies']) {
@@ -49,6 +54,16 @@ const Deals = () => {
     catch(error){toast({title:'No se pudo devolver la ficha',description:error.message,variant:'destructive'});}
     finally{busy.current.delete(deal.id);}
   };
+  const changeDeleted = async (deal, deleted) => {
+    if (busy.current.has(deal.id)) return;
+    busy.current.add(deal.id); setPendingId(deal.id);
+    try {
+      await setDealDeleted(deal.id, deleted);
+      setDeleteTarget(null); setViewingId(null); setFileId(null);
+      toast({title:deleted?'Venta enviada a la papelera':'Venta restaurada',description:deal.client});
+    } catch (error) { toast({title:'No se guardó el cambio',description:error.message,variant:'destructive'}); }
+    finally { busy.current.delete(deal.id); setPendingId(null); }
+  };
   const updateCardField = async (deal, patch) => {
     const changes={};
     if(patch.activity_status)changes.closing_status={...deal.closing_status,source_lead:{...deal.closing_status?.source_lead,activity_status:patch.activity_status}};
@@ -57,7 +72,7 @@ const Deals = () => {
     try {await persist(deal,changes);}
     catch(error){toast({title:'No se guardó el cambio',description:error.message,variant:'destructive'});throw error;}
   };
-  const renderCard = ({deal,card},index) => <ModernLeadCard key={deal.id} lead={card} index={index} companies={companies} onView={()=>setViewingId(deal.id)} onUpdateField={(_,patch)=>updateCardField(deal,patch)} sale={{stage:deal.stage,onStageChange:next=>changeStage(deal,next),onViewFile:()=>setFileId(deal.id),onRevert:()=>returnToLead(deal)}} />;
+  const renderCard = ({deal,card},index) => <ModernLeadCard key={deal.id} lead={card} index={index} companies={companies} onView={()=>setViewingId(deal.id)} onUpdateField={(_,patch)=>updateCardField(deal,patch)} sale={{stage:deal.stage,onStageChange:next=>changeStage(deal,next),onViewFile:()=>setFileId(deal.id),onRevert:()=>returnToLead(deal),onDelete:()=>setDeleteTarget(deal)}} />;
   const viewingDeal=deals.find(d=>d.id===viewingId), fileDeal=deals.find(d=>d.id===fileId);
   return <div className="min-h-full bg-background text-foreground">
     <Helmet><title>Ventas | KYRO</title></Helmet>
@@ -66,6 +81,7 @@ const Deals = () => {
         <div className="border-l-4 border-primary pl-3"><h1 className="text-2xl font-black uppercase tracking-tight">Ventas</h1><p className="text-xs text-muted-foreground">Tus fichas, desde el cierre hasta la entrega.</p></div>
         <Link to="/leads" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary"><ArrowLeft className="h-4 w-4" /> Ver prospectos</Link>
       </header>
+      <div className="flex justify-end"><Button variant="outline" size="sm" onClick={()=>setTrashOpen(true)}>Papelera ({deletedDeals.length})</Button></div>
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Etapa de venta">{[['all','Todas'],...SALE_STAGES].map(([id,label])=><button key={id} type="button" aria-pressed={stage===id} onClick={()=>setStage(id)} className={`min-h-9 rounded-full border px-3 text-[11px] font-semibold focus-visible:ring-2 focus-visible:ring-primary ${stage===id?'border-primary bg-primary text-primary-foreground':'border-border bg-card text-muted-foreground hover:text-foreground'}`}>{label} <span className="ml-1 opacity-70">{id==='all'?deals.length:deals.filter(d=>d.stage===id).length}</span></button>)}</div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="relative min-w-60 flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/><input aria-label="Buscar ventas" placeholder="Buscar empresa, contacto o proyecto…" value={search} onChange={e=>setSearch(e.target.value)} className="h-10 w-full rounded-xl border border-border bg-card pl-10 pr-3 text-sm focus-visible:ring-2 focus-visible:ring-primary" /></div>
@@ -77,7 +93,11 @@ const Deals = () => {
         <div className="rounded-xl border border-blue-400/20 bg-card p-3"><p className="text-xs text-muted-foreground">Valor de venta · USD</p><p className="text-lg font-bold">$ {totals.value.toLocaleString('es-MX',{maximumFractionDigits:2})}</p></div>
         <div className="rounded-xl border border-pink-400/20 bg-card p-3"><p className="text-xs text-muted-foreground">Utilidad posible · USD</p><p className="text-lg font-bold">{rows.length&&totals.pending===rows.length?'Por revisar':`$ ${totals.profit.toLocaleString('es-MX',{maximumFractionDigits:2})}`}</p><p className="text-[10px] text-muted-foreground">{totals.pending} con utilidad pendiente</p></div>
       </section>
-      {loading&&!deals.length ? <p role="status" className="p-8 text-center">Cargando ventas…</p> : !rows.length ? <div className="rounded-2xl border border-dashed border-border p-10 text-center"><FolderKanban className="mx-auto mb-3 h-8 w-8 text-primary"/><h2 className="font-bold">{deals.length?'No hay ventas con estos filtros':'Tu próxima venta empieza en Prospectos'}</h2><p className="mt-2 text-sm text-muted-foreground">Al convertir un prospecto, su ficha completa aparecerá aquí.</p></div> : view==='grid' ? <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">{rows.map(renderCard)}</div> : view==='kanban' ? <div className="flex gap-3 overflow-x-auto pb-3">{SALE_STAGES.filter(([id])=>rows.some(r=>r.deal.stage===id)).map(([id,label])=><section key={id} className="w-80 shrink-0 space-y-2"><h2 className="rounded-xl border border-primary/20 bg-card p-3 text-sm font-bold">{label}</h2>{rows.filter(r=>r.deal.stage===id).map(renderCard)}</section>)}</div> : <div className="overflow-x-auto rounded-xl border border-border"><table className="w-full text-left text-sm"><thead className="bg-secondary/30 text-xs text-muted-foreground"><tr>{['Empresa','Etapa','Fecha de conversión','Venta · USD','Utilidad · USD',''].map((t,i)=><th key={i} className="p-3">{t}</th>)}</tr></thead><tbody>{rows.map(({deal,card})=><tr key={deal.id} className="border-t border-border"><td className="min-w-48 p-3 font-bold">{card.name}</td><td className="p-3">{SALE_STAGES.find(([id])=>id===deal.stage)?.[1]||deal.stage}</td><td className="p-3">{displayDate(calendarDate(deal.closing_status?.converted_at||deal.close_date))}</td><td className="p-3">{money(card.financial.value)}</td><td className="p-3">{money(card.financial.profit)}</td><td className="p-3"><Button variant="outline" size="sm" onClick={()=>setViewingId(deal.id)}>Ver venta</Button></td></tr>)}</tbody></table></div>}
+      {loading&&!deals.length ? <p role="status" className="p-8 text-center">Cargando ventas…</p> : !rows.length ? <div className="rounded-2xl border border-dashed border-border p-10 text-center"><FolderKanban className="mx-auto mb-3 h-8 w-8 text-primary"/><h2 className="font-bold">{deals.length?'No hay ventas con estos filtros':'Tu próxima venta empieza en Prospectos'}</h2><p className="mt-2 text-sm text-muted-foreground">Al convertir un prospecto, su ficha completa aparecerá aquí.</p></div> : view==='grid' ? <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">{rows.map(renderCard)}</div> : view==='kanban' ? <div className="flex gap-3 overflow-x-auto pb-3">{SALE_STAGES.filter(([id])=>rows.some(r=>r.deal.stage===id)).map(([id,label])=><section key={id} className="w-80 shrink-0 space-y-2"><h2 className="rounded-xl border border-primary/20 bg-card p-3 text-sm font-bold">{label}</h2>{rows.filter(r=>r.deal.stage===id).map(renderCard)}</section>)}</div> : <div className="overflow-x-auto rounded-xl border border-border"><table className="w-full text-left text-sm"><thead className="bg-secondary/30 text-xs text-muted-foreground"><tr>{['Empresa','Etapa','Fecha de conversión','Venta · USD','Utilidad · USD',''].map((t,i)=><th key={i} className="p-3">{t}</th>)}</tr></thead><tbody>{rows.map(({deal,card})=><tr key={deal.id} className="border-t border-border"><td className="min-w-48 p-3 font-bold">{card.name}</td><td className="p-3">{SALE_STAGES.find(([id])=>id===deal.stage)?.[1]||deal.stage}</td><td className="p-3">{displayDate(calendarDate(deal.closing_status?.converted_at||deal.close_date))}</td><td className="p-3">{money(card.financial.value)}</td><td className="p-3">{money(card.financial.profit)}</td><td className="p-3"><div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={()=>setViewingId(deal.id)}>Ver venta</Button><Button variant="outline" size="sm" onClick={()=>returnToLead(deal)}>Regresar a Leads</Button><Button variant="outline" size="sm" className="text-red-400" onClick={()=>setDeleteTarget(deal)}>Borrar venta</Button></div></td></tr>)}</tbody></table></div>}
+      <AlertDialog open={!!deleteTarget} onOpenChange={open=>{if(!open&&pendingId===null)setDeleteTarget(null);}}>
+        <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Borrar la venta de {deleteTarget?.client}?</AlertDialogTitle><AlertDialogDescription>Saldrá de Ventas y de sus totales. Podrás recuperarla desde Papelera. Esta acción no la regresa a Leads.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={pendingId!==null}>Cancelar</AlertDialogCancel><Button variant="destructive" disabled={pendingId!==null} onClick={()=>changeDeleted(deleteTarget,true)}>{pendingId!==null?'Guardando…':'Sí, borrar venta'}</Button></AlertDialogFooter></AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={trashOpen} onOpenChange={setTrashOpen}><DialogContent><DialogHeader><DialogTitle>Papelera de ventas</DialogTitle><DialogDescription>Restaura una venta para recuperar su ficha y volver a incluirla en los totales.</DialogDescription></DialogHeader><div className="max-h-[60vh] space-y-2 overflow-y-auto">{deletedDeals.length?deletedDeals.map(deal=><div key={deal.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3"><span className="min-w-0 break-words font-semibold">{deal.client || deal.title}</span><Button variant="outline" disabled={pendingId!==null} onClick={()=>changeDeleted(deal,false)}>Restaurar venta</Button></div>):<p className="py-6 text-center text-muted-foreground">La papelera está vacía.</p>}</div></DialogContent></Dialog>
       {viewingDeal&&<ViewDealDialog isOpen setIsOpen={()=>setViewingId(null)} deal={viewingDeal} onUpdate={updateDeal} onRevert={returnToLead}/>}
       {fileDeal&&<ClientFileViewerDialog isOpen onClose={()=>setFileId(null)} deal={fileDeal} onUpdate={updateDeal}/>}
     </div>
