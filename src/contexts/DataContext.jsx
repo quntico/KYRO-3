@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { partitionPipeline, convertLeadToSale, revertSaleToLead, setSaleDeleted } from '@/lib/dealConversion';
+import { cleanConversationNotes } from '@/lib/conversationNotes';
 import { DEFAULT_STATUSES } from '@/constants/leadStatuses';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -167,6 +168,7 @@ export const DataProvider = ({ children }) => {
     }, [user?.id, fetchData]);
 
     const updateLead = useCallback(async (id, updates) => {
+        if ('notes' in updates) updates = { ...updates, notes: cleanConversationNotes(updates.notes) };
         try {
             const { error } = await supabase.from('leads').update(updates).eq('id', id);
             if (error) throw error;
@@ -198,6 +200,7 @@ export const DataProvider = ({ children }) => {
     }, [user]);
 
     const addLead = useCallback(async (lead) => {
+        if ('notes' in lead) lead = { ...lead, notes: cleanConversationNotes(lead.notes) };
         try {
             const { data, error } = await supabase.from('leads').insert([{ ...lead, user_id: user?.id }]).select().single();
             if (error) throw error;
