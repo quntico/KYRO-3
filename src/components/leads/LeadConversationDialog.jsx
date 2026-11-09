@@ -15,6 +15,7 @@ import { es } from 'date-fns/locale';
 import { Send, User, Bot, History, MessageCircle, Paperclip, Mic, Download, Share2, X, Edit2, Trash2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 import { supabase } from '@/lib/customSupabaseClient';
+import { conversationEntries } from '@/lib/conversationNotes';
 
 const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
     const { theme } = useTheme();
@@ -44,31 +45,19 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
     }, [selectedImage, selectedPdf, editingIndex]);
 
     useEffect(() => {
+        let cancelled = false;
         if (isOpen && lead) {
-            const parseNotes = (notesStr) => {
-                if (!notesStr) return [];
-                try {
-                    const parsed = JSON.parse(notesStr);
-                    return Array.isArray(parsed) ? parsed : [{ text: notesStr, date: new Date().toISOString(), type: 'manual' }];
-                } catch (e) {
-                    return [{ text: notesStr, date: new Date().toISOString(), type: 'manual' }];
-                }
-            };
-
-            if (lead.notes) {
-                setHistory(parseNotes(lead.notes));
-            } else {
-                setHistory([]);
-            }
+            setHistory(conversationEntries(lead.notes, lead.last_activity));
 
             const fetchNotes = async () => {
                 const { data } = await supabase.from('leads').select('notes').eq('id', lead.id).single();
-                if (data && data.notes) {
-                    setHistory(parseNotes(data.notes));
+                if (!cancelled && data) {
+                    setHistory(conversationEntries(data.notes, lead.last_activity));
                 }
             };
             fetchNotes();
         }
+        return () => { cancelled = true; };
     }, [isOpen, lead]);
 
     useEffect(() => {
@@ -287,7 +276,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                             <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground opacity-50">
                                 <History className="w-12 h-12 mb-4" />
                                 <p>No hay mensajes aún.</p>
-                                <p className="text-xs">Registra el primer avance abajo.</p>
+                                <p className="text-xs">Registra aquí lo que platicaste con el cliente.</p>
                             </div>
                         ) : (
                             history.map((entry, index) => (

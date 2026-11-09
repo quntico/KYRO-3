@@ -153,13 +153,6 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate, companies = [] }
       if (lead.quotations) setFiles(lead.quotations);
       else setFiles([]);
 
-      const fetchHeavyData = async () => {
-        const { data } = await supabase.from('leads').select('quotations').eq('id', lead.id).single();
-        if (data && data.quotations) {
-            setFiles(data.quotations);
-        }
-      };
-      fetchHeavyData();
       const hasFollowUp = !!lead.follow_up_date;
       setScheduleFollowUp(hasFollowUp);
       if (hasFollowUp) {
@@ -298,6 +291,10 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate, companies = [] }
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (files.some(file => file.deferred)) {
+      toast({title:'Espera a que terminen de cargar los documentos',variant:'destructive'});
+      return;
+    }
     if (!editingLead) return;
     
     setIsSaving(true);

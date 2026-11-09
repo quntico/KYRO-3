@@ -1,9 +1,10 @@
+import { SALE_STAGES } from '@/lib/dealConversion';
+import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown } from 'lucide-react';
+import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import jsPDF from 'jspdf';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,9 +30,9 @@ const getStatusColor = (status, isLightTheme) => {
 
 const getHoverEffects = (status, isLightTheme) => {
   if (isLightTheme) {
-    return { 
-      glow: 'from-transparent', 
-      shadow: 'hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:border-primary/30 border-border bg-card' 
+    return {
+      glow: 'from-transparent',
+      shadow: 'hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:border-primary/30 border-border bg-card'
     };
   }
   switch (status) {
@@ -143,7 +144,7 @@ const getStatusTextColor = (status, isLightTheme) => {
   }
 };
 
-const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, onUpdateField, companies = [] }) => {
+const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, onUpdateField, companies = [], sale = null }) => {
   const { theme } = useTheme();
   const isLightTheme = theme === 'recilogic' || theme === 'light' || !theme;
 
@@ -166,8 +167,9 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     setIsEditingQT(false);
   };
 
-  const handleExportGenerals = (e) => {
+  const handleExportGenerals = async (e) => {
     e.stopPropagation();
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFillColor(30, 30, 30);
     doc.rect(0, 0, 210, 25, 'F');
@@ -175,7 +177,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('Generales del Cliente', 14, 16);
-    
+
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
@@ -188,7 +190,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     if (quotationNumber) {
         doc.text(`Cotización: ${quotationNumber}`, 14, 100);
     }
-    
+
     doc.save(`Generales_${(lead.name || 'Cliente').replace(/\s+/g, '_')}.pdf`);
   };
 
@@ -196,39 +198,105 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
   const statusPill = getStatusPill(lead.status, isLightTheme);
   const scoreGradient = getScoreGradient(lead.status);
   const hoverFx = getHoverEffects(lead.status, isLightTheme);
-  const statusName = getStatusName(lead.status);
+  const statusName = sale ? (SALE_STAGES.find(([id]) => id === sale.stage)?.[1] || sale.stage) : getStatusName(lead.status);
   const displayScore = getDerivedScore(lead.status, lead.score);
   const statusTextColor = getStatusTextColor(lead.status, isLightTheme);
 
-  const lastUpdateRaw = lead.lastActivity || lead.updated_at || lead.updatedAt || lead.created_at || new Date().toISOString();
-  const formattedDate = new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+  const lastUpdateRaw = lead.created_at || null;
+  const formattedDate = lastUpdateRaw ? new Date(lastUpdateRaw).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '').toUpperCase() : 'SIN FECHA';
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={false}
       animate={{ opacity: 1 }}
-      transition={{ delay: index * 0.02 }}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 280px' }}
       onClick={() => onView(lead)}
-      className={`relative px-4 pt-4 pb-14 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col h-full rounded-2xl overflow-hidden ${hoverFx.shadow}`}
+      className={`relative p-3 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col self-start rounded-2xl overflow-hidden ${hoverFx.shadow}`}
     >
       <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${statusGradient.split(' ')[0]} ${statusGradient.split(' ')[1]}`} />
-      
+
       {/* Glow effect on hover */}
       <div className={`absolute inset-0 bg-gradient-to-br ${hoverFx.glow} to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none mix-blend-screen`} />
 
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="pr-2">
-          <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.id || '').substring(0,6)}</span></span>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 mb-2 relative z-10">
+        <div className="contents">
+          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-3 gap-y-1 flex-wrap">
+             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.sourceLeadId || lead.id || '').substring(0,6)}</span></span>
              <span className="w-1 h-1 rounded-full bg-border" />
              <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
-               <Clock className="w-2.5 h-2.5" /> {formattedDate}
+               <Clock className="w-2.5 h-2.5" /> Alta: {formattedDate}
              </span>
           </div>
-          <h3 className={`text-2xl font-black tracking-tight uppercase mb-0.5 line-clamp-1 ${statusTextColor}`}>
+          <h3 className={`col-span-2 row-start-2 min-w-0 text-lg leading-tight font-black tracking-tight uppercase whitespace-normal [overflow-wrap:anywhere] ${statusTextColor}`}>
             {lead.name}
           </h3>
-          <p className="text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] truncate mt-1 flex items-center gap-2">
+
+        </div>
+
+        <div className="col-start-2 row-start-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border cursor-pointer transition-all flex items-center gap-2 ${statusPill} hover:brightness-125`}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                {statusName}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              onClick={(e) => e.stopPropagation()}
+              align="end"
+              className="bg-popover border border-border text-popover-foreground z-50 font-black text-[10px] uppercase tracking-widest rounded-xl"
+            >
+              <DropdownMenuRadioGroup value={sale ? sale.stage : lead.status} onValueChange={(newStatus) => sale ? sale.onStageChange(newStatus) : onStatusChange(lead.id, newStatus)}>
+                {sale ? SALE_STAGES.map(([id,label]) => <DropdownMenuRadioItem key={id} value={id} className="cursor-pointer rounded-lg m-1">{label}</DropdownMenuRadioItem>) : <>
+                <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
+                  <Zap className="w-3.5 h-3.5 mr-2 text-[#00D4FF]" /> Cierre
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="hot" className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer rounded-lg m-1">
+                  <Flame className="w-3.5 h-3.5 mr-2 text-red-500" /> Caliente
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="warming" className="focus:bg-emerald-500/20 focus:text-emerald-400 cursor-pointer rounded-lg m-1">
+                  <TrendingUp className="w-3.5 h-3.5 mr-2 text-emerald-500" /> Avanzando
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="warm" className="focus:bg-orange-500/20 focus:text-orange-400 cursor-pointer rounded-lg m-1">
+                  <Sun className="w-3.5 h-3.5 mr-2 text-orange-500" /> Tibio
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="cooling" className="focus:bg-cyan-500/20 focus:text-cyan-400 cursor-pointer rounded-lg m-1">
+                  <TrendingDown className="w-3.5 h-3.5 mr-2 text-cyan-500" /> Enfriando
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="cold" className="focus:bg-blue-500/20 focus:text-blue-400 cursor-pointer rounded-lg m-1">
+                  <Snowflake className="w-3.5 h-3.5 mr-2 text-blue-500" /> Frío
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="new" className="focus:bg-purple-500/20 focus:text-purple-400 cursor-pointer rounded-lg m-1">
+                  <Target className="w-3.5 h-3.5 mr-2 text-purple-500" /> Nuevo
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
+                  <TrendingDown className="w-3.5 h-3.5 mr-2 text-[#8B4513]" /> Perdido
+                </DropdownMenuRadioItem>
+                </>}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <p className="mb-2 flex flex-wrap items-center gap-x-1 text-[11px] leading-snug text-muted-foreground">
+        <Clock className="h-3 w-3 shrink-0" />{lead.reportDateLabel || 'Fecha del documento'}:
+        <time dateTime={lead.reportDate || undefined} className="font-semibold text-foreground">{displayDate(lead.reportDate)}</time>
+      </p>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 rounded-lg border border-border bg-secondary/20 px-2.5 py-2 relative z-10">
+        <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.reportBasis === 'document' ? 'Referencia documental' : 'Venta · USD'}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.value ?? null, lead.financial?.currency || 'USD')}</p></div>
+        <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.financial?.scenario ? 'Utilidad simulada' : 'Utilidad posible'}{lead.financial?.profit !== null && !lead.financial?.complete ? ' · parcial' : ''}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.profit ?? null, lead.financial?.currency || 'USD')}</p></div>
+        <div><p className="text-[9px] font-semibold text-muted-foreground">{sale ? 'Registro' : 'Conversión'}</p><p className={`text-sm leading-snug font-black ${statusTextColor}`}>{sale ? 'Venta' : `${displayScore}%`}</p></div>
+      </div>
+      <details className="mt-2 relative z-10" onClick={e => e.stopPropagation()}>
+        <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 text-[11px] font-semibold text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+          Contacto y cotización <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+        </summary>
+          <div className="min-w-0 text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] flex flex-wrap items-center gap-2">
             <span>{lead.contact}</span>
             {matchedCompany && (
               <DropdownMenu>
@@ -287,85 +355,13 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-          </p>
-        </div>
-        
-        <div onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                type="button"
-                onClick={(e) => e.stopPropagation()}
-                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border cursor-pointer transition-all flex items-center gap-2 ${statusPill} hover:brightness-125`}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                {statusName}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              onClick={(e) => e.stopPropagation()}
-              align="end" 
-              className="bg-popover border border-border text-popover-foreground z-50 font-black text-[10px] uppercase tracking-widest rounded-xl"
-            >
-              <DropdownMenuRadioGroup value={lead.status} onValueChange={(newStatus) => onStatusChange(lead.id, newStatus)}>
-                <DropdownMenuRadioItem value="closing" className="focus:bg-[#00D4FF]/20 focus:text-[#00D4FF] cursor-pointer rounded-lg m-1">
-                  <Zap className="w-3.5 h-3.5 mr-2 text-[#00D4FF]" /> Cierre
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="hot" className="focus:bg-red-500/20 focus:text-red-400 cursor-pointer rounded-lg m-1">
-                  <Flame className="w-3.5 h-3.5 mr-2 text-red-500" /> Caliente
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="warming" className="focus:bg-emerald-500/20 focus:text-emerald-400 cursor-pointer rounded-lg m-1">
-                  <TrendingUp className="w-3.5 h-3.5 mr-2 text-emerald-500" /> Avanzando
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="warm" className="focus:bg-orange-500/20 focus:text-orange-400 cursor-pointer rounded-lg m-1">
-                  <Sun className="w-3.5 h-3.5 mr-2 text-orange-500" /> Tibio
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="cooling" className="focus:bg-cyan-500/20 focus:text-cyan-400 cursor-pointer rounded-lg m-1">
-                  <TrendingDown className="w-3.5 h-3.5 mr-2 text-cyan-500" /> Enfriando
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="cold" className="focus:bg-blue-500/20 focus:text-blue-400 cursor-pointer rounded-lg m-1">
-                  <Snowflake className="w-3.5 h-3.5 mr-2 text-blue-500" /> Frío
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="new" className="focus:bg-purple-500/20 focus:text-purple-400 cursor-pointer rounded-lg m-1">
-                  <Target className="w-3.5 h-3.5 mr-2 text-purple-500" /> Nuevo
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
-                  <TrendingDown className="w-3.5 h-3.5 mr-2 text-[#8B4513]" /> Perdido
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mb-4 relative z-10">
-        <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">% de Conversión</span>
-            <Target className="w-3 h-3 text-muted-foreground/30" />
           </div>
-          <span className={`text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r ${scoreGradient}`}>
-            {displayScore}%
-          </span>
-          <div className={`absolute bottom-0 left-0 h-[2px] bg-gradient-to-r ${scoreGradient} rounded-b-xl`} style={{width: `${displayScore}%`}} />
-        </div>
-        <div className="p-3 bg-secondary/20 border border-border flex flex-col relative group-hover:border-border/80 transition-colors rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] uppercase font-black text-muted-foreground/80 tracking-widest">Valoración</span>
-            <Banknote className="w-3 h-3 text-muted-foreground/30" />
-          </div>
-          <span className="text-2xl font-black text-foreground tracking-tight mt-1">
-            ${(lead.value || 0).toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      <div className="space-y-2 text-[11px] font-black tracking-[0.15em] relative z-10 flex-1">
+      <div className="space-y-2 text-[11px] font-black tracking-[0.15em] relative z-10 pt-2">
         <div className="flex items-center text-muted-foreground hover:text-foreground transition-colors px-3 py-2 bg-secondary/30 border border-border rounded-full">
            <Mail className="w-4 h-4 mr-3 text-primary/50" />
            <span className="truncate uppercase">{lead.email || 'NO_DATA'}</span>
         </div>
-        
+
         <div className="flex items-center text-muted-foreground hover:text-foreground transition-colors px-3 py-2 bg-secondary/30 border border-border rounded-full">
            <Phone className="w-4 h-4 mr-3 text-primary/50" />
            <span className="uppercase">{lead.phone || 'NO_DATA'}</span>
@@ -379,14 +375,14 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         )}
 
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-          <div 
+          <div
             className={`flex-1 flex items-center bg-secondary/30 border border-border rounded-full px-3 py-2 transition-all ${isEditingQT ? 'focus-within:border-primary/50' : 'cursor-pointer hover:border-border/80'}`}
             onClick={(e) => { e.stopPropagation(); if (!isEditingQT) setIsEditingQT(true); }}
           >
             <span className="text-[10px] text-muted-foreground/60 tracking-[0.15em] mr-2 uppercase shrink-0">QT//</span>
             {isEditingQT ? (
               <>
-                <input 
+                <input
                    value={quotationNumber}
                    onChange={(e) => setQuotationNumber(e.target.value)}
                    placeholder="SIN DEFINIR"
@@ -394,7 +390,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                    onClick={(e) => e.stopPropagation()}
                    onKeyDown={(e) => { if(e.key === 'Enter') { handleQuotationSave(e); } }}
                  />
-                <button 
+                <button
                   onClick={handleQuotationSave}
                   className="w-5 h-5 rounded flex items-center justify-center bg-primary/20 text-primary hover:bg-primary/40 ml-1 shrink-0 transition-colors"
                   title="Guardar Cotización"
@@ -408,7 +404,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
               </span>
             )}
           </div>
-          
+
           <button
             title="Ver Cotización PDF"
             disabled={!(lead.quotations && lead.quotations.length > 0)}
@@ -420,14 +416,15 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
             onClick={(e) => {
               e.stopPropagation();
               if (lead.quotations && lead.quotations.length > 0) {
-                const url = lead.quotations[lead.quotations.length - 1].url;
-                window.open(url, '_blank');
+                const file = lead.quotations[lead.quotations.length - 1];
+                if (file.deferred) onView(lead, file);
+                else if (file.url) window.open(file.url, '_blank');
               }
             }}
           >
             <FileText className="w-4 h-4" />
           </button>
-          
+
           <button
             title="Exportar Generales"
             className="w-9 h-9 rounded-full bg-secondary/30 border border-border flex items-center justify-center text-muted-foreground/60 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all shrink-0"
@@ -438,8 +435,16 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
       </div>
 
-      {/* Action Overlay */}
-      <div className="absolute bottom-0 left-0 w-full h-14 bg-gradient-to-t from-background via-background/80 to-transparent flex items-center justify-center gap-2 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
+      </details>
+
+      {/* Primary actions are available without expanding the contact details. */}
+      <div role="group" aria-label={`Acciones de ${lead.name}`} onClick={e => e.stopPropagation()} className="relative z-10 mt-2 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-2">
+         {sale ? <>
+           <Button size="sm" variant="outline" onClick={() => onView(lead)}>Ver venta</Button>
+           <Button size="sm" variant="outline" onClick={sale.onViewFile}>Expediente</Button>
+           <Button size="sm" variant="outline" className="border-cyan-400/40 bg-cyan-400/10 text-cyan-400" onClick={sale.onRevert}><Undo2 className="mr-1.5 h-4 w-4" />Regresar a Leads</Button>
+           <Button size="sm" variant="outline" className="border-red-400/40 bg-red-400/10 text-red-400 hover:bg-red-400/20" onClick={sale.onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Borrar venta</Button>
+         </> : <>
          <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-secondary border border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
            <Edit className="w-4 h-4" />
          </Button>
@@ -455,6 +460,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
          <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-600 dark:text-red-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} title="Eliminar">
            <Trash2 className="w-4 h-4" />
          </Button>
+         </>}
       </div>
     </motion.div>
   );

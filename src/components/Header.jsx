@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useSidebar } from '@/contexts/SidebarContext';
-import AISandbox from './ai/AISandbox';
+const AISandbox = React.lazy(() => import('./ai/AISandbox'));
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 import {
   DropdownMenu,
@@ -63,6 +63,8 @@ const SearchEngineSelector = () => {
 const Header = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sandboxOpen, setSandboxOpen] = useState(false);
+  const [sandboxLoaded, setSandboxLoaded] = useState(false);
+  const openSandbox = () => { setSandboxLoaded(true); setSandboxOpen(true); };
   const [initialPrompt, setInitialPrompt] = useState('');
   const navigate = useNavigate();
   const { toggleSidebar, toggleMobileSidebar, isCollapsed } = useSidebar();
@@ -81,7 +83,7 @@ const Header = () => {
     e.preventDefault();
     if (searchTerm.trim()) {
       setInitialPrompt(searchTerm);
-      setSandboxOpen(true);
+      openSandbox();
       setSearchTerm('');
     }
   };
@@ -118,7 +120,7 @@ const Header = () => {
               className="w-full appearance-none bg-secondary/40 border-border pl-12 pr-12 focus:bg-card focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all rounded-2xl h-11 text-sm placeholder:text-muted-foreground/60 cursor-pointer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onClick={() => setSandboxOpen(true)}
+              onClick={openSandbox}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                <div className="text-[9px] font-black text-muted-foreground/50 bg-secondary px-1.5 py-0.5 rounded border border-border uppercase tracking-tighter">Modo IA</div>
@@ -128,11 +130,13 @@ const Header = () => {
         </form>
       </div>
 
+      {sandboxLoaded && <React.Suspense fallback={<div role="status" className="fixed bottom-5 right-5 rounded-xl border border-primary/30 bg-card p-4">Abriendo asistente…</div>}>
       <AISandbox 
         open={sandboxOpen} 
         onOpenChange={setSandboxOpen} 
         initialPrompt={initialPrompt} 
       />
+      </React.Suspense>}
       <div className="flex items-center gap-3">
         <span className="text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v6.0</span>
         

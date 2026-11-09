@@ -1,16 +1,27 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { partitionPipeline, convertLeadToSale, revertSaleToLead, setSaleDeleted } from '@/lib/dealConversion';
+import { cleanConversationNotes } from '@/lib/conversationNotes';
 import { DEFAULT_STATUSES } from '@/constants/leadStatuses';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
+
+import { loadWorkspaceData, readArrayCache } from '@/lib/workspaceLoader';
 
 const DataContext = createContext(undefined);
 
 export const DataProvider = ({ children }) => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
+    const [pipelineLoading, setPipelineLoading] = useState(true);
+    const [dataError, setDataError] = useState(null);
+    const pipelineReady = useRef(null);
+    const inFlight = useRef(null);
+    const currentUser = useRef(user?.id);
+    currentUser.current = user?.id;
     const [leads, setLeads] = useState([]);
     const [deals, setDeals] = useState([]);
+    const [deletedDeals, setDeletedDeals] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [contacts, setContacts] = useState([]);
     const [notes, setNotes] = useState([]);
@@ -21,18 +32,17 @@ export const DataProvider = ({ children }) => {
     useEffect(() => {
         if (user?.id) {
             const loadCache = (key, setter) => {
-                try {
-                    const cached = localStorage.getItem(`kyro-${key}-${user.id}`);
-                    if (cached) {
-                        setter(JSON.parse(cached));
-                    }
-                } catch (e) {
-                    console.error(`Error loading cache for ${key}:`, e);
-                }
+                const cached = readArrayCache(localStorage, `kyro-${key}-${user.id}`);
+                if (cached) setter(cached);
+                return cached !== null;
             };
+            const hasLeads = loadCache('leads', setLeads);
+            const hasDeals = loadCache('deals', setDeals);
+            const cachedPipeline = hasLeads && hasDeals;
+            pipelineReady.current = cachedPipeline ? user.id : null;
+            setPipelineLoading(!cachedPipeline);
 
-            loadCache('leads', setLeads);
-            loadCache('deals', setDeals);
+            loadCache('deletedDeals', setDeletedDeals);
             loadCache('tasks', setTasks);
             loadCache('contacts', setContacts);
             loadCache('notes', setNotes);
@@ -41,90 +51,58 @@ export const DataProvider = ({ children }) => {
         }
     }, [user?.id]);
 
-    const fetchData = useCallback(async () => {
-        if (!user?.id) {
-            setLoading(false);
-            return;
+    const fetchData = useCallback((options = {}) => {
+        const userId = user?.id;
+        if (!userId) { setLoading(false); setPipelineLoading(false); return Promise.resolve(); }
+        if (inFlight.current?.userId === userId) {
+            return options.force ? inFlight.current.promise.then(() => fetchData()) : inFlight.current.promise;
         }
-
-        try {
-            // Speed up: if we have any data in memory or cache, don't show full loading
-            const hasCache = !!localStorage.getItem(`kyro-leads-${user.id}`);
-            if (leads.length === 0 && !hasCache) {
-                setLoading(true);
-            } else {
-                setLoading(false);
-            }
-
-            // Execute all fetches in parallel with a timeout/safety
-            const [
-                { data: leadsData, error: e1 },
-                { data: dealsData, error: e2 },
-                { data: tasksData, error: e3 },
-                { data: contactsData, error: e4 },
-                { data: logisticsData, error: e6 },
-            ] = await Promise.all([
-                supabase.from('leads').select('id, name, contact, position, email, phone, status, machines, follow_up_date, created_at, user_id, last_activity, score, dynamic_quotation_url, next_step, activity_status, source, notes').eq('user_id', user.id),
-                supabase.from('deals').select('*').eq('user_id', user.id),
-                supabase.from('tasks').select('*').eq('user_id', user.id),
-                supabase.from('contacts').select('*').eq('user_id', user.id),
-                supabase.from('logistics').select('*').eq('user_id', user.id),
-            ]).catch(err => {
-                console.error("Data fetch network error:", err);
-                return [
-                    { data: [], error: err }, { data: [], error: err }, 
-                    { data: [], error: err }, { data: [], error: err }, 
-                    { data: [], error: err }, { data: [], error: err }
-                ];
-            });
-
-            if (e1) console.error("Error fetching leads:", e1);
-            if (e2) console.error("Error fetching deals:", e2);
-            if (e3) console.error("Error fetching tasks:", e3);
-            if (e4) console.error("Error fetching contacts:", e4);
-            if (e6) console.error("Error fetching logistics:", e6);
-
-            const safeData = (data) => Array.isArray(data) ? data : [];
-
-            const lData = safeData(leadsData);
-            const dData = safeData(dealsData);
-            const tData = safeData(tasksData);
-            const cData = safeData(contactsData);
-            const logData = safeData(logisticsData);
-
-            setLeads(lData);
-            setDeals(dData);
-            setTasks(tData);
-            setContacts(cData);
-            setLogistics(logData);
-
-
-
-            // Update cache safely
-            saveToCache(`leads-${user.id}`, lData);
-            saveToCache(`deals-${user.id}`, dData);
-            saveToCache(`tasks-${user.id}`, tData);
-            saveToCache(`contacts-${user.id}`, cData);
-            saveToCache(`logistics-${user.id}`, logData);
-
-        } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [user?.id, leads.length]);
+        inFlight.current?.controller.abort();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        const isCurrent = () => currentUser.current === userId;
+        setDataError(null);
+        setPipelineLoading(pipelineReady.current !== userId);
+        setLoading(true);
+        const promise = loadWorkspaceData({
+            db: supabase, userId, signal: controller.signal,
+            onPipeline: (rawLeads, rawDeals) => {
+                if (!isCurrent()) return;
+                const pipeline = partitionPipeline(rawLeads, rawDeals);
+                const trash = rawDeals.filter(d => d.closing_status?.deleted_at && !d.closing_status?.reverted_at);
+                setLeads(pipeline.leads);
+                setDeals(pipeline.deals);
+                setDeletedDeals(trash);
+                pipelineReady.current = userId;
+                saveToCache(`leads-${userId}`, pipeline.leads);
+                saveToCache(`deals-${userId}`, pipeline.deals);
+                saveToCache(`deletedDeals-${userId}`, trash);
+            },
+            onSection: (table, data) => {
+                if (!isCurrent()) return;
+                ({tasks: setTasks, contacts: setContacts, logistics: setLogistics})[table](data);
+                saveToCache(`${table}-${userId}`, data);
+            },
+            onPipelineSettled: () => { if (isCurrent()) setPipelineLoading(false); },
+            onError: (section, error) => {
+                console.error(`Error fetching ${section}:`, error);
+                if (isCurrent() && section === 'pipeline') setDataError('No se pudo actualizar la cartera. Tus datos guardados se conservan.');
+            },
+        }).finally(() => {
+            clearTimeout(timeout);
+            if (inFlight.current?.promise === promise) inFlight.current = null;
+            if (isCurrent()) setLoading(false);
+        });
+        inFlight.current = {userId, promise, controller};
+        return promise;
+    }, [user?.id]);
 
     const saveToCache = (key, data) => {
         try {
             localStorage.setItem(`kyro-${key}`, JSON.stringify(data));
         } catch (e) {
-            if (e.name === 'QuotaExceededError') {
-                console.warn('LocalStorage quota exceeded, cleaning up oldest kyro data...');
-                // Optional: clear all kyro data if full to make room for new one
-                Object.keys(localStorage).forEach(k => {
-                    if (k.startsWith('kyro-')) localStorage.removeItem(k);
-                });
-            }
+            // A full browser cache must never erase the user's other KYRO settings.
+            console.warn('No se pudo actualizar la caché local:', e.name);
         }
     };
 
@@ -142,7 +120,26 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
+    const convertLead = useCallback(async (leadId) => {
+        const deal = await convertLeadToSale(supabase, user?.id, leadId);
+        setDeals(prev => [deal, ...prev.filter(d => d.id !== deal.id)]);
+        setLeads(prev => prev.filter(l => String(l.id) !== String(leadId)));
+        return deal;
+    }, [user?.id]);
+
+    const revertDeal = useCallback(async (dealId) => {
+        await revertSaleToLead(supabase, user?.id, dealId);
+        await fetchData({force: true});
+    }, [user?.id, fetchData]);
+
+    const setDealDeleted = useCallback(async (dealId, deleted) => {
+        await setSaleDeleted(supabase, user?.id, dealId, deleted);
+        await fetchData({force: true});
+    }, [user?.id, fetchData]);
+
     const updateLead = useCallback(async (id, updates) => {
+        if (updates.quotations?.some(file => file.deferred)) throw new Error('Carga la ficha completa antes de modificar sus documentos.');
+        if ('notes' in updates) updates = { ...updates, notes: cleanConversationNotes(updates.notes) };
         try {
             const { error } = await supabase.from('leads').update(updates).eq('id', id);
             if (error) throw error;
@@ -169,13 +166,12 @@ export const DataProvider = ({ children }) => {
             return data;
         } catch (error) {
             console.error('Error adding deal:', error);
-            const localDeal = { ...deal, id: Date.now(), user_id: user?.id, created_at: new Date().toISOString() };
-            setDeals(prev => [localDeal, ...prev]);
-            return localDeal;
+            return null;
         }
     }, [user]);
 
     const addLead = useCallback(async (lead) => {
+        if ('notes' in lead) lead = { ...lead, notes: cleanConversationNotes(lead.notes) };
         try {
             const { data, error } = await supabase.from('leads').insert([{ ...lead, user_id: user?.id }]).select().single();
             if (error) throw error;
@@ -323,11 +319,15 @@ export const DataProvider = ({ children }) => {
     const value = useMemo(() => ({
         leads,
         deals,
+        deletedDeals,
+        setDealDeleted,
         tasks,
         contacts,
         notes,
         logistics,
         loading,
+        pipelineLoading,
+        dataError,
         fetchData,
         updateLead,
         removeLead,
@@ -335,6 +335,8 @@ export const DataProvider = ({ children }) => {
         updateDeal,
         removeDeal,
         addDeal,
+        convertLead,
+        revertDeal,
         setTasks,
         addTask,
         updateTask,
@@ -351,7 +353,7 @@ export const DataProvider = ({ children }) => {
         addLeadStatus,
         updateLeadStatus,
         deleteLeadStatus
-    }), [leads, deals, tasks, contacts, notes, logistics, loading, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
+    }), [leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, pipelineLoading, dataError, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

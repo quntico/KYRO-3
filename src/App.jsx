@@ -11,10 +11,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 import { useData } from '@/contexts/DataContext';
 
-import Dashboard from '@/pages/Dashboard';
-import Leads from '@/pages/Leads';
-// const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
-// const Leads = React.lazy(() => import('@/pages/Leads'));
+const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
+const Leads = React.lazy(() => import('@/pages/Leads'));
 const Deals = React.lazy(() => import('@/pages/Deals'));
 const Analytics = React.lazy(() => import('@/pages/Analytics'));
 const Settings = React.lazy(() => import('@/pages/Settings'));
@@ -60,18 +58,8 @@ const ProtectedRoute = ({ children }) => {
 const AppContent = () => {
   const { isCollapsed } = useSidebar();
   const { user } = useAuth();
-  const { loading: dataLoading } = useData();
-  const [showSplash, setShowSplash] = React.useState(true);
   const [showScrollTop, setShowScrollTop] = React.useState(false);
   const scrollContainerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    // Reducimos el tiempo de splash screen para una carga más rápida
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 500); // Antes era 1000
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleScroll = (e) => {
     if (e.currentTarget.scrollTop > 300) {
@@ -89,13 +77,6 @@ const AppContent = () => {
   };
 
   if (!user) return <Navigate to="/login" replace />;
-
-  const hasCache = !!localStorage.getItem(`kyro-leads-${user?.id}`);
-  const isLoading = dataLoading && !hasCache && showSplash;
-
-  if (isLoading) {
-    return <Fallback />;
-  }
 
   return (
     <div className="flex h-[100dvh] w-full bg-background text-foreground transition-colors duration-300 overflow-hidden select-none">
