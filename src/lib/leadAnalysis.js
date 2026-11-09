@@ -1,15 +1,16 @@
+import {contactMatches, contactDay} from './dailyContacts.js';
 export const LEAD_STATUSES = [
   ['all', 'Todos'], ['new', 'Nuevos'], ['closing', 'Próximo cierre'],
   ['hot', 'Calientes'], ['warming', 'Avanzando'], ['warm', 'Tibios'],
   ['cooling', 'Enfriando'], ['cold', 'Fríos'], ['declined', 'Declinados / riesgo'],
 ];
 export const DATE_FIELDS = {
-  document: 'Fecha del documento', created: 'Alta en KYRO',
+  contact: 'Último contacto', document: 'Fecha del documento', created: 'Alta en KYRO',
   activity: 'Última actividad', followup: 'Próximo seguimiento',
 };
 export const DEFAULT_FILTERS = {
   dateField: 'document', month: '', from: '', to: '', undated: false,
-  initial: '', min: '', max: '', basis: 'registered', currency: 'all',
+  contact: 'all', initial: '', min: '', max: '', basis: 'registered', currency: 'all',
 };
 export const normalizeText = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
 export function numberOrNull(value) {
@@ -29,6 +30,7 @@ export function calendarDate(value) {
 }
 export function leadDate(lead, field) {
   const directory = lead.activity_status?.clientDirectory || {};
+  if (field === 'contact') return calendarDate(lead.last_contact_date);
   if (field === 'created') return calendarDate(lead.created_at);
   if (field === 'activity') return calendarDate(lead.last_activity);
   if (field === 'followup') return calendarDate(lead.follow_up_date || lead.next_step?.date);
@@ -82,7 +84,7 @@ export function filterError(filters) {
   if ((min !== null && min < 0) || (max !== null && max < 0)) return 'Los importes del filtro deben ser positivos o cero.';
   return '';
 }
-export function analyzeLeads(leads, { filters = DEFAULT_FILTERS, search = '', status = 'all', companies = ['all'], sort = 'status', margin = '' } = {}) {
+export function analyzeLeads(leads, { filters = DEFAULT_FILTERS, search = '', status = 'all', companies = ['all'], sort = 'status', margin = '', today = contactDay() } = {}) {
   if (filterError(filters)) return [];
   const min = numberOrNull(filters.min), max = numberOrNull(filters.max);
   const query = normalizeText(search);
@@ -96,6 +98,7 @@ export function analyzeLeads(leads, { filters = DEFAULT_FILTERS, search = '', st
     const haystack = [lead.name, lead.contact, lead.email, lead.phone, ...(lead.machines || []).map(m => m?.name)].map(normalizeText).join(' ');
     const initial = String(lead.name || '').trim().charAt(0).toLocaleUpperCase('es');
     if (query && !haystack.includes(query)) return false;
+    if (!contactMatches(lead.last_contact_date, filters.contact, today)) return false;
     if (status !== 'all' && lead.status !== status) return false;
     if (!companies.includes('all') && !companies.includes(lead.activity_status?.managingCompanyId || 'comp-1')) return false;
     if (filters.initial === '#' ? !/\d/.test(initial) : filters.initial && (filters.initial === 'Ñ' ? initial !== 'Ñ' : initial === 'Ñ' || normalizeText(initial) !== normalizeText(filters.initial))) return false;
