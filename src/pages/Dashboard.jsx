@@ -18,7 +18,7 @@ import DynamicClock from '@/components/dashboard/DynamicClock';
 import NewsTicker from '@/components/dashboard/NewsTicker';
 
 const Dashboard = () => {
-  const { leads, deals, tasks, contacts, loading, setTasks } = useData();
+  const { leads, deals, tasks, contacts, pipelineLoading: loading, setTasks } = useData();
   const { settings, loading: settingsLoading } = useSettings();
 
   const [isStatDetailDialogOpen, setIsStatDetailDialogOpen] = useState(false);
@@ -103,7 +103,7 @@ const Dashboard = () => {
     </motion.div>
   );
 
-  if (loading || settingsLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center w-full h-full bg-background">
         <KyroRune className="w-16 h-16 animate-spin text-primary" />

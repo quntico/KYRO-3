@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext.jsx';
 import MobileNav from '@/components/MobileNav';
 import Header from '@/components/Header';
+import CalendarSyncWatcher from '@/components/CalendarSyncWatcher';
 import { Command as KyroRune, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
@@ -19,6 +20,7 @@ const Settings = React.lazy(() => import('@/pages/Settings'));
 const ClientOnboarding = React.lazy(() => import('@/pages/ClientOnboarding'));
 const Clients = React.lazy(() => import('@/pages/Clients'));
 const Logistics = React.lazy(() => import('@/pages/Logistics'));
+const Agenda = React.lazy(() => import('@/pages/Agenda'));
 const ToDo = React.lazy(() => import('@/pages/ToDo'));
 const Directory = React.lazy(() => import('@/pages/Directory'));
 const News = React.lazy(() => import('@/pages/News'));
@@ -52,8 +54,7 @@ const ProtectedRoute = ({ children }) => {
     return <Fallback />;
   }
 
-  // Bypass Auth: Always return children
-  return children;
+  return user ? children : <Navigate to="/login" replace />;
 };
 const AppContent = () => {
   const { isCollapsed } = useSidebar();
@@ -80,6 +81,7 @@ const AppContent = () => {
 
   return (
     <div className="flex h-[100dvh] w-full bg-background text-foreground transition-colors duration-300 overflow-hidden select-none">
+      <CalendarSyncWatcher />
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 md:pl-20 overflow-hidden relative">
         <Header />
@@ -101,6 +103,7 @@ const AppContent = () => {
               <Route path="clients" element={<Clients />} />
               <Route path="logistics" element={<Logistics />} />
               <Route path="industrial-logistics" element={<Logistics />} />
+              <Route path="agenda" element={<Agenda />} />
               <Route path="todo" element={<ToDo />} />
               <Route path="directory" element={<Directory />} />
               <Route path="news" element={<News />} />

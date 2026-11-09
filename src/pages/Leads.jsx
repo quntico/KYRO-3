@@ -192,45 +192,15 @@ const Leads = () => {
   }, []);
 
   const handleScheduleFollowUp = useCallback(async (lead, actionType, due) => {
+    const {data: task, error} = await supabase.rpc('kyro_schedule_followup', {
+      p_lead_id:lead.id, p_title:actionType, p_due:due.toISOString()
+    });
+    if(error) {toast({title:'No se pudo agendar',description:error.message,variant:'destructive'}); return;}
+    updateTaskByLeadId(lead.id,task);
     closeDialogs();
-    const newTask = {
-      user_id: user.id,
-      title: `${actionType} con ${lead.name}`,
-      due: due.toISOString(),
-      client: lead.name,
-      priority: 'medium',
-      completed: false,
-      attachments: [],
-      lead_id: lead.id,
-    };
-
-    const { data: upsertedTask, error: taskError } = await supabase
-      .from('tasks')
-      .upsert(newTask, { onConflict: 'lead_id' }).select().single();
-
-    if (taskError) {
-      toast({ title: "Error al agendar tarea", description: taskError.message, variant: "destructive" });
-    } else {
-      updateTaskByLeadId(lead.id, upsertedTask);
-    }
-
-    const { data: updatedLead, error: leadError } = await supabase
-      .from('leads')
-      .update({ next_step: { type: actionType, date: due.toISOString() }, last_activity: new Date().toISOString() })
-      .eq('id', lead.id)
-      .select()
-      .single();
-
-    if (leadError) {
-      toast({ title: "Error al actualizar prospecto", description: leadError.message, variant: "destructive" });
-    } else {
-      updateLead(updatedLead);
-      toast({
-        title: "✅ Seguimiento Agendado",
-        description: `Tarea "${actionType} con ${lead.name}" creada en tu Agenda.`,
-      });
-    }
-  }, [closeDialogs, user, updateLead, updateTaskByLeadId]);
+    toast({title:'Seguimiento guardado',description:'Disponible en Agenda. El historial anterior se conserva.'});
+    await fetchData({force:true});
+  }, [closeDialogs, updateTaskByLeadId, fetchData]);
 
   const conversionInFlight = useRef(false);
   const handleConvertToDeal = useCallback(async (leadToConvert) => {

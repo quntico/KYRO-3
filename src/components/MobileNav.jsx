@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Target, HeartHandshake as Handshake, ListChecks, BookUser, MoreHorizontal, BarChart2, Settings, UserPlus, Ship, Newspaper, LogOut } from 'lucide-react';
+import { CalendarDays, LayoutDashboard, Target, HeartHandshake as Handshake, ListChecks, BookUser, MoreHorizontal, BarChart2, Settings, UserPlus, Ship, Newspaper, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -9,14 +9,15 @@ const mainNavItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Tablero' },
   { to: '/leads', icon: Target, label: 'Prospectos' },
   { to: '/deals', icon: Handshake, label: 'Ventas' },
-  { to: '/news', icon: Newspaper, label: 'Noticias' },
+  { to: '/agenda', icon: CalendarDays, label: 'Agenda' },
 ];
 
 const moreNavItems = [
+  { to: '/news', icon: Newspaper, label: 'Noticias' },
   { to: '/todo', icon: ListChecks, label: 'Tareas' },
   { to: '/directory', icon: BookUser, label: 'Directorio' },
   { to: '/clients', icon: UserPlus, label: 'Clientes' },
-  { to: '/client-onboarding', icon: UserPlus, label: 'Alta' },
+  { to: '/onboarding', icon: UserPlus, label: 'Alta' },
   { to: '/logistics', icon: Ship, label: 'Logística' },
   { to: '/analytics', icon: BarChart2, label: 'Analíticas' },
   { to: '/settings', icon: Settings, label: 'Ajustes' },

@@ -1,3 +1,4 @@
+import {authenticate} from './_lib/security.js';
 import openai, { DEFAULT_MODEL } from './_lib/openai.js';
 
 /**
@@ -5,6 +6,8 @@ import openai, { DEFAULT_MODEL } from './_lib/openai.js';
  * Description: Recommends specific business actions based on goals and context.
  */
 export default async function handler(req, res) {
+    if(!await authenticate(req,res,{ai:true})) return;
+    if(!process.env.OPENAI_API_KEY) return res.status(503).json({error:'La IA requiere configurar la clave en el servidor. Tu agenda funciona sin ella.'});
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }

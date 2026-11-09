@@ -107,6 +107,18 @@ const NoteContentEditor = ({ initialContent, onChange }) => {
   );
 };
 
+  const safeFormat = (date, formatStr) => {
+    try {
+      if (!date) return "N/A";
+      const d = typeof date === 'string' ? parseISO(date) : new Date(date);
+      if (isNaN(d.getTime())) return "N/A";
+      return format(d, formatStr, { locale: es });
+    } catch (e) {
+      return "N/A";
+    }
+  };
+
+
 const ToDo = () => {
   const { theme } = useTheme();
   const {
@@ -115,7 +127,7 @@ const ToDo = () => {
     leads, uploadMedia
   } = useData();
 
-  const [activeView, setActiveView] = useState('notes'); // 'notes', 'tasks', 'calendar'
+  const [activeView, setActiveView] = useState('tasks'); // 'notes', 'tasks', 'calendar'
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
@@ -139,7 +151,7 @@ const ToDo = () => {
         return dateB - dateA;
       });
     }
-    return tasksArray.filter(t =>
+    return tasksArray.filter(t => t.status !== 'cancelled').filter(t =>
       (t.title?.toLowerCase().includes(query)) ||
       (t.description?.toLowerCase().includes(query))
     ).sort((a, b) => {
@@ -148,17 +160,6 @@ const ToDo = () => {
       return dateB - dateA;
     });
   }, [activeView, notes, tasks, searchQuery]);
-
-  const safeFormat = (date, formatStr) => {
-    try {
-      if (!date) return "N/A";
-      const d = typeof date === 'string' ? parseISO(date) : new Date(date);
-      if (isNaN(d.getTime())) return "N/A";
-      return format(d, formatStr, { locale: es });
-    } catch (e) {
-      return "N/A";
-    }
-  };
 
   const safeFormatDistance = (date) => {
     try {
@@ -181,13 +182,11 @@ const ToDo = () => {
   const handleSaveNote = async () => {
     if (!selectedItem || activeView !== 'notes') return;
     setIsSaving(true);
-    await updateNote(selectedItem.id, {
-      title: selectedItem.title,
-      content: selectedItem.content,
-      updated_at: new Date().toISOString()
-    });
-    setIsSaving(false);
-    toast({ title: "Nota guardada" });
+    try {
+      await updateNote(selectedItem.id, {title:selectedItem.title,content:selectedItem.content,updated_at:new Date().toISOString()});
+      toast({title:'Nota guardada'});
+    } catch {} finally {setIsSaving(false);}
+
   };
 
   const handleCreateNew = () => {
@@ -199,7 +198,7 @@ const ToDo = () => {
         tags: [],
         attachments: []
       };
-      addNote(newNote).then(res => setSelectedItem(res));
+      addNote(newNote).then(res => setSelectedItem(res)).catch(()=>{});
     } else {
       setIsNewTaskDialogOpen(true);
     }
@@ -229,7 +228,7 @@ const ToDo = () => {
     const updatedItem = { ...item, completed: isCompleted };
 
     if (activeView === 'tasks' || item.due) { // Works for tasks or items with due dates
-      updateTask(updatedItem);
+      try { await updateTask(updatedItem); } catch { return; }
       if (selectedItem?.id === item.id) {
         setSelectedItem(updatedItem);
       }

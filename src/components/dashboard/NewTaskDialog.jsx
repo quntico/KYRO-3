@@ -23,6 +23,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from '@/components/ui/use-toast';
+import { mexicoLocalToISO } from '@/lib/agenda';
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 
@@ -39,6 +41,7 @@ const taskTypes = [
 ];
 
 const NewTaskDialog = ({ open, onOpenChange, onAddTask, onUpdateTask, contacts = [], leads = [], taskToEdit, quickAddInfo }) => {
+  const [saving,setSaving] = useState(false);
   const [taskType, setTaskType] = useState('');
   const [customTitle, setCustomTitle] = useState('');
   const [date, setDate] = useState(new Date());
@@ -97,7 +100,8 @@ const NewTaskDialog = ({ open, onOpenChange, onAddTask, onUpdateTask, contacts =
     return allClients.filter((v, i, a) => a.findIndex(t => (t.value === v.value)) === i);
   }, [contacts, leads]);
 
-  const handleSaveTask = () => {
+  const handleSaveTask = async () => {
+    if(saving) return;
     const title = taskType === 'Otro' ? customTitle : taskType;
     if (!title || !date || !time) {
       return;
@@ -117,19 +121,21 @@ const NewTaskDialog = ({ open, onOpenChange, onAddTask, onUpdateTask, contacts =
       id: isEditMode ? taskToEdit.id : Date.now(),
       title,
       priority: 'medium',
-      due: dueDateTime.toISOString(),
+      due: mexicoLocalToISO(format(date,'yyyy-MM-dd'),time),
+      lead_id: leads.find(l=>l.name===client)?.id ?? null,
       client: client,
       completed: isEditMode ? taskToEdit.completed : false,
       paymentConcept: taskType === 'Pago' ? paymentConcept : undefined,
       paymentAmount: taskType === 'Pago' ? parseFloat(paymentAmount) : undefined,
     };
 
-    if (isEditMode) {
-      onUpdateTask(taskData);
-    } else {
-      onAddTask(taskData);
-    }
-    onOpenChange(false);
+    setSaving(true);
+    try {
+      if (isEditMode) await onUpdateTask(taskData); else await onAddTask(taskData);
+      onOpenChange(false);
+    } catch(error) {toast({title:'No se guardó la tarea',description:error.message,variant:'destructive'});}
+    finally {setSaving(false);}
+
   };
 
   return (
@@ -294,7 +300,7 @@ const NewTaskDialog = ({ open, onOpenChange, onAddTask, onUpdateTask, contacts =
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSaveTask} className="text-white bg-gradient-to-r from-primary to-accent button-glow">
+          <Button disabled={saving} onClick={handleSaveTask} className="text-white bg-gradient-to-r from-primary to-accent button-glow">
             {isEditMode ? 'Guardar Cambios' : 'Guardar Tarea'}
           </Button>
         </DialogFooter>

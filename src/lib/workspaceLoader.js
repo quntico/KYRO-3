@@ -12,7 +12,7 @@ export async function loadWorkspaceData({ db, userId, signal, onPipeline, onSect
     .then(([leads, deals]) => onPipeline(leads, deals))
     .catch(error => onError('pipeline', error))
     .finally(onPipelineSettled);
-  const secondary = ['tasks', 'contacts', 'logistics'].map(table => read(table)
+  const secondary = ['tasks', 'contacts', 'logistics', 'notes'].map(table => read(table)
     .then(data => onSection(table, data))
     .catch(error => onError(table, error)));
   await Promise.all([pipeline, ...secondary]);

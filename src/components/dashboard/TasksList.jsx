@@ -9,6 +9,7 @@ import React, { useState } from 'react';
     import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
     import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
     import { toast } from '@/components/ui/use-toast';
+    import { useData } from '@/contexts/DataContext';
     import { useTheme } from '@/contexts/ThemeContext.jsx';
 
     const TasksList = ({ tasks, setTasks, contacts, leads }) => {
@@ -29,30 +30,16 @@ import React, { useState } from 'react';
         return <CalendarIcon className="w-4 h-4" />;
       };
 
-      const handleAddTask = (newTask) => {
-        const updatedTasks = [...tasks, newTask].sort((a, b) => parseISO(a.due) - parseISO(b.due));
-        setTasks(updatedTasks);
-      };
-
-      const handleUpdateTask = (updatedTask) => {
-        const updatedTasks = tasks.map(task => task.id === updatedTask.id ? updatedTask : task);
-        setTasks(updatedTasks.sort((a, b) => parseISO(a.due) - parseISO(b.due)));
-        setTaskToEdit(null);
-      };
-
-      const handleDeleteTask = () => {
-        if (taskToDelete) {
-          setTasks(tasks.filter(task => task.id !== taskToDelete.id));
-          setTaskToDelete(null);
-          toast({
-            title: "Tarea eliminada",
-            description: "La tarea ha sido eliminada de tu agenda.",
-          });
-        }
+      const {addTask,updateTask,removeTask} = useData();
+      const handleAddTask = addTask;
+      const handleUpdateTask = async task => {await updateTask(task); setTaskToEdit(null);};
+      const handleDeleteTask = async () => {
+        if(!taskToDelete) return;
+        try {await removeTask(taskToDelete.id);setTaskToDelete(null);toast({title:'Tarea cancelada'});} catch {}
       };
 
       const selectedDayTasks = tasks
-        .filter(task => isSameDay(parseISO(task.due), selectedDate))
+        .filter(task => task.status !== 'cancelled').filter(task => isSameDay(parseISO(task.due), selectedDate))
         .sort((a, b) => parseISO(a.due) - parseISO(b.due));
 
       const getTimelineTitle = () => {

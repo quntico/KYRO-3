@@ -1,3 +1,4 @@
+import {secureAIClient, aiFetch} from '@/lib/secureAIClient';
 import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjs from 'pdfjs-dist';
 import * as XLSX from 'xlsx';
@@ -83,7 +84,8 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
     const saved = localStorage.getItem('kyro_pandora_memory');
     return saved ? JSON.parse(saved) : { name: '' };
   });
-  const [openaiKey, setOpenaiKey] = useState(() => localStorage.getItem('kyro_openai_key') || '');
+  const [openaiKey, setOpenaiKey] = useState(false);
+  useEffect(()=>{localStorage.removeItem('kyro_openai_key');},[]);
   const [showKeySetup, setShowKeySetup] = useState(false);
   const [keyInput, setKeyInput] = useState('');
   const [editorImage, setEditorImage] = useState(null);
@@ -203,8 +205,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
        }]);
 
        try {
-         const { default: OpenAI } = await import('openai');
-         const openaiClient = new OpenAI({ apiKey: openaiKey, dangerouslyAllowBrowser: true });
+         const openaiClient = secureAIClient;
          
          const transcription = await openaiClient.audio.transcriptions.create({
            file: file,
@@ -616,7 +617,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
       const pingAI = async () => {
         try {
           // Usamos un fetch limpio (sin x-client-info) para evitar bloqueos CORS en localhost:3001
-          const res = await fetch('https://cizkskcvenagvvrnklal.supabase.co/functions/v1/ai', {
+          const res = await aiFetch('/api/ai', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -625,7 +626,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
             },
             body: JSON.stringify({ q: 'ping' })
           });
-          if (res.ok) setConnectionStatus('online');
+          if (res.ok) {const status = await res.json();setOpenaiKey(!!status.configured);setConnectionStatus(status.configured?'online':'offline');}
           else setConnectionStatus('offline');
         } catch (e) {
           setConnectionStatus('offline');
@@ -727,8 +728,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
         setMessages(prev => [...prev, { role: 'assistant', content: '🎨 Generando imagen con DALL-E 3... (10-20 segundos)', timestamp: new Date(), type: 'text' }]);
         
         try {
-          const { default: OpenAI } = await import('openai');
-          const openaiClient = new OpenAI({ apiKey: openaiKey, dangerouslyAllowBrowser: true });
+          const openaiClient = secureAIClient;
           
           const response = await openaiClient.images.generate({
             model: 'dall-e-3',
@@ -744,7 +744,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
           }]));
         } catch(imgErr) {
           const errMsg = imgErr.message?.includes('401') || imgErr.message?.includes('Incorrect API key')
-            ? 'La API Key no es válida. Haz clic en 🔑 para actualizarla.'
+            ? 'La conexión de IA requiere revisión en el servidor.'
             : `Error al generar imagen: ${imgErr.message}`;
           setMessages(prev => prev.slice(0, -1).concat([{
             role: 'assistant', content: errMsg, timestamp: new Date(), type: 'text'
@@ -761,7 +761,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
         const chartPromptPayload = `El usuario pidió: "${text}". Responde ÚNICAMENTE con JSON válido (sin markdown, sin explicación) en este formato exacto:
 {"title": "Título del gráfico", "type": "bar|line|pie", "data": [{"name": "Etiqueta", "value": número}], "insight": "Una sola oración de análisis estratégico."}\nSi necesitas datos del contexto: Lead=${selectedLead?.name || 'N/A'}, Valor=${selectedLead?.value || 0} USD.`;
         
-        const chartRes = await fetch('https://cizkskcvenagvvrnklal.supabase.co/functions/v1/ai', {
+        const chartRes = await aiFetch('/api/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${supabaseAnonKey}` },
           body: JSON.stringify({ q: chartPromptPayload, prompt: chartPromptPayload })
@@ -832,7 +832,7 @@ Usuario: ${userMemory.name || user?.user_metadata?.full_name || 'Estratega Senio
 Contexto activo: ${selectedLead ? `Cliente ${selectedLead.name}, valor $${(selectedLead.value || 0).toLocaleString()} USD + IVA` : 'Sin cliente seleccionado (Modo Consola Global)'}.
 Historial reciente de chat:\n${historyCtx}`;
 
-      const chatRes = await fetch('https://cizkskcvenagvvrnklal.supabase.co/functions/v1/ai', {
+      const chatRes = await aiFetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': supabaseAnonKey, 'Authorization': `Bearer ${supabaseAnonKey}` },
         body: JSON.stringify({ q: `${systemPrompt}\n\nPREGUNTA: ${text}`, prompt: systemPrompt, query: text, message: text })
@@ -1053,7 +1053,7 @@ Historial reciente de chat:\n${historyCtx}`;
                 {/* Indicador Key OpenAI */}
                 <button
                   onClick={() => { setKeyInput(openaiKey); setShowKeySetup(true); }}
-                  title={openaiKey ? 'API Key configurada — Click para cambiar' : 'Configurar API Key de OpenAI'}
+                  title="Estado de la conexión de IA"
                   className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${
                     openaiKey 
                       ? 'border-emerald-400/30 bg-emerald-400/5 text-emerald-400 hover:bg-emerald-400/10' 
@@ -1065,7 +1065,7 @@ Historial reciente de chat:\n${historyCtx}`;
                     : <Key className="w-3 h-3" />
                   }
                   <span className="text-[7px] font-bold uppercase tracking-widest">
-                    {openaiKey ? 'DALL-E' : 'Sin Key'}
+                    {openaiKey ? 'DALL-E' : 'Configurar IA'}
                   </span>
                 </button>
                 <div className="flex items-center gap-2 opacity-30">
@@ -1181,46 +1181,13 @@ Historial reciente de chat:\n${historyCtx}`;
                               <Key className="w-4 h-4 text-cyan-400" />
                             </div>
                             <div>
-                              <p className="text-[11px] font-black text-white uppercase tracking-widest">Configurar OpenAI API Key</p>
-                              <p className="text-[9px] text-white/30 mt-0.5">Se guarda localmente. Necesaria para generar imágenes con DALL-E 3.</p>
+                              <p className="text-[11px] font-black text-white uppercase tracking-widest">Conexión de IA segura</p>
+                              <p className="text-[9px] text-white/30 mt-0.5">Las credenciales se configuran exclusivamente en el servidor.</p>
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <input
-                              type="password"
-                              placeholder="sk-proj-... (pega tu key aquí)"
-                              value={keyInput}
-                              onChange={e => setKeyInput(e.target.value)}
-                              className="w-full h-10 bg-white/5 border border-white/10 rounded-xl px-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-cyan-400/50 font-mono"
-                              autoFocus
-                            />
-                            <div className="text-[9px] text-white/20 leading-relaxed">
-                              Obtén tu key gratis en{' '}
-                              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-cyan-400/60 underline">
-                                platform.openai.com/api-keys
-                              </a>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  if (keyInput.trim().startsWith('sk-')) {
-                                    localStorage.setItem('kyro_openai_key', keyInput.trim());
-                                    setOpenaiKey(keyInput.trim());
-                                    setShowKeySetup(false);
-                                    setMessages(prev => [...prev, { role: 'assistant', content: '✅ API Key de OpenAI configurada correctamente. Ya puedes generar imágenes con DALL-E 3. Intenta: **"crea una imagen de una manzana roja"**', timestamp: new Date(), type: 'text' }]);
-                                  }
-                                }}
-                                className="flex-1 h-9 bg-cyan-400 text-black text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-cyan-300 transition-all"
-                              >
-                                Guardar Key
-                              </button>
-                              <button
-                                onClick={() => setShowKeySetup(false)}
-                                className="h-9 px-4 bg-white/5 border border-white/10 text-white/40 text-[10px] rounded-xl hover:bg-white/10 transition-all"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
+                          <div className="space-y-3 text-sm text-muted-foreground">
+                            <p>{openaiKey ? 'El servicio de IA está conectado de forma segura.' : 'La IA está pendiente de configuración en el servidor. La agenda y el CRM funcionan sin ella.'}</p>
+                            <button onClick={()=>setShowKeySetup(false)} className="rounded-xl bg-cyan-400 px-4 py-2 text-black">Entendido</button>
                           </div>
                         </motion.div>
                       )}

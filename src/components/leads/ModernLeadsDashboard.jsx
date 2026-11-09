@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect,useState} from 'react';
 import { motion } from 'framer-motion';
 import ModernLeadCard from './ModernLeadCard';
 import { Target } from 'lucide-react';
@@ -6,6 +6,9 @@ import LeadsKanban from './LeadsKanban';
 import LeadsTable from './LeadsTable';
 
 const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
+  const [visibleCount,setVisibleCount]=useState(24);
+  const resultKey=filteredLeads.map(l=>l.id).join('|');
+  useEffect(()=>setVisibleCount(24),[resultKey,viewMode]);
   return (
     <div className="space-y-4">
       {/* Cards, Table or Kanban based on viewMode */}
@@ -31,12 +34,13 @@ const ModernLeadsDashboard = ({ filteredLeads, viewMode, ...cardProps }) => {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
-          {filteredLeads.map((lead, index) => (
+          {filteredLeads.slice(0,visibleCount).map((lead, index) => (
             <ModernLeadCard key={lead.id} lead={lead} index={index} {...cardProps} />
           ))}
         </div>
       )}
       
+      {viewMode!=='kanban' && viewMode!=='list' && filteredLeads.length>visibleCount && <button onClick={()=>setVisibleCount(n=>n+24)} className="w-full rounded-xl border border-primary/30 bg-primary/10 py-3 font-semibold text-primary">Mostrar 24 más · {visibleCount} de {filteredLeads.length} prospectos</button>}
       {filteredLeads.length === 0 && (
          <div className="text-center py-20 bg-secondary/20 rounded-3xl border border-border backdrop-blur-sm">
            <Target className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
