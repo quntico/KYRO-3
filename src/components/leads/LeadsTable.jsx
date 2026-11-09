@@ -1,3 +1,4 @@
+import LeadContactRow from './LeadContactRow';
 import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -279,6 +280,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           </Tooltip>
                         )}
                       </div>
+                      <LeadContactRow lead={lead} />
                       <div className="flex flex-col gap-1 mt-1.5 text-[11px] text-muted-foreground">
                         <div
                           className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/copy"
