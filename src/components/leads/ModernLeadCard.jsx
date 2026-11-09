@@ -1,3 +1,4 @@
+import LeadContactRow from './LeadContactRow';
 import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
@@ -283,6 +284,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
       </div>
 
+      <LeadContactRow lead={lead} isSale={!!sale} />
       <p className="mb-2 flex flex-wrap items-center gap-x-1 text-[11px] leading-snug text-muted-foreground">
         <Clock className="h-3 w-3 shrink-0" />{lead.reportDateLabel || 'Fecha del documento'}:
         <time dateTime={lead.reportDate || undefined} className="font-semibold text-foreground">{displayDate(lead.reportDate)}</time>
@@ -297,7 +299,6 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
           Contacto y cotización <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </summary>
           <div className="min-w-0 text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] flex flex-wrap items-center gap-2">
-            <span>{lead.contact}</span>
             {matchedCompany && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

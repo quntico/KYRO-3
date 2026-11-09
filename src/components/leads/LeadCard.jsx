@@ -1,3 +1,4 @@
+import LeadContactRow from './LeadContactRow';
 import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -182,8 +183,8 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                 </div>
               )}
             </div>
+            <LeadContactRow lead={lead} />
             <div className="flex items-center justify-between gap-2 mt-1">
-              <p className="text-xs text-muted-foreground">{lead.contact}</p>
               <LeadAnalysisDetails lead={lead} />
               {matchedCompany && (
                 <DropdownMenu>

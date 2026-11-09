@@ -9,7 +9,7 @@ import Header from '@/components/Header';
 import { Command as KyroRune, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
-import { useData } from '@/contexts/DataContext';
+import { DailyContactProvider } from '@/contexts/DailyContactContext';
 
 const Dashboard = React.lazy(() => import('@/pages/Dashboard'));
 const Leads = React.lazy(() => import('@/pages/Leads'));
@@ -152,7 +152,7 @@ function App() {
                   authLoading ? (
                     <Fallback />
                   ) : user ? (
-                    <AppContent />
+                    <DailyContactProvider key={user.id} userId={user.id}><AppContent /></DailyContactProvider>
                   ) : (
                     <Navigate to="/login" replace />
                   )
