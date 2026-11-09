@@ -9,30 +9,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Bypass Auth: Mock user for development immediately
-    const mockUser = {
-      id: '882f8e4e-9124-4334-849b-44c25ca2aed3',
-      email: 'dev@kyro.test',
-      user_metadata: { full_name: 'Developer' }
+    let active = true;
+    let observed = false;
+    const apply = session => {
+      if (!active) return;
+      setSession(session); setUser(session?.user ?? null); setLoading(false);
     };
-    const mockSession = { user: mockUser, access_token: 'mock-token' };
-
-    setSession(mockSession);
-    setUser(mockUser);
-    setLoading(false);
-
-    // We still listen for changes but the initial state is mocked
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session) {
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
-        // No need to set loading to false here again as it's already done
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { observed=true; apply(session); });
+    supabase.auth.getSession().then(({data, error}) => {
+      if (error) console.error('No se pudo recuperar la sesión');
+      if(!observed) apply(data?.session ?? null);
+    }).catch(() => apply(null));
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
   const signUp = useCallback(async (email, password, options) => {

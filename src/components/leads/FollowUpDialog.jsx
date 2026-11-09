@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { mexicoLocalToISO } from '@/lib/agenda';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
 const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUpdate }) => {
+  const pending = useRef(false);
+  const [saving,setSaving] = useState(false);
   const [date, setDate] = useState(null);
   const [time, setTime] = useState('09:00');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -36,7 +39,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
     }
   }, [open]);
 
-  const handleSchedule = useCallback(() => {
+  const handleSchedule = useCallback(async () => {
     if (!date || !time || !lead) {
       return;
     }
@@ -48,12 +51,16 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
     scheduledDate.setSeconds(0);
     scheduledDate.setMilliseconds(0);
 
-    onSchedule(lead, actionType, scheduledDate);
+    if(pending.current) return; pending.current=true; setSaving(true);
+    try {await onSchedule(lead, actionType, new Date(mexicoLocalToISO(format(date,'yyyy-MM-dd'),time)));}
+    catch(error){toast({title:'No se pudo agendar',description:error.message,variant:'destructive'});}
+    finally {pending.current=false;setSaving(false);}
   }, [date, time, onSchedule, lead, actionType]);
 
   const handleJustUpdate = useCallback(async () => {
     if (!lead) return;
 
+    try {
     const { data, error } = await onUpdate(lead.id, {
       next_step: { type: actionType, date: new Date().toISOString() }
     });
@@ -67,6 +74,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
       });
     }
     onOpenChange(false);
+    } catch(error) { toast({title:"No se guardó el cambio",description:error.message,variant:"destructive"}); }
   }, [lead, actionType, onOpenChange, onUpdate]);
 
   if (!lead) return null;
@@ -75,7 +83,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-card border-border text-foreground">
         <DialogHeader>
-          <DialogTitle>Cambiar Status a "{actionType}"</DialogTitle>
+          <DialogTitle>Próxima acción: "{actionType}"</DialogTitle>
           <DialogDescription className="text-muted-foreground">
             ¿Quieres agendar esta acción para <span className="font-bold">{lead.name}</span>?
           </DialogDescription>
@@ -135,7 +143,7 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowCalendar(false)}>Atrás</Button>
-              <Button onClick={handleSchedule} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button disabled={saving} onClick={handleSchedule} className="bg-primary text-primary-foreground hover:bg-primary/90">
                 Agendar
               </Button>
             </DialogFooter>
@@ -143,10 +151,10 @@ const FollowUpDialog = ({ open, onOpenChange, lead, actionType, onSchedule, onUp
         ) : (
           <DialogFooter className="sm:justify-between gap-2 pt-4">
             <Button variant="outline" className="border-border text-foreground hover:bg-secondary" onClick={handleJustUpdate}>
-              Sólo Actualizar Status
+              Guardar próxima acción
             </Button>
             <Button onClick={() => setShowCalendar(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-              Actualizar y Agendar
+              Elegir fecha y agendar
             </Button>
           </DialogFooter>
         )}

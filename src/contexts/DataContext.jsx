@@ -6,6 +6,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 
+import { taskPayload } from '@/lib/agenda';
 import { loadWorkspaceData, readArrayCache } from '@/lib/workspaceLoader';
 
 const DataContext = createContext(undefined);
@@ -31,9 +32,9 @@ export const DataProvider = ({ children }) => {
     // Sync from cache whenever user becomes available
     useEffect(() => {
         if (user?.id) {
-            const loadCache = (key, setter) => {
+            const loadCache = (key, setter, fallback = []) => {
                 const cached = readArrayCache(localStorage, `kyro-${key}-${user.id}`);
-                if (cached) setter(cached);
+                setter(cached ?? fallback);
                 return cached !== null;
             };
             const hasLeads = loadCache('leads', setLeads);
@@ -47,7 +48,10 @@ export const DataProvider = ({ children }) => {
             loadCache('contacts', setContacts);
             loadCache('notes', setNotes);
             loadCache('logistics', setLogistics);
-            loadCache('leadStatuses', setLeadStatuses);
+            loadCache('leadStatuses', setLeadStatuses, DEFAULT_STATUSES);
+        } else {
+            inFlight.current?.controller.abort();pipelineReady.current=null;
+            setLeads([]);setDeals([]);setDeletedDeals([]);setTasks([]);setContacts([]);setNotes([]);setLogistics([]);
         }
     }, [user?.id]);
 
@@ -80,13 +84,14 @@ export const DataProvider = ({ children }) => {
             },
             onSection: (table, data) => {
                 if (!isCurrent()) return;
+                if(table==='notes') {setNotes(previous=>{const merged=[...data,...previous.filter(n=>!data.some(d=>String(d.id)===String(n.id)))];saveToCache(`notes-${userId}`,merged);return merged;});return;}
                 ({tasks: setTasks, contacts: setContacts, logistics: setLogistics})[table](data);
                 saveToCache(`${table}-${userId}`, data);
             },
             onPipelineSettled: () => { if (isCurrent()) setPipelineLoading(false); },
             onError: (section, error) => {
                 console.error(`Error fetching ${section}:`, error);
-                if (isCurrent() && section === 'pipeline') setDataError('No se pudo actualizar la cartera. Tus datos guardados se conservan.');
+                if (isCurrent()) setDataError(section==='pipeline'?'No se pudo actualizar la cartera. Tus datos guardados se conservan.':`No se pudo actualizar ${section==='tasks'?'la agenda':section}. Reintenta para confirmar la información.`);
             },
         }).finally(() => {
             clearTimeout(timeout);
@@ -112,11 +117,11 @@ export const DataProvider = ({ children }) => {
 
     const removeLead = useCallback(async (leadId) => {
         try {
-            const { error } = await supabase.from('leads').delete().eq('id', leadId);
+            const { error } = await supabase.from('leads').delete().eq('id', leadId).select('id').single();
             if (error) throw error;
             setLeads(prev => prev.filter(l => l.id !== leadId));
         } catch (error) {
-            setLeads(prev => prev.filter(l => l.id !== leadId));
+            toast({title:'No se pudo borrar', description:error.message, variant:'destructive'}); throw error;
         }
     }, []);
 
@@ -138,14 +143,16 @@ export const DataProvider = ({ children }) => {
     }, [user?.id, fetchData]);
 
     const updateLead = useCallback(async (id, updates) => {
+        if (!updates || !id) throw new Error('Actualización de prospecto incompleta.');
         if (updates.quotations?.some(file => file.deferred)) throw new Error('Carga la ficha completa antes de modificar sus documentos.');
         if ('notes' in updates) updates = { ...updates, notes: cleanConversationNotes(updates.notes) };
         try {
-            const { error } = await supabase.from('leads').update(updates).eq('id', id);
+            const { data, error } = await supabase.from('leads').update(updates).eq('id', id).select('id').single();
             if (error) throw error;
             setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+            return {data: {...updates, id}, error:null};
         } catch (error) {
-            setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+            toast({title:'No se guardaron los cambios', description:error.message, variant:'destructive'}); throw error;
         }
     }, []);
 
@@ -179,25 +186,22 @@ export const DataProvider = ({ children }) => {
             return data;
         } catch (error) {
             console.error('Error adding lead:', error);
-            const localLead = { ...lead, id: Date.now(), user_id: user?.id, created_at: new Date().toISOString() };
-            setLeads(prev => [localLead, ...prev]);
-            return localLead;
+            toast({title:'No se guardó el prospecto', description:error.message, variant:'destructive'}); throw error;
         }
     }, [user]);
 
-    const addTask = useCallback((newTask) => {
-        setTasks(prev => [newTask, ...prev].sort((a, b) => new Date(a.due) - new Date(b.due)));
-    }, []);
-
-    const updateTask = useCallback((updatedTask) => {
-        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-    }, []);
-
-    const updateTaskByLeadId = useCallback((leadId, updatedTask) => {
-        setTasks(prev => {
-            const otherTasks = prev.filter(t => t.lead_id !== leadId);
-            return [...otherTasks, updatedTask];
-        });
+    const persistTask = useCallback(async (task, existing = false) => {
+        const payload = taskPayload(task, user?.id);
+        const query = existing ? supabase.from('tasks').update(payload).eq('id',task.id).eq('user_id',user.id) : supabase.from('tasks').insert(payload);
+        const {data,error} = await query.select().single();
+        if(error) {toast({title:'No se guardó la tarea',description:error.message,variant:'destructive'}); throw error;}
+        setTasks(prev => {const next = [data,...prev.filter(t=>t.id!==data.id)]; saveToCache(`tasks-${user.id}`,next); return next;});
+        return data;
+    }, [user?.id]);
+    const addTask = useCallback(task => persistTask(task), [persistTask]);
+    const updateTask = useCallback(task => persistTask(task,true), [persistTask]);
+    const updateTaskByLeadId = useCallback((_leadId, updatedTask) => {
+        setTasks(prev => [updatedTask,...prev.filter(t=>t.id!==updatedTask.id)]);
     }, []);
 
     const updateLogistics = useCallback((updatedLog) => {
@@ -212,9 +216,11 @@ export const DataProvider = ({ children }) => {
         setLogistics(prev => [newLog, ...prev]);
     }, []);
 
-    const removeTask = useCallback((taskId) => {
-        setTasks(prev => prev.filter(t => t.id !== taskId));
-    }, []);
+    const removeTask = useCallback(async (taskId) => {
+        const {error} = await supabase.from('tasks').update({status:'cancelled',completed:true}).eq('id',taskId).eq('user_id',user.id).select('id').single();
+        if(error) {toast({title:'No se pudo cancelar',description:error.message,variant:'destructive'}); throw error;}
+        setTasks(prev => prev.map(t=>t.id===taskId ? {...t,status:'cancelled',completed:true} : t));
+    }, [user?.id]);
 
     const addNote = useCallback(async (note) => {
         try {
@@ -223,29 +229,27 @@ export const DataProvider = ({ children }) => {
             setNotes(prev => [data[0], ...prev]);
             return data[0];
         } catch (error) {
-            const localNote = { ...note, id: Date.now(), user_id: user?.id, created_at: new Date().toISOString() };
-            setNotes(prev => [localNote, ...prev]);
-            return localNote;
+            toast({title:'No se guardó la nota',description:error.message,variant:'destructive'}); throw error;
         }
     }, [user]);
 
     const updateNote = useCallback(async (id, updates) => {
         try {
-            const { error } = await supabase.from('notes').update(updates).eq('id', id);
+            const { error } = await supabase.from('notes').update(updates).eq('id', id).select('id').single();
             if (error) throw error;
             setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
         } catch (error) {
-            setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
+            toast({title:'No se guardó la nota',description:error.message,variant:'destructive'}); throw error;
         }
     }, []);
 
     const deleteNote = useCallback(async (id) => {
         try {
-            const { error } = await supabase.from('notes').delete().eq('id', id);
+            const { error } = await supabase.from('notes').delete().eq('id', id).select('id').single();
             if (error) throw error;
             setNotes(prev => prev.filter(n => n.id !== id));
         } catch (error) {
-            setNotes(prev => prev.filter(n => n.id !== id));
+            toast({title:'No se pudo borrar la nota',description:error.message,variant:'destructive'}); throw error;
         }
     }, []);
 

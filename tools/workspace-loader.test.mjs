@@ -13,17 +13,17 @@ function fakeDb(responses, calls) {
 }
 test('renders the lightweight pipeline while secondary sections are still loading',async()=>{
   const contacts=deferred(),calls=[],events=[];
-  const db=fakeDb({kyro_leads_summary:{data:[{id:1,quotations:[{fileName:'quote.pdf',deferred:true}]}]},deals:{data:[]},tasks:{data:[]},contacts:contacts.promise,logistics:{data:[]}},calls);
+  const db=fakeDb({kyro_leads_summary:{data:[{id:1,quotations:[{fileName:'quote.pdf',deferred:true}]}]},deals:{data:[]},tasks:{data:[]},contacts:contacts.promise,logistics:{data:[]},notes:{data:[]}},calls);
   const pending=loadWorkspaceData({db,userId:'owner',onPipeline:(l,d)=>events.push(['pipeline',l,d]),onSection:t=>events.push([t]),onPipelineSettled:()=>events.push(['ready']),onError:()=>assert.fail('unexpected error')});
   await setImmediate();
   assert.ok(events.some(e=>e[0]==='pipeline'));assert.ok(events.some(e=>e[0]==='ready'));
   assert.ok(!events.some(e=>e[0]==='contacts'));assert.ok(!calls.includes('leads'));
   contacts.resolve({data:[]});await pending;
-  assert.equal(calls.length,5);assert.ok(events.some(e=>e[0]==='contacts'));
+  assert.equal(calls.length,6);assert.ok(events.some(e=>e[0]==='contacts'));
 });
 test('failed pipeline request preserves prior data instead of publishing a partial or empty pipeline',async()=>{
   const events=[];
-  await loadWorkspaceData({db:fakeDb({kyro_leads_summary:{data:[{id:1}]},deals:{error:new Error('offline')},tasks:{data:[]},contacts:{error:new Error('offline')},logistics:{data:[]}},[]),userId:'owner',onPipeline:()=>assert.fail('must preserve cache'),onSection:t=>events.push(t),onPipelineSettled:()=>events.push('settled'),onError:t=>events.push('error:'+t)});
+  await loadWorkspaceData({db:fakeDb({kyro_leads_summary:{data:[{id:1}]},deals:{error:new Error('offline')},tasks:{data:[]},contacts:{error:new Error('offline')},logistics:{data:[]},notes:{data:[]}},[]),userId:'owner',onPipeline:()=>assert.fail('must preserve cache'),onSection:t=>events.push(t),onPipelineSettled:()=>events.push('settled'),onError:t=>events.push('error:'+t)});
   assert.ok(events.includes('settled'));assert.ok(events.includes('error:pipeline'));assert.ok(events.includes('tasks'));assert.ok(!events.includes('contacts'));
 });
 test('document hydration uses the complete original record and preserves embedded files',async()=>{

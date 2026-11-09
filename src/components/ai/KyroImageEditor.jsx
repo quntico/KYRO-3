@@ -1,3 +1,4 @@
+import {secureAIClient} from '@/lib/secureAIClient';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
@@ -76,7 +77,7 @@ export default function KyroImageEditor({ imageUrl, onClose }) {
   
   const [aiCommand, setAiCommand] = useState('');
   const [isAiWorking, setIsAiWorking] = useState(false);
-  const [openaiKey] = useState(() => localStorage.getItem('kyro_openai_key') || '');
+  const [openaiKey] = useState(true);
 
   useEffect(() => {
     if (!imageUrl) return;
@@ -175,8 +176,7 @@ export default function KyroImageEditor({ imageUrl, onClose }) {
     if (!aiCommand.trim() || !openaiKey) return;
     setIsAiWorking(true);
     try {
-      const { default: OpenAI } = await import('openai');
-      const openai = new OpenAI({ apiKey: openaiKey, dangerouslyAllowBrowser: true });
+      const openai = secureAIClient;
       
       const prompt = `Actúa como un editor de diseño experto. El usuario tiene una imagen con estos filtros: ${JSON.stringify(filters)} y estos textos: ${JSON.stringify(texts)}. El usuario dice: "${aiCommand}". Responde ÚNICAMENTE con JSON (sin markdown).`;
 

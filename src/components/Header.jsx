@@ -1,6 +1,7 @@
+import {APP_VERSION} from '@/lib/version';
 import React, { useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Settings, PanelLeft, BrainCircuit, Palette, ChevronDown, Search, X } from 'lucide-react';
+import { CalendarDays, Settings, PanelLeft, BrainCircuit, Palette, ChevronDown, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSidebar } from '@/contexts/SidebarContext';
 const AISandbox = React.lazy(() => import('./ai/AISandbox'));
@@ -53,7 +54,8 @@ const Header = () => {
         <Input type="search" aria-label="Buscar vectores o prospectos" placeholder="Buscar Vectores / Prospectos…" value={searchTerm} onChange={event => searchProspects(event.target.value)} className="h-11 w-full rounded-xl border-primary/20 bg-secondary/40 pl-10 pr-10 text-sm focus:border-primary/60 [&::-webkit-search-cancel-button]:appearance-none" />
         {searchTerm && <button type="button" aria-label="Limpiar búsqueda" onClick={() => searchProspects('')} className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"><X className="h-4 w-4" /></button>}
       </form>
-      <button type="button" onClick={openSandbox} aria-label="Abrir orquestador de IA" title="Orquestador de IA" className="ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-secondary/20 px-3 text-xs font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"><BrainCircuit className="h-4 w-4" /><span>IA</span></button>
+      <button type="button" onClick={() => navigate('/agenda')} className="ml-auto flex h-11 shrink-0 items-center gap-2 rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-3 text-sm font-bold text-cyan-300 shadow-[0_0_18px_#22d3ee18] focus-visible:ring-2 focus-visible:ring-primary"><CalendarDays className="h-4 w-4" />Agenda</button>
+      <button type="button" onClick={openSandbox} aria-label="Abrir orquestador de IA" title="Orquestador de IA" className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-secondary/20 px-3 text-xs font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary"><BrainCircuit className="h-4 w-4" /><span>IA</span></button>
       {sandboxLoaded && <React.Suspense fallback={<div role="status" className="fixed bottom-5 right-5 rounded-xl border border-primary/30 bg-card p-4">Abriendo asistente…</div>}>
       <AISandbox 
         open={sandboxOpen} 
@@ -62,7 +64,7 @@ const Header = () => {
       />
       </React.Suspense>}
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden lg:inline text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v6.0</span>
+        <span className="hidden lg:inline text-[10px] font-mono font-bold text-muted-foreground/40 select-none">v{APP_VERSION}</span>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -76,6 +78,7 @@ const Header = () => {
             <div className="px-2.5 py-1.5 text-[8px] font-black tracking-widest text-muted-foreground/60 border-b border-border mb-1">
               Seleccionar Tema
             </div>
+            <DropdownMenuRadioGroup value={theme} onValueChange={changeTheme}>
             {Object.entries(themeLabels).map(([key, label]) => (
               <DropdownMenuRadioItem
                 key={key}
@@ -88,6 +91,7 @@ const Header = () => {
                 {theme === key && <div className="w-1.5 h-1.5 rounded-full bg-primary ml-2" />}
               </DropdownMenuRadioItem>
             ))}
+            </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
 

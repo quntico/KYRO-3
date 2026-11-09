@@ -1,3 +1,4 @@
+import {APP_VERSION} from '@/lib/version';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -110,7 +111,7 @@ const LeadsHeader = ({
               </div>
             </div>
             <p className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-[0.25em] flex items-center gap-2">
-              Consola Estratégica de IA <span className="w-8 h-[1px] bg-border" /> v6.0
+              Consola Estratégica de IA <span className="w-8 h-[1px] bg-border" /> v{APP_VERSION}
             </p>
           </div>
         </div>

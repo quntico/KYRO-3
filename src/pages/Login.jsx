@@ -5,6 +5,7 @@ import { Command as KyroRune, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const Login = () => {
@@ -12,7 +13,22 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  React.useEffect(() => { if (user) navigate('/agenda', {replace: true}); }, [user]);
+  const emailAccess = async () => {
+    if (!email.trim()) return toast({title: 'Escribe tu correo', variant:'destructive'});
+    setLoading(true);
+    try {
+      const {error} = codeSent
+        ? await supabase.auth.verifyOtp({email: email.trim(), token: code.trim(), type:'email'})
+        : await supabase.auth.signInWithOtp({email: email.trim(), options:{shouldCreateUser:false, emailRedirectTo: window.location.origin + '/agenda'}});
+      if(error) throw error;
+      if(!codeSent) {setCodeSent(true); toast({title:'Revisa tu correo',description:'Abre el enlace de acceso o introduce el código si aparece en el correo.'});}
+    } catch(error) {toast({title:'No se pudo iniciar sesión', description:error.message,variant:'destructive'});}
+    finally {setLoading(false);}
+  };
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -39,7 +55,7 @@ const Login = () => {
         title: "¡Bienvenido de vuelta!",
         description: "Has iniciado sesión correctamente.",
       });
-      navigate('/dashboard');
+      navigate('/agenda');
     }
     setLoading(false);
   };
@@ -58,10 +74,7 @@ const Login = () => {
             Inicia sesión en KYRO
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            ¿No tienes una cuenta?{' '}
-            <Link to="/signup" className="font-medium text-primary hover:underline">
-              Regístrate
-            </Link>
+            Tu cartera está conservada. Identifica tu cuenta una vez; la sesión permanece en este equipo.
           </p>
         </div>
         <form className="space-y-6" onSubmit={handleLogin}>
@@ -107,6 +120,11 @@ const Login = () => {
             </Button>
           </div>
         </form>
+        <div className="space-y-3 border-t border-border pt-4">
+          {codeSent && <Input aria-label="Código del correo" value={code} onChange={e=>setCode(e.target.value)} placeholder="Código recibido (si está disponible)" autoComplete="one-time-code" />}
+          <Button type="button" variant="outline" disabled={loading} className="w-full" onClick={emailAccess}>{codeSent ? 'Verificar código' : 'Entrar con enlace por correo'}</Button>
+          {codeSent && <button onClick={()=>setCodeSent(false)} className="text-sm text-primary">Volver a solicitar enlace</button>}
+        </div>
       </motion.div>
     </div>
   );
