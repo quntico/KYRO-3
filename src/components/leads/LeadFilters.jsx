@@ -21,7 +21,7 @@ export function LeadFilterButton({ open, onClick, count }) {
     <SlidersHorizontal className="h-4 w-4 text-cyan-400" /> Fechas y filtros {count>0&&<span className="rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">{count}</span>}<ChevronDown className={`h-3.5 w-3.5 transition-transform ${open?'rotate-180':''}`} />
   </button>;
 }
-export default function LeadFilters({ open, filters, setFilters, status, setStatus, sort, setSort, margin, setMargin, onReset, months, resultCount }) {
+export default function LeadFilters({ open, filters, setFilters, status, setStatus, sort, setSort, margin, setMargin, onReset, months, resultCount, contactsReady = true }) {
   const [advanced,setAdvanced]=useState(false);
   const set=(key,value)=>setFilters(prev=>({...prev,[key]:value}));
   const clearDates=()=>setFilters(prev=>({...prev,month:'',from:'',to:'',undated:false}));
@@ -29,6 +29,7 @@ export default function LeadFilters({ open, filters, setFilters, status, setStat
   const amountLabel = filters.min!=='' || filters.max!=='' ? `${filters.min!==''?Number(filters.min).toLocaleString('es-MX'):'0'} — ${filters.max!==''?Number(filters.max).toLocaleString('es-MX'):'sin límite'}` : 'Cualquier importe';
   const chips=[];
   if(filters.month||filters.from||filters.to||filters.undated)chips.push({text:`${DATE_FIELDS[filters.dateField]} · ${periodLabel(filters)}`,clear:clearDates});
+  if(filters.contact && filters.contact !== 'all')chips.push({text:({today:'Contactados hoy',pending:'Pendientes hoy',never:'Sin contacto registrado'})[filters.contact],clear:()=>set('contact','all')});
   if(status!=='all')chips.push({text:LEAD_STATUSES.find(([key])=>key===status)?.[1]||status,clear:()=>setStatus('all')});
   if(filters.min!==''||filters.max!=='')chips.push({text:`Importe: ${amountLabel}`,clear:()=>setFilters(prev=>({...prev,min:'',max:''}))});
   if(filters.initial)chips.push({text:`Inicial: ${filters.initial==='#'?'0–9':filters.initial}`,clear:()=>set('initial','')});
@@ -43,7 +44,8 @@ export default function LeadFilters({ open, filters, setFilters, status, setStat
           <div className="flex flex-wrap items-center gap-3"><h2 className="text-sm font-bold tracking-tight">Encuentra tu próxima oportunidad</h2><span role="status" className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary">{resultCount} prospectos</span></div>
           <button type="button" onClick={onReset} className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground ${focus}`}><RotateCcw className="h-3.5 w-3.5" /> Restablecer</button>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <div className={!contactsReady ? 'pointer-events-none opacity-50' : ''} inert={!contactsReady ? '' : undefined}><Menu label="Contacto" value={filters.contact || 'all'} options={[['all','Todos los contactos'],['today','Contactados hoy'],['pending','Pendientes hoy'],['never','Sin contacto registrado']]} onChange={value=>set('contact',value)} icon={Check} color="text-cyan-400" /></div>
           <LeadPeriodFilter filters={filters} setFilters={setFilters} months={months} triggerClass={control} />
           <Menu label="Estatus" value={status} options={LEAD_STATUSES} onChange={setStatus} icon={Circle} color="text-pink-400" dots />
           <Popover><PopoverTrigger asChild><button type="button" className={control} aria-label={`Importe: ${amountLabel}`}><Wallet className="h-4 w-4 shrink-0 text-blue-400" /><span className="min-w-0 flex-1 text-left"><span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Importe</span><span className="block text-sm font-semibold leading-snug">{amountLabel}</span></span><ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /></button></PopoverTrigger>
@@ -73,5 +75,5 @@ export default function LeadFilters({ open, filters, setFilters, status, setStat
   </>;
 }
 export function activeFilterCount(filters, search, status, companies) {
-  return Number(Boolean(filters.month||filters.from||filters.to||filters.undated)) + Number(filters.min!==''||filters.max!=='') + Number(Boolean(filters.initial)) + Number(filters.currency!=='all') + Number(filters.basis!=='registered') + Number(status!=='all') + Number(Boolean(search)) + Number(!companies.includes('all'));
+  return Number(Boolean(filters.contact && filters.contact !== 'all')) + Number(Boolean(filters.month||filters.from||filters.to||filters.undated)) + Number(filters.min!==''||filters.max!=='') + Number(Boolean(filters.initial)) + Number(filters.currency!=='all') + Number(filters.basis!=='registered') + Number(status!=='all') + Number(Boolean(search)) + Number(!companies.includes('all'));
 }

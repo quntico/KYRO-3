@@ -20,11 +20,13 @@ const LeadConversationDialog = React.lazy(() => import('@/components/leads/LeadC
 const LeadQuoteCalculator = React.lazy(() => import('@/components/leads/LeadQuoteCalculator'));
 import ModernLeadsDashboard from '@/components/leads/ModernLeadsDashboard';
 const ManageCompaniesDialog = React.lazy(() => import('@/components/leads/ManageCompaniesDialog'));
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useData } from '@/contexts/DataContext';
 import { loadLeadDetails } from '@/lib/workspaceLoader';
+import { useDailyContacts } from '@/contexts/DailyContactContext';
+import { contactRecordKey } from '@/lib/dailyContacts';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 
 const Leads = () => {
@@ -101,7 +103,15 @@ const Leads = () => {
     localStorage.setItem('kyro_crm_companies_v5.5', JSON.stringify(updatedCompanies));
   };
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchTerm = searchParams.get('q') || '';
+  const setSearchTerm = value => setSearchParams(previous => {
+    const next = new URLSearchParams(previous);
+    if (value) next.set('q', value); else next.delete('q');
+    return next;
+  }, {replace: true});
+  const {history, day, ready: contactsReady, error: contactError, refresh: refreshContacts} = useDailyContacts();
+  const contactLeads = useMemo(() => leads.map(lead => ({...lead, last_contact_date: history[contactRecordKey(lead)] || ''})), [leads, history]);
   const [filters, setFilters] = useState({ ...DEFAULT_FILTERS });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [scenarioMargin, setScenarioMargin] = useState('');
@@ -126,11 +136,11 @@ const Leads = () => {
 
 
 
-  const filteredLeads = useMemo(() => analyzeLeads(leads, {
+  const filteredLeads = useMemo(() => analyzeLeads(contactLeads, {
     filters, search: searchTerm, status: selectedStatus, companies: selectedCompanyIds,
-    sort: sortMode, margin: scenarioMargin,
-  }), [leads, filters, searchTerm, selectedStatus, selectedCompanyIds, sortMode, scenarioMargin]);
-  const availableMonths = useMemo(() => [...new Set((leads || []).map(lead => leadDate(lead, filters.dateField).slice(0, 7)).filter(Boolean))].sort().reverse(), [leads, filters.dateField]);
+    sort: sortMode, margin: scenarioMargin, today: day,
+  }), [contactLeads, day, filters, searchTerm, selectedStatus, selectedCompanyIds, sortMode, scenarioMargin]);
+  const availableMonths = useMemo(() => [...new Set((contactLeads || []).map(lead => leadDate(lead, filters.dateField).slice(0, 7)).filter(Boolean))].sort().reverse(), [contactLeads, filters.dateField]);
   const analysisSummary = useMemo(() => summarizeLeads(filteredLeads), [filteredLeads]);
   const filterCount = activeFilterCount(filters, searchTerm, selectedStatus, selectedCompanyIds);
   const resetFilters = () => {
@@ -701,33 +711,16 @@ const Leads = () => {
           onOpenFilters={() => setFiltersOpen(true)}
         />
 
-        {/* Buscador de mejor tamaño justo arriba de los leads */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="relative w-full max-w-2xl group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground/60 group-focus-within:text-primary transition-colors" />
-            <input
-              type="text"
-              placeholder="Buscar Vectores / Prospectos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary/40 border border-border rounded-xl h-10 min-h-11 md:min-h-0 pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus:bg-card focus:shadow-[0_0_20px_rgba(var(--primary),0.15)] transition-all font-mono tracking-wider"
-            />
-            {searchTerm && (
-              <button
-                aria-label="Limpiar búsqueda"
-                title="Limpiar búsqueda"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-5 top-1/2 -translate-y-1/2 p-2 hover:bg-secondary rounded-md transition-all text-muted-foreground/60 hover:text-foreground cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+          <div role="group" aria-label="Contacto de prospectos" className="flex flex-wrap items-center gap-1.5">
+            {[['all','Todos los contactos'],['today','Contactados hoy'],['pending','Pendientes hoy']].map(([value,label]) => <button key={value} type="button" aria-pressed={filters.contact === value} disabled={!contactsReady && value !== 'all'} onClick={() => setFilters(previous => ({...previous,contact:value}))} className={`min-h-9 rounded-xl border px-3 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 ${filters.contact === value ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_12px_hsl(var(--primary)/0.1)]' : 'border-border bg-card text-muted-foreground hover:border-primary/40'}`}>{label}</button>)}
           </div>
           <LeadFilterButton open={filtersOpen} onClick={() => setFiltersOpen(open => !open)} count={filterCount} />
         </div>
+        {contactError && <p role="alert" className="text-xs text-amber-400">No se pudo sincronizar el último contacto. <button type="button" onClick={refreshContacts} className="underline focus-visible:ring-2 focus-visible:ring-primary">Reintentar</button></p>}
         <LeadFilters open={filtersOpen} filters={filters} setFilters={setFilters}
           status={selectedStatus} setStatus={setSelectedStatus} sort={sortMode} setSort={setSortMode}
-          margin={scenarioMargin} setMargin={setScenarioMargin} onReset={resetFilters} months={availableMonths} resultCount={filteredLeads.length} />
+          margin={scenarioMargin} setMargin={setScenarioMargin} onReset={resetFilters} months={availableMonths} resultCount={filteredLeads.length} contactsReady={contactsReady} />
         <LeadFinancialSummary summary={analysisSummary} total={leads.length} basis={filters.basis}
           dateLabel={DATE_FIELDS[filters.dateField]} dateSelection={dateSelection} margin={scenarioMargin} setMargin={setScenarioMargin}
           onReset={resetFilters} active={filterCount} />
