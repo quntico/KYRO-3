@@ -3,7 +3,7 @@ import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
+import { CalendarDays, Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,6 +21,7 @@ const getStatusColor = (status, isLightTheme) => {
     case 'closing': return 'from-blue-600 to-cyan-500 dark:from-[#0047FF] dark:to-[#00D4FF]';
     case 'warming': return 'from-emerald-500 to-teal-500';
     case 'warm': return 'from-orange-500 to-amber-500';
+    case '2027': return 'from-yellow-300 to-yellow-500';
     case 'cooling': return 'from-cyan-500 to-blue-500';
     case 'cold': return 'from-blue-500 to-indigo-500';
     case 'new': return 'from-purple-500 to-pink-500';
@@ -41,6 +42,7 @@ const getHoverEffects = (status, isLightTheme) => {
     case 'closing': return { glow: 'from-[#0047FF]/20', shadow: 'hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] border-transparent hover:border-[#00D4FF]/50' };
     case 'warming': return { glow: 'from-emerald-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] border-transparent hover:border-emerald-500/50' };
     case 'warm': return { glow: 'from-orange-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] border-transparent hover:border-orange-500/50' };
+    case '2027': return { glow: 'from-yellow-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(250,204,21,0.15)] border-transparent hover:border-yellow-500/50' };
     case 'cooling': return { glow: 'from-cyan-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] border-transparent hover:border-cyan-500/50' };
     case 'cold': return { glow: 'from-blue-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] border-transparent hover:border-blue-500/50' };
     case 'new': return { glow: 'from-purple-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] border-transparent hover:border-purple-500/50' };
@@ -56,6 +58,7 @@ const getStatusPill = (status, isLightTheme) => {
       case 'closing': return 'border-blue-200 bg-blue-50 text-blue-600';
       case 'warming': return 'border-emerald-200 bg-emerald-50 text-emerald-600';
       case 'warm': return 'border-orange-200 bg-orange-50 text-orange-600';
+      case '2027': return 'border-yellow-200 bg-yellow-50 text-yellow-700';
       case 'cooling': return 'border-cyan-200 bg-cyan-50 text-cyan-700';
       case 'cold': return 'border-blue-200 bg-blue-50 text-blue-600';
       case 'new': return 'border-purple-200 bg-purple-50 text-purple-600';
@@ -68,6 +71,7 @@ const getStatusPill = (status, isLightTheme) => {
     case 'closing': return 'border-[#00D4FF]/30 bg-[#00D4FF]/10 text-[#00D4FF]';
     case 'warming': return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400';
     case 'warm': return 'border-orange-500/30 bg-orange-500/10 text-orange-400';
+    case '2027': return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-400';
     case 'cooling': return 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400';
     case 'cold': return 'border-blue-500/30 bg-blue-500/10 text-blue-400';
     case 'new': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
@@ -82,6 +86,7 @@ const getScoreGradient = (status) => {
     case 'closing': return 'from-[#00D4FF] to-[#0047FF]';
     case 'warming': return 'from-emerald-400 to-emerald-600';
     case 'warm': return 'from-orange-400 to-orange-600';
+    case '2027': return 'from-yellow-400 to-yellow-600';
     case 'cooling': return 'from-cyan-400 to-cyan-600';
     case 'cold': return 'from-blue-400 to-blue-600';
     case 'new': return 'from-purple-400 to-purple-600';
@@ -96,6 +101,7 @@ const getStatusName = (status) => {
     case 'hot': return 'Caliente';
     case 'warming': return 'Avanzando';
     case 'warm': return 'Tibio';
+    case '2027': return '2027';
     case 'cooling': return 'Enfriando';
     case 'cold': return 'Frío';
     case 'new': return 'Nuevo';
@@ -125,6 +131,7 @@ const getStatusTextColor = (status, isLightTheme) => {
       case 'closing': return 'text-[#005AB5]';
       case 'warming': return 'text-emerald-600';
       case 'warm': return 'text-orange-600';
+      case '2027': return 'text-yellow-700';
       case 'cooling': return 'text-cyan-700';
       case 'cold': return 'text-blue-600';
       case 'new': return 'text-purple-600';
@@ -137,6 +144,7 @@ const getStatusTextColor = (status, isLightTheme) => {
     case 'closing': return 'text-[#00D4FF]';
     case 'warming': return 'text-emerald-400';
     case 'warm': return 'text-orange-400';
+    case '2027': return 'text-yellow-400';
     case 'cooling': return 'text-cyan-400';
     case 'cold': return 'text-blue-400';
     case 'new': return 'text-purple-400';
@@ -273,6 +281,9 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="new" className="focus:bg-purple-500/20 focus:text-purple-400 cursor-pointer rounded-lg m-1">
                   <Target className="w-3.5 h-3.5 mr-2 text-purple-500" /> Nuevo
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="2027" className="text-yellow-500 focus:bg-yellow-500/20 focus:text-yellow-400 cursor-pointer rounded-lg m-1">
+                  <CalendarDays className="w-3.5 h-3.5 mr-2 text-yellow-500" /> 2027
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
                   <TrendingDown className="w-3.5 h-3.5 mr-2 text-[#8B4513]" /> Perdido

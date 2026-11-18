@@ -2,7 +2,7 @@ import LeadContactRow from './LeadContactRow';
 import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, TrendingUp, TrendingDown, Clock, MoreVertical, Eye, Edit, Trash2, Flame, Sun, Snowflake, Banknote, BookUser, HeartHandshake, Package, Phone, Mail, Video, FileText, Sparkles, CalendarPlus, Send, FileSearch, Calendar, Gem, MessageSquare, PlusCircle, Copy, Check, Link as LinkIcon, ExternalLink, File, Building, ChevronDown } from 'lucide-react';
+import { CalendarDays, Target, TrendingUp, TrendingDown, Clock, MoreVertical, Eye, Edit, Trash2, Flame, Sun, Snowflake, Banknote, BookUser, HeartHandshake, Package, Phone, Mail, Video, FileText, Sparkles, CalendarPlus, Send, FileSearch, Calendar, Gem, MessageSquare, PlusCircle, Copy, Check, Link as LinkIcon, ExternalLink, File, Building, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -55,6 +55,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
         case 'closing': return { label: 'Cierre', color: 'bg-blue-50 text-blue-600 border border-blue-200', Icon: Sparkles };
         case 'warming': return { label: 'Se está calentando', color: 'bg-emerald-50 text-emerald-600 border border-emerald-200', Icon: TrendingUp };
         case 'warm': return { label: 'Tibio', color: 'bg-orange-50 text-orange-600 border border-orange-200', Icon: Sun };
+        case '2027': return { label: '2027', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200', Icon: CalendarDays };
         case 'cooling': return { label: 'Se está enfriando', color: 'bg-cyan-50 text-cyan-700 border border-cyan-200', Icon: TrendingDown };
         case 'cold': return { label: 'Frío', color: 'bg-blue-50 text-blue-600 border border-blue-200', Icon: Snowflake };
         case 'new': return { label: 'Nuevo', color: 'bg-purple-50 text-purple-600 border border-purple-200', Icon: null };
@@ -66,6 +67,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
       case 'closing': return { label: 'Cierre', color: theme === 'futuristic' ? 'bg-[#00D4FF]/20 text-[#00D4FF]' : 'bg-[#00D4FF]/10 text-[#00D4FF] dark:bg-[#00D4FF]/20 dark:text-[#00D4FF]', Icon: Sparkles };
       case 'warming': return { label: 'Se está calentando', color: theme === 'futuristic' ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-400', Icon: TrendingUp };
       case 'warm': return { label: 'Tibio', color: theme === 'futuristic' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-400', Icon: Sun };
+      case '2027': return { label: '2027', color: theme === 'futuristic' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400', Icon: CalendarDays };
       case 'cooling': return { label: 'Se está enfriando', color: theme === 'futuristic' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/50 dark:text-cyan-400', Icon: TrendingDown };
       case 'cold': return { label: 'Frío', color: theme === 'futuristic' ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400', Icon: Snowflake };
       case 'new': return { label: 'Nuevo', color: theme === 'futuristic' ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400', Icon: null };
@@ -90,6 +92,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
         case 'closing': return 'text-[#005AB5]';
         case 'warming': return 'text-emerald-600';
         case 'warm': return 'text-orange-600';
+        case '2027': return 'text-yellow-700';
         case 'cooling': return 'text-cyan-700';
         case 'cold': return 'text-blue-600';
         case 'new': return 'text-purple-600';
@@ -102,6 +105,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
       case 'closing': return 'text-[#00D4FF]';
       case 'warming': return 'text-emerald-500 dark:text-emerald-400';
       case 'warm': return 'text-orange-500 dark:text-orange-400';
+      case '2027': return 'text-yellow-500 dark:text-yellow-400';
       case 'cooling': return 'text-cyan-500 dark:text-cyan-400';
       case 'cold': return 'text-blue-500 dark:text-blue-400';
       case 'new': return 'text-purple-500 dark:text-purple-400';
@@ -277,6 +281,10 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                   <DropdownMenuRadioItem value="cold" onClick={(e) => e.stopPropagation()}>
                     <Snowflake className="w-4 h-4 mr-2 text-blue-500" />
                     Frío
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="2027" className="text-yellow-500" onClick={(e) => e.stopPropagation()}>
+                    <CalendarDays className="w-4 h-4 mr-2 text-yellow-500" />
+                    2027
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>

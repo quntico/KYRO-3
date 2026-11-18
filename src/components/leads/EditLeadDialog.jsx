@@ -143,6 +143,7 @@ const EditLeadDialog = ({ isOpen, onOpenChange, lead, onUpdate, companies = [] }
     { value: 'hot', label: 'Caliente' },
     { value: 'warm', label: 'Tibio' },
     { value: 'cold', label: 'Frío' },
+    { value: '2027', label: '2027' },
   ], []);
 
   useEffect(() => {

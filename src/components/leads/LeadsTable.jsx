@@ -116,6 +116,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
         case 'hot': return { label: 'Caliente', color: 'bg-red-100 text-red-800 border-red-200', rowColor: 'border-l-4 border-l-red-500 hover:bg-red-50/50' };
         case 'warming': return { label: 'Avanzando', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', rowColor: 'border-l-4 border-l-emerald-500 hover:bg-emerald-50/50' };
         case 'warm': return { label: 'Tibio', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', rowColor: 'border-l-4 border-l-orange-500 hover:bg-yellow-50/50' };
+        case '2027': return { label: '2027', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', rowColor: 'border-l-4 border-l-yellow-500 hover:bg-yellow-50/50' };
         case 'cooling': return { label: 'Enfriando', color: 'bg-cyan-100 text-cyan-800 border-cyan-200', rowColor: 'border-l-4 border-l-cyan-500 hover:bg-cyan-50/50' };
         case 'cold': return { label: 'Frío', color: 'bg-blue-100 text-blue-800 border-blue-200', rowColor: 'border-l-4 border-l-blue-500 hover:bg-blue-50/50' };
         case 'new': return { label: 'Nuevo', color: 'bg-purple-100 text-purple-800 border-purple-200', rowColor: 'border-l-4 border-l-purple-500 hover:bg-purple-50/50' };
@@ -128,6 +129,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
       case 'hot': return { label: 'Caliente', color: 'bg-red-500/20 text-red-400 border-red-500/30', rowColor: 'border-l-4 border-l-red-500 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]' };
       case 'warming': return { label: 'Avanzando', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', rowColor: 'border-l-4 border-l-emerald-500 hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]' };
       case 'warm': return { label: 'Tibio', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', rowColor: 'border-l-4 border-l-orange-500 hover:bg-orange-500/10 hover:shadow-[0_0_15px_rgba(249,115,22,0.1)]' };
+      case '2027': return { label: '2027', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', rowColor: 'border-l-4 border-l-yellow-500 hover:bg-yellow-500/10 hover:shadow-[0_0_15px_rgba(250,204,21,0.1)]' };
       case 'cooling': return { label: 'Enfriando', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', rowColor: 'border-l-4 border-l-cyan-500 hover:bg-cyan-500/10 hover:shadow-[0_0_15px_rgba(6,182,212,0.1)]' };
       case 'cold': return { label: 'Frío', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', rowColor: 'border-l-4 border-l-blue-500 hover:bg-blue-500/10 hover:shadow-[0_0_15px_rgba(59,130,246,0.1)]' };
       case 'new': return { label: 'Nuevo', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', rowColor: 'border-l-4 border-l-purple-500 hover:bg-purple-500/10 hover:shadow-[0_0_15px_rgba(168,85,247,0.1)]' };
@@ -144,6 +146,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
         case 'closing': return 'text-[#005AB5]';
         case 'warming': return 'text-emerald-600';
         case 'warm': return 'text-orange-600';
+        case '2027': return 'text-yellow-700';
         case 'cooling': return 'text-cyan-700';
         case 'cold': return 'text-blue-600';
         case 'new': return 'text-purple-600';
@@ -156,6 +159,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
       case 'closing': return 'text-[#00D4FF]';
       case 'warming': return 'text-emerald-400';
       case 'warm': return 'text-orange-400';
+      case '2027': return 'text-yellow-400';
       case 'cooling': return 'text-cyan-400';
       case 'cold': return 'text-blue-400';
       case 'new': return 'text-purple-400';
@@ -182,6 +186,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
         case 'hot': return 'text-red-600 focus:bg-red-50';
         case 'warming': return 'text-emerald-600 focus:bg-emerald-50';
         case 'warm': return 'text-orange-600 focus:bg-orange-50';
+        case '2027': return 'text-yellow-700 focus:bg-yellow-50';
         case 'cooling': return 'text-cyan-700 focus:bg-cyan-50';
         case 'cold': return 'text-blue-600 focus:bg-blue-50';
         case 'new': return 'text-purple-600 focus:bg-purple-50';
@@ -194,6 +199,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
       case 'hot': return 'text-red-400 focus:bg-red-500/20';
       case 'warming': return 'text-emerald-400 focus:bg-emerald-500/20';
       case 'warm': return 'text-orange-400 focus:bg-orange-500/20';
+      case '2027': return 'text-yellow-400 focus:bg-yellow-500/20';
       case 'cooling': return 'text-cyan-400 focus:bg-cyan-500/20';
       case 'cold': return 'text-blue-400 focus:bg-blue-500/20';
       case 'new': return 'text-purple-400 focus:bg-purple-500/20';
@@ -417,6 +423,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           <DropdownMenuRadioItem value="cooling" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('cooling')}`}>Enfriando</DropdownMenuRadioItem>
                           <DropdownMenuRadioItem value="cold" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('cold')}`}>Frío</DropdownMenuRadioItem>
                           <DropdownMenuRadioItem value="new" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('new')}`}>Nuevo</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="2027" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('2027')}`}>2027</DropdownMenuRadioItem>
                           <DropdownMenuRadioItem value="declined" className={`text-[10px] font-bold uppercase cursor-pointer ${getStatusOptionClass('declined')}`}>Declinado</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                       </DropdownMenuContent>

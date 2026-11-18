@@ -190,6 +190,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
     if (!lead) return;
     let newScore;
     switch (newStatus) {
+      case '2027': break; // El año de seguimiento conserva la puntuación registrada.
       case 'closing': newScore = 100; break;
       case 'hot': newScore = Math.floor(Math.random() * (99 - 85 + 1)) + 85; break;
       case 'warm': newScore = Math.floor(Math.random() * (84 - 60 + 1)) + 60; break;
@@ -211,7 +212,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
 
     const { data: updatedLead, error } = await supabase
       .from('leads')
-      .update({ status: newStatus, score: newScore, last_activity: new Date().toISOString() })
+      .update({ status: newStatus, ...(newScore === undefined ? {} : { score: newScore }), last_activity: new Date().toISOString() })
       .eq('id', lead.id)
       .select()
       .single();
@@ -370,6 +371,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                         lead.status === 'hot' ? 'bg-red-500/20 border-red-500/50 text-red-400' :
                         lead.status === 'warming' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' :
                         lead.status === 'warm' ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' :
+                        lead.status === '2027' ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' :
                         lead.status === 'cooling' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' :
                         lead.status === 'cold' ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' :
                         lead.status === 'new' ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' :
@@ -382,6 +384,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                         lead.status === 'hot' ? '🔥 Caliente' :
                         lead.status === 'warming' ? '📈 Avanzando' :
                         lead.status === 'warm' ? '⚡ Tibio' :
+                        lead.status === '2027' ? '📅 2027' :
                         lead.status === 'cooling' ? '📉 Enfriando' :
                         lead.status === 'cold' ? '❄️ Frío' :
                         lead.status === 'new' ? '🎯 Nuevo' :
@@ -411,6 +414,9 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="new" className="focus:bg-purple-500/20 focus:text-purple-400 cursor-pointer rounded-lg m-1">
                         🎯 Nuevo
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="2027" className="text-yellow-500 focus:bg-yellow-500/20 focus:text-yellow-400 cursor-pointer rounded-lg m-1">
+                        📅 2027
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="declined" className="focus:bg-[#8B4513]/20 focus:text-[#D2691E] cursor-pointer rounded-lg m-1">
                         💼 Perdido

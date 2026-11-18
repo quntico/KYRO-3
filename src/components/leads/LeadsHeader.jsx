@@ -83,6 +83,7 @@ const LeadsHeader = ({
     { value: 'hot', label: 'Calientes' },
     { value: 'warm', label: 'Tibios' },
     { value: 'cold', label: 'Fríos' },
+    { value: '2027', label: '2027' },
     { value: 'declined', label: 'Declinados / Riesgo' }
   ];
 

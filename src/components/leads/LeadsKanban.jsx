@@ -3,6 +3,7 @@ import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
+    CalendarDays,
     Flame,
     Sun,
     Snowflake,
@@ -153,6 +154,7 @@ const LeadsKanban = ({ leads, onView, onOpenConversation, companies = [], onUpda
         { id: 'hot', title: 'Calientes', icon: Flame, color: 'text-red-400', bg: 'bg-red-400/10' },
         { id: 'warm', title: 'Tibios', icon: Sun, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         { id: 'cooling', title: 'Enfriando', icon: Snowflake, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+        { id: '2027', title: '2027', icon: CalendarDays, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
         { id: 'cold', title: 'Fríos', icon: Snowflake, color: 'text-blue-400', bg: 'bg-blue-400/10' },
         { id: 'declined', title: 'Declinados / riesgo', icon: MoreVertical, color: 'text-orange-400', bg: 'bg-orange-400/10' }
     ];
