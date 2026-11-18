@@ -8,7 +8,7 @@ const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:rin
 const control = `flex min-h-[64px] w-full min-w-0 items-center gap-3 rounded-xl border border-border bg-background/60 px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-primary/5 ${focus}`;
 const field = `h-11 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm text-foreground ${focus}`;
 const SORTS = [['status','Prioridad de estatus'],['date','Más recientes primero'],['date-asc','Más antiguos primero'],['value','Mayor importe primero'],['value-asc','Menor importe primero'],['alpha','Nombre de A a Z'],['alpha-desc','Nombre de Z a A']];
-const statusColors = { all:'bg-slate-400',new:'bg-purple-400',closing:'bg-cyan-400',hot:'bg-red-400',warming:'bg-emerald-400',warm:'bg-amber-400',cooling:'bg-sky-400',cold:'bg-blue-400',declined:'bg-orange-400' };
+const statusColors = { all:'bg-slate-400',new:'bg-purple-400',closing:'bg-cyan-400',hot:'bg-red-400',warming:'bg-emerald-400',warm:'bg-amber-400',cooling:'bg-sky-400',cold:'bg-blue-400','2027':'bg-yellow-400',declined:'bg-orange-400' };
 function Menu({ label, value, options, onChange, icon:Icon, color, dots }) {
   const [open,setOpen]=useState(false);
   const selected=options.find(([key])=>key===value)?.[1] || value;

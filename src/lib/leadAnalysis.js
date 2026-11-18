@@ -2,7 +2,7 @@ import {contactMatches, contactDay} from './dailyContacts.js';
 export const LEAD_STATUSES = [
   ['all', 'Todos'], ['new', 'Nuevos'], ['closing', 'Próximo cierre'],
   ['hot', 'Calientes'], ['warming', 'Avanzando'], ['warm', 'Tibios'],
-  ['cooling', 'Enfriando'], ['cold', 'Fríos'], ['declined', 'Declinados / riesgo'],
+  ['cooling', 'Enfriando'], ['cold', 'Fríos'], ['2027', '2027'], ['declined', 'Declinados / riesgo'],
 ];
 export const DATE_FIELDS = {
   contact: 'Último contacto', document: 'Fecha del documento', created: 'Alta en KYRO',
@@ -127,7 +127,7 @@ export function analyzeLeads(leads, { filters = DEFAULT_FILTERS, search = '', st
     }
     if (sort === 'alpha') return alpha;
     if (sort === 'alpha-desc') return -alpha;
-    const priority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
+    const priority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, '2027': 8, declined: 9 };
     return (priority[a.status] || 99) - (priority[b.status] || 99) || b.value - a.value || alpha;
   });
 }

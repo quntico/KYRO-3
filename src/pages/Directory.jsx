@@ -26,6 +26,7 @@
         case 'closing': return { label: 'Cierre', color: 'bg-[#00D4FF]' };
         case 'warming': return { label: 'Avanzando', color: 'bg-emerald-500' };
         case 'cooling': return { label: 'Enfriando', color: 'bg-cyan-500' };
+        case '2027': return { label: '2027', color: 'bg-yellow-500' };
         case 'declined': return { label: 'Perdido', color: 'bg-amber-700' };
         default: return { label: status ? status.toUpperCase() : 'Contacto', color: 'bg-gray-400' };
       }

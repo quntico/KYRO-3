@@ -45,6 +45,7 @@ const Analytics = () => {
       { id: 'warming', label: 'Avanzando', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500/30', bgGlow: 'bg-emerald-500/10' },
       { id: 'warm', label: 'Tibio', color: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500/30', bgGlow: 'bg-orange-500/10' },
       { id: 'cooling', label: 'Enfriando', color: 'bg-cyan-500', text: 'text-cyan-400', border: 'border-cyan-500/30', bgGlow: 'bg-cyan-500/10' },
+      { id: '2027', label: '2027', color: 'bg-yellow-500', text: 'text-yellow-400', border: 'border-yellow-500/30', bgGlow: 'bg-yellow-500/10' },
       { id: 'cold', label: 'Frío', color: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500/30', bgGlow: 'bg-blue-500/10' },
       { id: 'new', label: 'Nuevo', color: 'bg-purple-500', text: 'text-purple-400', border: 'border-purple-500/30', bgGlow: 'bg-purple-500/10' },
       { id: 'declined', label: 'Declinado', color: 'bg-[#8B4513]', text: 'text-[#D2691E]', border: 'border-[#8B4513]/30', bgGlow: 'bg-[#8B4513]/10' },

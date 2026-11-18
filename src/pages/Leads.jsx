@@ -262,6 +262,7 @@ const Leads = () => {
   const handleStatusChange = useCallback(async (leadId, newStatus) => {
     let newScore;
     switch (newStatus) {
+      case '2027': break; // El año de seguimiento conserva la puntuación registrada.
       case 'closing': newScore = 100; break;
       case 'hot': newScore = Math.floor(Math.random() * (99 - 85 + 1)) + 85; break;
       case 'warm': newScore = Math.floor(Math.random() * (84 - 60 + 1)) + 60; break;
@@ -281,7 +282,7 @@ const Leads = () => {
       declined: 'Perdido'
     };
 
-    await updateLeadAndLastActivity(leadId, { status: newStatus, score: newScore });
+    await updateLeadAndLastActivity(leadId, { status: newStatus, ...(newScore === undefined ? {} : { score: newScore }) });
     toast({ 
       title: "¡Estatus Actualizado!", 
       description: `El prospecto ha sido marcado como ${statusNames[newStatus] || newStatus}.` 
@@ -374,7 +375,7 @@ const Leads = () => {
     const tableColumn = ["#", "Cliente", "Contacto", "Empresa Gestora", "Máquinas/Proyectos", "Siguiente Paso", "Monto ($)"];
     const tableRows = [];
 
-    const statusPriority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, declined: 8 };
+    const statusPriority = { closing: 1, hot: 2, warming: 3, warm: 4, cooling: 5, cold: 6, new: 7, '2027': 8, declined: 9 };
     const statusColorsRGB = {
       closing: [0, 71, 255],
       hot: [239, 68, 68],
@@ -383,6 +384,7 @@ const Leads = () => {
       cooling: [6, 182, 212],
       cold: [59, 130, 246],
       new: [168, 85, 247],
+      '2027': [250, 204, 21],
       declined: [139, 69, 19],
     };
 
