@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { toast } from '@/components/ui/use-toast';
 import { useData } from '@/contexts/DataContext';
 import ModernLeadCard from '@/components/leads/ModernLeadCard';
+import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
 import ViewDealDialog from '@/components/deals/ViewDealDialog';
 import ClientFileViewerDialog from '@/components/deals/ClientFileViewerDialog';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -19,6 +20,7 @@ const Deals = () => {
   const { user } = useAuth();
   const { deals, deletedDeals, setDealDeleted, pipelineLoading: loading, updateDeal, revertDeal } = useData();
   const [viewingId, setViewingId] = useState(null);
+  const [journalId,setJournalId] = useState(null);
   const [fileId, setFileId] = useState(null);
   const [search, setSearch] = useState('');
   const [stage, setStage] = useState('all');
@@ -72,9 +74,11 @@ const Deals = () => {
     try {await persist(deal,changes);}
     catch(error){toast({title:'No se guardó el cambio',description:error.message,variant:'destructive'});throw error;}
   };
-  const renderCard = ({deal,card},index) => <ModernLeadCard key={deal.id} lead={card} index={index} companies={companies} onView={()=>setViewingId(deal.id)} onUpdateField={(_,patch)=>updateCardField(deal,patch)} sale={{stage:deal.stage,onStageChange:next=>changeStage(deal,next),onViewFile:()=>setFileId(deal.id),onRevert:()=>returnToLead(deal),onDelete:()=>setDeleteTarget(deal)}} />;
+  const renderCard = ({deal,card},index) => <ModernLeadCard key={deal.id} onOpenConversation={()=>setJournalId(deal.id)} lead={card} index={index} companies={companies} onView={()=>setViewingId(deal.id)} onUpdateField={(_,patch)=>updateCardField(deal,patch)} sale={{stage:deal.stage,onStageChange:next=>changeStage(deal,next),onViewFile:()=>setFileId(deal.id),onRevert:()=>returnToLead(deal),onDelete:()=>setDeleteTarget(deal)}} />;
+  const journalDeal = deals.find(d => d.id === journalId);
   const viewingDeal=deals.find(d=>d.id===viewingId), fileDeal=deals.find(d=>d.id===fileId);
   return <div className="min-h-full bg-background text-foreground">
+    {journalDeal && <LeadConversationDialog isSale isOpen lead={saleAsCard(journalDeal)} onOpenChange={open => !open && setJournalId(null)} />}
     <Helmet><title>Ventas | KYRO</title></Helmet>
     <div className="mx-auto max-w-[1700px] space-y-3 p-3 md:p-4">
       <header className="flex flex-wrap items-center justify-between gap-3">

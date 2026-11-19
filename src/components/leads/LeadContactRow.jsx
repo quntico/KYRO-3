@@ -3,7 +3,7 @@ import {useData} from '@/contexts/DataContext';
 import {shiftDay,dayKey} from '@/lib/agenda';
 import {callForCard,findCardCall} from '@/lib/agendaCapture';
 import MachineProject from './MachineProject';
-import QuickAgendaNote from './QuickAgendaNote';
+import {MessageSquare} from 'lucide-react';
 import {toast} from '@/components/ui/use-toast';
 import './lead-card.css';
 import {Check} from 'lucide-react';
@@ -11,10 +11,10 @@ import {useDailyContacts} from '@/contexts/DailyContactContext';
 import {contactRecordKey} from '@/lib/dailyContacts';
 import {displayDate} from '@/lib/leadAnalysis';
 
-export default function LeadContactRow({lead, isSale = false, showProject = true, cardLayout = false, children}) {
+export default function LeadContactRow({lead, isSale = false, showProject = true, cardLayout = false, onOpenConversation, children}) {
   const {ids, mark, history, pending, ready, error, day} = useDailyContacts();
   const key = contactRecordKey(lead, isSale);
-  const {tasks,loading,dataError,toggleCardCall,reportAgenda} = useData();
+  const {tasks,loading,dataError,toggleCardCall,reportAgenda,journal} = useData();
   const tomorrow = shiftDay(day || dayKey(),1);
   const call = callForCard(lead,key,tomorrow);
   const scheduled = findCardCall(tasks,call,tomorrow);
@@ -29,6 +29,7 @@ export default function LeadContactRow({lead, isSale = false, showProject = true
     catch (error) { toast({title:'No se pudo actualizar la llamada',description:error.message || 'Vuelve a intentarlo.',variant:'destructive'}); }
     finally { lock.current=false; setWorking(false); }
   }
+  const latest = journal.byClient.get(key)?.at(-1);
   const checked = ids.has(key);
   const saving = pending.has(key);
   const lastDate = history[key];
@@ -47,6 +48,9 @@ export default function LeadContactRow({lead, isSale = false, showProject = true
         {cardLayout && <span className="client-field-date">{lead.reportDateLabel || 'Fecha del documento'} · <time dateTime={lead.reportDate || undefined}>{displayDate(lead.reportDate)}</time></span>}
       </div>}
     </div>
+    {cardLayout && latest && <button type="button" className="client-last-entry" onClick={event => { event.stopPropagation(); onOpenConversation(lead); }}>
+      <span>Último seguimiento</span><strong>{latest.text}</strong>
+    </button>}
     {children}
     <div className={cardLayout ? 'client-followup' : 'flex flex-wrap items-center gap-1.5'} onClick={event => event.stopPropagation()}>
     <label title="Guarda el contacto de hoy en KYRO. Al desmarcar, conserva las fechas anteriores. Horario de CDMX." className={`inline-flex min-h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border px-2 text-[10px] font-semibold transition-colors ${checked ? 'border-primary/40 bg-primary/10 text-primary shadow-[0_0_10px_hsl(var(--primary)/0.12)]' : 'border-border bg-secondary/20 text-muted-foreground hover:border-primary/50 hover:text-foreground'}`}>
@@ -67,7 +71,7 @@ export default function LeadContactRow({lead, isSale = false, showProject = true
         </span>
         {working?'Guardando…':done?'Llamada hecha':'Llamar mañana'}
       </label>
-      <QuickAgendaNote name={lead.name} recordKey={key}/>
+      <button type="button" className="client-open-journal inline-flex items-center gap-1 rounded-lg border border-border px-2 text-xs" onClick={() => onOpenConversation(lead)}><MessageSquare aria-hidden="true" size={14}/>Seguimiento</button>
     </div>
   </div>;
 }

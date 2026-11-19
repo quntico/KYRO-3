@@ -229,7 +229,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
         </div>
       </header>
 
-      <LeadContactRow lead={lead} isSale={!!sale} cardLayout>
+      <LeadContactRow onOpenConversation={onOpenConversation} lead={lead} isSale={!!sale} cardLayout>
         <div className="client-financials">
         <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.reportBasis === 'document' ? 'Referencia documental' : 'Venta'}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.value ?? null, lead.financial?.currency || 'USD')}</p></div>
         <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.financial?.scenario ? 'Utilidad simulada' : 'Utilidad posible'}{lead.financial?.profit !== null && !lead.financial?.complete ? ' · parcial' : ''}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.profit ?? null, lead.financial?.currency || 'USD')}</p></div>
@@ -378,7 +378,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
 
       <div role="group" aria-label={`Acciones de ${lead.name}`} className="client-tools" onClick={e=>e.stopPropagation()}>
         <button type="button" title={sale ? 'Ver venta' : 'Editar'} aria-label={sale ? 'Ver venta' : 'Editar'} onClick={()=>sale ? onView(lead) : onEdit(lead)}>{sale ? <ExternalLink/> : <Edit/>}</button>
-        <button type="button" title={sale ? 'Expediente' : 'Bitácora'} aria-label={sale ? 'Expediente' : 'Bitácora'} onClick={()=>sale ? sale.onViewFile() : onOpenConversation(lead)}>{sale ? <FileText/> : <MessageSquare/>}</button>
+        {sale && <button type="button" title="Expediente" aria-label="Expediente" onClick={sale.onViewFile}><FileText/></button>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild><button type="button" aria-label="Más acciones" title="Más acciones"><MoreHorizontal/></button></DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={e=>e.stopPropagation()}>

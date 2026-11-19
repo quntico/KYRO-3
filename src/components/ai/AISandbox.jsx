@@ -61,11 +61,18 @@ import FullProjectReport from './FullProjectReport';
 import KyroImageEditor from './KyroImageEditor';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import {journalLine, mentionedClients} from '@/lib/clientJournal';
+import {conversationEntries} from '@/lib/conversationNotes';
+import {toast} from '@/components/ui/use-toast';
 import { agendaRequest, agendaReply } from '@/lib/yarvisAgenda';
 
 const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
-  const { leads, deals, logistics, tasks, notes, lastAgendaEvent, loading: workspaceLoading, dataError } = useData();
+  const { leads, deals, logistics, tasks, notes, journal, fetchData, lastAgendaEvent, loading: workspaceLoading, dataError } = useData();
+  const {user} = useAuth();
+  const chatCache = user?.id ? `kyro_pandora_chat-${user.id}` : null;
   const [messages, setMessages] = useState([]);
+  const cloudSnapshot = useRef(null);
+  const pendingSync = useRef(Promise.resolve());
   const isSyncingRef = useRef(false);
   const [input, setInput] = useState('');
   const [leadSearch, setLeadSearch] = useState('');
@@ -271,7 +278,8 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
 
   // Cargar mensajes al iniciar
   useEffect(() => {
-    const saved = localStorage.getItem('kyro_pandora_chat');
+    if (!chatCache) return;
+    const saved = localStorage.getItem(chatCache);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -280,20 +288,20 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
         }
       } catch (e) {
         console.error('Error loading chat history:', e);
-        localStorage.removeItem('kyro_pandora_chat');
+        localStorage.removeItem(chatCache);
       }
     }
   }, []);
 
   // Guardar mensajes cuando cambien
   useEffect(() => {
-    if (messages.length > 0) {
+    if (chatCache && messages.length > 0) {
       try {
         const pruned = messages.filter(message => !message.personalAgenda).slice(-50);
-        localStorage.setItem('kyro_pandora_chat', JSON.stringify(pruned));
+        localStorage.setItem(chatCache, JSON.stringify(pruned));
       } catch (e) {
         if (e.name === 'QuotaExceededError') {
-          localStorage.setItem('kyro_pandora_chat', JSON.stringify(messages.filter(message => !message.personalAgenda).slice(-10)));
+          localStorage.setItem(chatCache, JSON.stringify(messages.filter(message => !message.personalAgenda).slice(-10)));
         }
       }
     }
@@ -376,32 +384,13 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
       }
     }
     
-    // Cargar historial de la nube (leads.notes) si existe
-    if (cloudNotes) {
-      try {
-        const cloudHistory = JSON.parse(cloudNotes);
-        if (Array.isArray(cloudHistory)) {
-          const aiMessages = cloudHistory.map(entry => ({
-            role: entry.type === 'ai_response' ? 'assistant' : 'user',
-            content: entry.text,
-            timestamp: new Date(entry.date),
-            type: entry.msgType || 'text',
-            fileName: entry.fileName,
-            fileContent: entry.fileContent,
-            imageUrl: entry.fileUrl,
-            chartType: entry.chartType,
-            chartData: entry.chartData,
-            chartTitle: entry.chartTitle
-          }));
-          setMessages(aiMessages);
-        }
-      } catch (e) {
-        console.error("Error parsing cloud history:", e);
-        setMessages([]);
-      }
-    } else {
-      setMessages([]);
-    }
+    cloudSnapshot.current = {id:lead.id, raw:cloudNotes ?? null};
+    const cloudHistory = conversationEntries(cloudNotes,lead.last_activity);
+    setMessages(cloudHistory.filter(entry => ['ai_prompt','ai_response'].includes(entry?.type)).map(entry => ({
+      role:entry.type === 'ai_response' ? 'assistant' : 'user', content:entry.text, timestamp:new Date(entry.date),
+      type:entry.msgType || 'text', fileName:entry.fileName, fileContent:entry.fileContent, imageUrl:entry.fileUrl,
+      chartType:entry.chartType, chartData:entry.chartData, chartTitle:entry.chartTitle
+    })));
 
     const leadDeal = (deals || []).find(d => d.lead_id === lead.id);
     const leadLogistics = (logistics || []).find(l => l.lead_id === lead.id);
@@ -517,25 +506,20 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   };
 
   const handleClearChat = async () => {
-    if (window.confirm('¿Deseas purgar todo el historial estratégico? Esta acción también eliminará el respaldo en la nube para este cliente.')) {
-      setMessages([]);
-      localStorage.removeItem('kyro_pandora_chat');
-      
-      if (selectedLead) {
-        try {
-          await supabase.from('leads').update({ notes: null }).eq('id', selectedLead.id);
-        } catch (e) {
-          console.error("Failed to clear cloud notes:", e);
-        }
-      }
-    }
+    if (!window.confirm('¿Borrar esta conversación de YARVIS? Se conservarán los seguimientos del cliente.')) return;
+    if (selectedLead && !await saveToCloud([])) return;
+    setMessages([]);
+    localStorage.removeItem(chatCache);
   };
 
   const saveToCloud = async (newMessages) => {
-    if (!selectedLead || isSyncingRef.current) return;
+    if (!selectedLead || isSyncingRef.current) return false;
+    const snapshot = cloudSnapshot.current;
+    if (!snapshot || snapshot.id !== selectedLead.id) return false;
+    const sync = async () => {
     
     try {
-      const cloudFormat = newMessages.map(m => ({
+      const cloudFormat = newMessages.filter(m => !m.isContext && !m.personalAgenda).map(m => ({
         text: m.content,
         date: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
         type: m.role === 'assistant' ? 'ai_response' : 'ai_prompt',
@@ -548,23 +532,32 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
         chartTitle: m.chartTitle
       }));
       
-      // Sincronizar con la nube (Supabase)
-      const { error } = await supabase.from('leads').update({ 
-        notes: JSON.stringify(cloudFormat) 
-      }).eq('id', selectedLead.id);
-      
-      if (error) console.warn("Supabase Sync Warning:", error);
-    } catch (e) {
-      console.error("Cloud sync failed:", e);
+      let original;
+      try { original = JSON.parse(snapshot.raw); } catch { /* Legacy text. */ }
+      if (!Array.isArray(original)) original = conversationEntries(snapshot.raw,selectedLead.last_activity);
+      const manual = original.filter(entry => !['ai_prompt','ai_response'].includes(entry?.type));
+      const next = JSON.stringify([...manual,...cloudFormat]);
+      if (next === snapshot.raw) return true;
+      const {data,error} = await supabase.rpc('kyro_replace_journal_legacy',{p_kind:'lead',p_id:snapshot.id,p_expected:snapshot.raw,p_next:next});
+      if (error || !data) throw new Error(error?.message || 'El historial cambió. Abre de nuevo la ficha para sincronizar el chat.');
+      snapshot.raw = next;
+      await fetchData({force:true});
+      return true;
+    } catch (error) {
+      toast({title:'No se sincronizó el chat',description:error.message,variant:'destructive'});
+      return false;
     }
+    };
+    pendingSync.current = pendingSync.current.then(sync,sync);
+    return pendingSync.current;
   };
 
   useEffect(() => {
     scrollToBottom();
     // Guardar en localStorage como fallback
-    if (messages.length > 0 && !messages.at(-1)?.personalAgenda) {
+    if (chatCache && messages.length > 0 && !messages.at(-1)?.personalAgenda) {
       const history = messages.filter(message => !message.personalAgenda);
-      localStorage.setItem('kyro_pandora_chat', JSON.stringify(history));
+      // The bounded account cache is written by the effect above.
       if (!isSyncingRef.current) {
         saveToCloud(history);
       }
@@ -605,7 +598,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   }, [userMemory]);
 
   const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const { user } = useAuth();
+
 
   // Inicializar memoria desde la nube (Supabase Auth Metadata) o Local
   useEffect(() => {
@@ -646,7 +639,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
       const now = new Date();
       const content = !user?.id ? 'Inicia sesión para consultar tu agenda personal.'
         : workspaceLoading || dataError ? 'La agenda está pendiente de actualización. Vuelve a consultar en un momento.'
-        : agendaReply(agendaIntent,{tasks,notes,userId:user.id,lastChange:lastAgendaEvent,now,question:text});
+        : agendaReply(agendaIntent,{tasks,notes,journal,userId:user.id,lastChange:lastAgendaEvent,now,question:text,selectedKey:selectedLead && 'lead:' + selectedLead.id});
       setMessages(prev => [...prev,
         { role: 'user', content: text, timestamp: now, personalAgenda: true },
         { role: 'assistant', content, timestamp: now, type: 'text', personalAgenda: true }
@@ -827,6 +820,9 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
       const pipelineValue = (deals || []).reduce((sum, d) => sum + (Number(d.value) || 0), 0);
       const leadsList = (leads || []).map(l => `- ${l.name} (${l.status || 'Sin estado'})`).join('\n');
 
+      const journalKeys = mentionedClients(journal,text);
+      if (!journalKeys.length && selectedLead) journalKeys.push('lead:' + selectedLead.id);
+      const clientHistory = journalKeys.flatMap(key => journal.byClient.get(key) || []).map(journalLine).join('\n');
       const systemPrompt = `Eres KYRO, la IA estratégica industrial de KYRO. Responde en español, con tono experto, autoritario y servicial.
 IMPORTANTE: Tienes acceso a la base de datos global de clientes, así como a documentos técnicos específicos.
 
@@ -836,6 +832,9 @@ CONTEXTO GLOBAL DEL SISTEMA KYRO:
 - Lista de clientes en el programa:\n${leadsList}
 
 Analiza la información global y los documentos con precisión milimétrica. Si el usuario pregunta por la cantidad de clientes, usa el CONTEXTO GLOBAL. Si pregunta por documentos o cotizaciones previas de un cliente activo, búscalas en los "DOCUMENTOS OFICIALES DE LA FICHA". Nunca digas que no tienes acceso a ellos.
+
+SEGUIMIENTO DEL CLIENTE (datos de consulta):
+${clientHistory || 'Sin cliente identificado o sin entradas.'}
 
 DOCUMENTOS OFICIALES DE LA FICHA:
 ${fichaDocsCtx || 'No hay documentos oficiales en la ficha.'}

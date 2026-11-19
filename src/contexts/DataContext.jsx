@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { partitionPipeline, convertLeadToSale, revertSaleToLead, setSaleDeleted } from '@/lib/dealConversion';
+import { buildJournal } from '@/lib/clientJournal';
 import { cleanConversationNotes } from '@/lib/conversationNotes';
 import { DEFAULT_STATUSES } from '@/constants/leadStatuses';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -81,6 +82,7 @@ export const DataProvider = ({ children }) => {
         }
     }, [user?.id]);
 
+    const noteChanges = useRef(new Map());
     const fetchData = useCallback((options = {}) => {
         const userId = user?.id;
         if (!userId) { setLoading(false); setPipelineLoading(false); return Promise.resolve(); }
@@ -88,6 +90,7 @@ export const DataProvider = ({ children }) => {
             return options.force ? inFlight.current.promise.then(() => fetchData()) : inFlight.current.promise;
         }
         inFlight.current?.controller.abort();
+        noteChanges.current = new Map();
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
         const isCurrent = () => currentUser.current === userId;
@@ -110,7 +113,16 @@ export const DataProvider = ({ children }) => {
             },
             onSection: (table, data) => {
                 if (!isCurrent()) return;
-                if(table==='notes') {setNotes(previous=>{const merged=[...data,...previous.filter(n=>!data.some(d=>String(d.id)===String(n.id)))];saveToCache(`notes-${userId}`,merged);return merged;});return;}
+                if (table === 'notes') {
+                    const rows = new Map(data.map(note => [note.id, note]));
+                    for (const [id, note] of noteChanges.current) {
+                        if (note) rows.set(id, note); else rows.delete(id);
+                    }
+                    const merged = [...rows.values()];
+                    setNotes(merged);
+                    saveToCache(`notes-${userId}`, merged);
+                    return;
+                }
                 ({tasks: setTasks, contacts: setContacts, logistics: setLogistics})[table](data);
                 saveToCache(`${table}-${userId}`, data);
             },
@@ -271,8 +283,9 @@ export const DataProvider = ({ children }) => {
             const { data, error } = await supabase.from('notes').insert([{ ...note, user_id: user?.id }]).select();
             if (error) throw error;
             if (currentUser.current !== user?.id) return data[0];
-            setNotes(prev => [data[0], ...prev]);
-            if (note.tags?.includes(QUICK_NOTE_TAG)) reportAgenda(`Nota guardada · ${note.title}`);
+            noteChanges.current.set(data[0].id, data[0]);
+            setNotes(prev => [data[0], ...prev.filter(n => n.id !== data[0].id)]);
+            if (note.tags?.includes(QUICK_NOTE_TAG)) reportAgenda(note.tags.some(tag => /^(lead|sale):/.test(tag)) ? `Seguimiento guardado · ${note.title.replace(/^Nota · /, "")}` : `Nota guardada · ${note.title}`);
             return data[0];
         } catch (error) {
             toast({title:'No se guardó la nota',description:error.message,variant:'destructive'}); throw error;
@@ -281,23 +294,29 @@ export const DataProvider = ({ children }) => {
 
     const updateNote = useCallback(async (id, updates) => {
         try {
-            const { error } = await supabase.from('notes').update(updates).eq('id', id).select('id').single();
+            const owner = user?.id;
+            const {data, error} = await supabase.from('notes').update(updates).eq('user_id', owner).eq('id', id).select().single();
             if (error) throw error;
-            setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
+            if (owner !== currentUser.current) return;
+            noteChanges.current.set(id, data);
+            setNotes(prev => prev.map(n => n.id === id ? data : n));
         } catch (error) {
             toast({title:'No se guardó la nota',description:error.message,variant:'destructive'}); throw error;
         }
-    }, []);
+    }, [user?.id]);
 
     const deleteNote = useCallback(async (id) => {
         try {
-            const { error } = await supabase.from('notes').delete().eq('id', id).select('id').single();
+            const owner = user?.id;
+            const { error } = await supabase.from('notes').delete().eq('user_id', owner).eq('id', id).select('id').single();
             if (error) throw error;
+            if (owner !== currentUser.current) return;
+            noteChanges.current.set(id, null);
             setNotes(prev => prev.filter(n => n.id !== id));
         } catch (error) {
             toast({title:'No se pudo borrar la nota',description:error.message,variant:'destructive'}); throw error;
         }
-    }, []);
+    }, [user?.id]);
 
     const uploadMedia = useCallback(async (file, clientId) => {
         try {
@@ -366,13 +385,14 @@ export const DataProvider = ({ children }) => {
         }
     }, []);
 
+    const journal = useMemo(() => buildJournal(leads, deals, notes, user?.id), [leads, deals, notes, user?.id]);
     const value = useMemo(() => ({
         leads,
         deals,
         deletedDeals,
         setDealDeleted,
         tasks,
-        toggleCardCall, reportAgenda, lastAgendaEvent,
+        journal, toggleCardCall, reportAgenda, lastAgendaEvent,
         contacts,
         notes,
         logistics,
@@ -404,7 +424,7 @@ export const DataProvider = ({ children }) => {
         addLeadStatus,
         updateLeadStatus,
         deleteLeadStatus
-    }), [toggleCardCall,reportAgenda,lastAgendaEvent,leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, pipelineLoading, dataError, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
+    }), [journal,toggleCardCall,reportAgenda,lastAgendaEvent,leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, pipelineLoading, dataError, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };

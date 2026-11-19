@@ -1,3 +1,4 @@
+import { useData } from '@/contexts/DataContext';
 import MachineProject from './MachineProject';
 import LeadContactRow from './LeadContactRow';
 import LeadAnalysisDetails from './LeadAnalysisDetails';
@@ -32,6 +33,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 
 const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onConvertToDeal, onStatusChange, companies = [], onUpdateField }) => {
+  const {journal} = useData();
   const { theme } = useTheme();
   const [copied, setCopied] = React.useState(null);
 
@@ -82,18 +84,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
     return 'Cerrado';
   };
 
-  const getLastNote = (lead) => {
-    if (!lead || !lead.notes) return 'Sin seguimiento registrado';
-    try {
-      const parsed = JSON.parse(lead.notes);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed[parsed.length - 1].text || 'Sin texto';
-      }
-      return String(lead.notes);
-    } catch (e) {
-      return String(lead.notes);
-    }
-  };
+  const getLastNote = lead => journal.byClient.get('lead:' + lead.id)?.at(-1)?.text || 'Sin seguimiento registrado';
 
   const formatLastActivity = (dateString) => {
     if (!dateString) return 'N/A';
@@ -287,7 +278,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           </Tooltip>
                         )}
                       </div>
-                      <LeadContactRow lead={lead} showProject={false} />
+                      <LeadContactRow onOpenConversation={onOpenConversation} lead={lead} showProject={false} />
                       <div className="flex flex-col gap-1 mt-1.5 text-[11px] text-muted-foreground">
                         <div
                           className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/copy"

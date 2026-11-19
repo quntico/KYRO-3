@@ -10,18 +10,65 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+const dayFormat = new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const timeFormat = new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const showDay = value => journalDate(value) ? dayFormat.format(journalDate(value)) : 'Fecha sin registrar';
+const showTime = value => journalDate(value) && !/^\d{4}-\d{2}-\d{2}$/.test(value) ? timeFormat.format(journalDate(value)) : 'Hora sin registrar';
 import { Send, User, Bot, History, MessageCircle, Paperclip, Mic, Download, Share2, X, Edit2, Trash2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext.jsx';
 import { supabase } from '@/lib/customSupabaseClient';
-import { conversationEntries } from '@/lib/conversationNotes';
+import { conversationEntries, isDocumentaryImport } from '@/lib/conversationNotes';
+import { journalKey, journalPayload, journalDate } from '@/lib/clientJournal';
+import {useData} from '@/contexts/DataContext';
+import {toast} from '@/components/ui/use-toast';
 
-const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
+const LeadConversationDialog = ({ isOpen, onOpenChange, lead, isSale = false, agenda = false }) => {
     const { theme } = useTheme();
     const [comment, setComment] = useState('');
-    const [history, setHistory] = useState([]);
-    const scrollRef = useRef(null);
+    const {journal, leads, deals, addNote, updateNote, deleteNote, reportAgenda, fetchData} = useData();
+    const [chosen,setChosen] = useState('');
+    const key = agenda ? chosen : lead && journalKey(lead, isSale);
+    const name = journal.clients.get(key) || lead?.name;
+    const history = React.useMemo(() => agenda && !chosen ? [...journal.entries].reverse() : journal.byClient.get(key) || [], [agenda,chosen,key,journal]);
+    const [busy,setBusy] = useState(false);
+    const saving = useRef(false);
+    async function persist(action) {
+        if (saving.current) return false;
+        saving.current = true;
+        setBusy(true);
+        try { await action(); return true; }
+        catch (error) { toast({title:'Seguimiento pendiente de guardar',description:error.message,variant:'destructive'}); return false; }
+        finally { saving.current = false; setBusy(false); }
+    }
+    function append(entry) {
+        return persist(() => addNote(journalPayload(entry, name, key)));
+    }
+    async function change(entry, nextText) {
+        if (entry.noteId != null) {
+            if (nextText === null) await deleteNote(entry.noteId);
+            else {
+                const payload = journalPayload({...entry, text:nextText}, entry.name, entry.key);
+                await updateNote(entry.noteId, {content:payload.content});
+            }
+        } else {
+            const prospect = leads.find(l => 'lead:' + l.id === entry.key);
+            const sale = !prospect && deals.find(d => (d.closing_status?.source_lead_id == null ? 'sale:' + d.id : 'lead:' + d.closing_status.source_lead_id) === entry.key);
+            const liveLead = prospect || sale?.closing_status?.source_lead;
+            if (!liveLead) throw new Error('La ficha cambió. Actualiza la agenda.');
+            const raw = liveLead.notes ?? null;
+            let all;
+            try { all = JSON.parse(raw); } catch { /* Legacy plain text. */ }
+            if (!Array.isArray(all)) all = conversationEntries(raw, liveLead?.last_activity);
+            const current = all.filter(e => !isDocumentaryImport(e))[entry.legacyIndex];
+            if (!current || current.text !== entry.text) throw new Error('El historial cambió. Vuelve a abrir la entrada.');
+            const next = all.flatMap(item => item !== current ? [item] : nextText === null ? [] : [{...item,text:nextText}]);
+            const {data,error} = await supabase.rpc('kyro_replace_journal_legacy', {p_kind:sale?'sale':'lead',p_id:sale ? sale.id : prospect.id,p_expected:raw,p_next:JSON.stringify(next)});
+            if (error) throw error;
+            await fetchData({force:true});
+            if (!data) throw new Error('Otro dispositivo actualizó el historial. Revisa la versión actual.');
+        }
+        reportAgenda((nextText === null ? 'Seguimiento eliminado · ' : 'Seguimiento actualizado · ') + entry.name);
+    }
     const endOfMessagesRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
@@ -45,86 +92,44 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
     }, [selectedImage, selectedPdf, editingIndex]);
 
     useEffect(() => {
-        let cancelled = false;
-        if (isOpen && lead) {
-            setHistory(conversationEntries(lead.notes, lead.last_activity));
-
-            const fetchNotes = async () => {
-                const { data } = await supabase.from('leads').select('notes').eq('id', lead.id).single();
-                if (!cancelled && data) {
-                    setHistory(conversationEntries(data.notes, lead.last_activity));
-                }
-            };
-            fetchNotes();
-        }
-        return () => { cancelled = true; };
-    }, [isOpen, lead]);
-
-    useEffect(() => {
         if (endOfMessagesRef.current) {
             endOfMessagesRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [history, isOpen]);
 
-    const safeFormatDate = (dateSource, formatStr = "EEE, dd MMM, HH:mm'h'") => {
-        if (!dateSource) return '';
-        try {
-            const d = new Date(dateSource);
-            if (isNaN(d.getTime())) return '';
-            return format(d, formatStr, { locale: es });
-        } catch (e) {
-            return '';
-        }
-    };
+    const safeFormatDate = value => showDay(value) + ' · ' + showTime(value);
+    const title = name || 'Mi agenda';
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!comment.trim()) return;
-
-        const newEntry = {
-            text: comment,
-            date: new Date().toISOString(),
-            type: 'manual'
-        };
-
-        const updatedHistory = [...history, newEntry];
-        setHistory(updatedHistory);
-        onSave(lead.id, { notes: JSON.stringify(updatedHistory) });
-        setComment('');
+        if (await append({text:comment.trim(), type:'manual'})) setComment('');
     };
 
-    const handleDeleteMessage = (index) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar este mensaje?')) return;
-        const newHistory = history.filter((_, i) => i !== index);
-        setHistory(newHistory);
-        onSave(lead.id, { notes: JSON.stringify(newHistory) });
+    const handleDeleteMessage = async entry => {
+        if (window.confirm('¿Eliminar esta entrada del seguimiento?')) await persist(() => change(entry,null));
     };
 
-    const handleEditMessage = (index) => {
-        setEditingIndex(index);
-        setEditText(history[index].text);
+    const handleEditMessage = entry => {
+        setEditingIndex(entry.uid);
+        setEditText(entry.text);
     };
 
-    const handleSaveEdit = (index) => {
-        if (!editText.trim()) return;
-        const newHistory = [...history];
-        newHistory[index].text = editText;
-        setHistory(newHistory);
-        onSave(lead.id, { notes: JSON.stringify(newHistory) });
-        setEditingIndex(null);
+    const handleSaveEdit = async entry => {
+        if (editText.trim() && await persist(() => change(entry,editText.trim()))) setEditingIndex(null);
     };
 
     const handleDownloadHistory = () => {
-        const text = `Historial de Seguimiento: ${lead.name}\n\n` + history.map(entry => `[${safeFormatDate(entry.date)}] Usuario:\n${entry.text}`).join('\n\n');
+        const text = `Historial de Seguimiento: ${title}\n\n` + history.map(entry => `[${safeFormatDate(entry.date)}] ${entry.name} · ${entry.type === 'ai_response' ? 'YARVIS' : 'Usuario'}:\n${entry.text}`).join('\n\n');
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Historial_${lead.name.replace(/\s+/g, '_')}.txt`;
+        a.download = `Historial_${title.replace(/\s+/g, '_')}.txt`;
         a.click();
     };
 
     const handleShareWhatsApp = () => {
-        const text = `*Historial de Seguimiento: ${lead.name}*\n\n` + history.map(entry => `_${safeFormatDate(entry.date)}_\n${entry.text}`).join('\n\n');
+        const text = `*Historial de Seguimiento: ${title}*\n\n` + history.map(entry => `_${safeFormatDate(entry.date)}_ · ${entry.name}\n${entry.text}`).join('\n\n');
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(url, '_blank');
     };
@@ -144,9 +149,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                 fileName: file.name,
                 fileType: file.type
             };
-            const updatedHistory = [...history, newEntry];
-            setHistory(updatedHistory);
-            onSave(lead.id, { notes: JSON.stringify(updatedHistory) });
+            append(newEntry);
         };
         reader.readAsDataURL(file);
     };
@@ -182,9 +185,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                             type: 'audio',
                             audioUrl: base64AudioMessage
                         };
-                        const updatedHistory = [...history, newEntry];
-                        setHistory(updatedHistory);
-                        onSave(lead.id, { notes: JSON.stringify(updatedHistory) });
+                        append(newEntry);
                     };
                     stream.getTracks().forEach(track => track.stop());
                 };
@@ -198,7 +199,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
         }
     };
 
-    if (!lead) return null;
+    if (!agenda && !lead) return null;
 
     return (
         <>
@@ -243,10 +244,10 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                 </div>
             )}
             <Dialog aria-describedby="bitacora-vance-description" open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-xl border border-border bg-card text-foreground shadow-2xl p-0 overflow-hidden !transform !translate-x-[-50%] !translate-y-[-50%]">
-                <div className="p-6 border-b border-border bg-secondary/10">
+                <DialogContent className="grid-cols-[minmax(0,1fr)] gap-0 max-h-[96dvh] overflow-y-auto sm:max-w-xl border border-border bg-card text-foreground shadow-2xl p-0 !transform !translate-x-[-50%] !translate-y-[-50%]">
+                <div className="p-4 sm:p-6 border-b border-border bg-secondary/10">
                     <DialogHeader>
-                        <div className="flex justify-between items-center w-full pr-4">
+                        <div className="flex flex-wrap items-center justify-between gap-1 w-full pr-5">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-full bg-primary/20">
                                     <MessageCircle className="w-5 h-5 text-primary" />
@@ -254,7 +255,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                 <div>
                                     <DialogTitle className="text-xl font-bold text-foreground">SEGUIMIENTO</DialogTitle>
                                     <DialogDescription className="text-muted-foreground/80 text-xs">
-                                        Sigue la conversación con <span className="text-primary font-bold">{lead.name}</span>
+                                        <span className="text-primary font-bold">{title}</span> · Hora de Ciudad de México
                                     </DialogDescription>
                                 </div>
                             </div>
@@ -270,7 +271,12 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                     </DialogHeader>
                 </div>
 
-                <ScrollArea className="h-[400px] p-6 bg-card" viewportRef={scrollRef}>
+                {agenda && <label className="flex items-center gap-3 px-6 pt-3 text-xs">Cliente
+                  <select value={chosen} onChange={event => {setChosen(event.target.value); setEditingIndex(null);}} disabled={busy || !!comment.trim() || isRecording} className="min-w-0 flex-1 rounded-lg border border-border bg-background p-2">
+                    <option value="">Todos · escribir nota de agenda</option>
+                    {[...journal.clients].sort((a,b)=>a[1].localeCompare(b[1],'es')).map(([id,label])=><option value={id} key={id}>{label} · #{id.split(':')[1]}</option>)}
+                  </select></label>}
+                <ScrollArea className="h-[min(46dvh,400px)] px-4 py-3 sm:px-6 bg-card">
                     <div className="space-y-6">
                         {history.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground opacity-50">
@@ -279,21 +285,22 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                 <p className="text-xs">Registra aquí lo que platicaste con el cliente.</p>
                             </div>
                         ) : (
-                            history.map((entry, index) => (
-                                <div key={index} className="flex flex-col space-y-2">
+                            history.map((entry,index) => (
+                                <div key={entry.uid} className="flex flex-col space-y-2">
+                                    {(!index || showDay(entry.date) !== showDay(history[index - 1].date)) && <div className="my-2 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground"><span className="h-px flex-1 bg-border"/><span className="capitalize">{showDay(entry.date)}</span><span className="h-px flex-1 bg-border"/></div>}
                                     <div className="flex items-center gap-2 text-xs text-muted-foreground/60 px-1">
                                         <User className="w-3 h-3" />
-                                        <span>Usuario</span>
+                                        <span>{entry.type === 'ai_response' ? 'YARVIS' : 'Usuario'}{agenda && !chosen ? ' · ' + entry.name : ''}</span>
                                         <span className="ml-auto font-bold text-primary/90">
-                                            {safeFormatDate(entry.date)}
+                                            <time dateTime={entry.date || undefined} title={safeFormatDate(entry.date)}>{showTime(entry.date)}</time>
                                         </span>
                                     </div>
                                     <div className="bg-secondary/40 border border-border rounded-2xl rounded-tl-none p-4 shadow-sm relative group/message text-foreground">
                                         <div className="absolute top-2 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity flex gap-1 bg-secondary border border-border p-1 rounded-md z-10">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleEditMessage(index)}>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary" onClick={() => handleEditMessage(entry)}>
                                                 <Edit2 className="w-3 h-3" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => handleDeleteMessage(index)}>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => handleDeleteMessage(entry)}>
                                                 <Trash2 className="w-3 h-3" />
                                             </Button>
                                         </div>
@@ -327,7 +334,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                                 <audio src={entry.audioUrl} controls className="w-full h-10" />
                                             </div>
                                         )}
-                                        {editingIndex === index ? (
+                                        {editingIndex === entry.uid ? (
                                             <div className="mt-2 flex flex-col gap-2 relative z-20">
                                                 <Textarea 
                                                     value={editText} 
@@ -336,7 +343,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                                                 />
                                                 <div className="flex justify-end gap-2">
                                                     <Button size="sm" variant="ghost" onClick={() => setEditingIndex(null)}>Cancelar</Button>
-                                                    <Button size="sm" onClick={() => handleSaveEdit(index)} className="bg-primary hover:bg-primary/80 text-primary-foreground">Guardar</Button>
+                                                    <Button disabled={busy} size="sm" onClick={() => handleSaveEdit(entry)} className="bg-primary hover:bg-primary/80 text-primary-foreground">Guardar</Button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -352,11 +359,11 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                     </div>
                 </ScrollArea>
 
-                <div className="p-6 bg-secondary/10 border-t border-border">
+                <div className="p-4 sm:p-6 bg-secondary/10 border-t border-border">
                     <div className="relative group">
                         <Textarea
-                            placeholder="Escribe el seguimiento de lo que dijo el cliente..."
-                            value={comment}
+                            placeholder="Escribe lo que acordaron o lo que quieres recordar…"
+                            disabled={busy} value={comment}
                             onChange={(e) => setComment(e.target.value)}
                             className="min-h-[100px] bg-background border-border text-foreground focus:border-primary/50 transition-all resize-none pr-32 rounded-xl"
                             onKeyDown={(e) => {
@@ -395,7 +402,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                             <Button
                                 size="icon"
                                 onClick={handleSend}
-                                disabled={!comment.trim()}
+                                aria-label="Guardar seguimiento" disabled={busy || !comment.trim()}
                                 className="w-8 h-8 rounded-full bg-primary hover:bg-primary/80 transition-transform active:scale-90"
                             >
                                 <Send className="w-4 h-4 text-primary-foreground" />
@@ -403,7 +410,7 @@ const LeadConversationDialog = ({ isOpen, onOpenChange, lead, onSave }) => {
                         </div>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-3 text-center">
-                        Presiona Enter para enviar • Los avances se guardan automáticamente
+                        Enter para guardar · Disponible en YARVIS
                     </p>
                 </div>
             </DialogContent>

@@ -1,3 +1,4 @@
+import { useData } from '@/contexts/DataContext';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
@@ -51,6 +52,7 @@ const safeFormatDate = (dateSource, formatStr = "dd/MM/yy") => {
 };
 
 const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation, initialPdf, companies = [], detailsLoaded = false }) => {
+  const {journal} = useData();
   const { theme } = useTheme();
   const [activityStatus, setActivityStatus] = useState({});
   const [viewingPdf, setViewingPdf] = useState(null);
@@ -499,14 +501,7 @@ const ViewLeadDialog = ({ isOpen, setIsOpen, lead, onUpdate, onOpenConversation,
                   <MessageSquare className="w-3 h-3 text-primary" /> SEGUIMIENTO
                 </h3>
                 {(() => {
-                  const lastNote = lead.notes ? (() => {
-                    try {
-                      const parsed = JSON.parse(lead.notes);
-                      return Array.isArray(parsed) ? parsed[parsed.length - 1] : { text: lead.notes, date: lead.last_activity };
-                    } catch (e) {
-                      return { text: lead.notes, date: lead.last_activity };
-                    }
-                  })() : null;
+                  const lastNote = journal.byClient.get('lead:' + lead.id)?.at(-1);
 
                   return lastNote ? (
                     <div

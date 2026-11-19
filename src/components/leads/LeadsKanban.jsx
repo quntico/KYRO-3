@@ -51,7 +51,7 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
                 </div>
             </div>
 
-            <LeadContactRow lead={lead} />
+            <LeadContactRow onOpenConversation={onOpenConversation} lead={lead} />
             <div className="flex items-center justify-between gap-2 mb-3">
                 <LeadAnalysisDetails lead={lead} />
                 {matchedCompany && (

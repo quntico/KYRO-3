@@ -3,10 +3,15 @@
 export async function loadWorkspaceData({ db, userId, signal, onPipeline, onSection, onPipelineSettled, onError }) {
   const read = async table => {
     const source = table === 'leads' ? 'kyro_leads_summary' : table;
-    const { data, error } = await db.from(source).select('*').eq('user_id', userId).abortSignal(signal);
-    if (error) throw error;
-    if (!Array.isArray(data)) throw new Error(`Respuesta inválida: ${table}`);
-    return data;
+    const rows = [];
+    const size = 500;
+    for (let offset = 0; ; offset += size) {
+      const {data,error} = await db.from(source).select('*').eq('user_id',userId).order('id').range(offset,offset + size - 1).abortSignal(signal);
+      if (error) throw error;
+      if (!Array.isArray(data)) throw new Error(`Respuesta inválida: ${table}`);
+      rows.push(...data);
+      if (data.length < size) return rows;
+    }
   };
   const pipeline = Promise.all([read('leads'), read('deals')])
     .then(([leads, deals]) => onPipeline(leads, deals))

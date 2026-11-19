@@ -7,7 +7,7 @@ const deferred = () => {let resolve; const promise=new Promise(r=>{resolve=r;});
 function fakeDb(responses, calls) {
   return {from(table) {
     calls.push(table);
-    const query={select(){return this;},eq(key,value){if(key==='user_id')assert.equal(value,'owner');return this;},abortSignal(){return this;},single(){return responses[table];},then(resolve,reject){return Promise.resolve(responses[table]).then(resolve,reject);}};
+    const query={select(){return this;},order(key){assert.equal(key,'id');return this;},range(){return this;},eq(key,value){if(key==='user_id')assert.equal(value,'owner');return this;},abortSignal(){return this;},single(){return responses[table];},then(resolve,reject){return Promise.resolve(responses[table]).then(resolve,reject);}};
     return query;
   }};
 }

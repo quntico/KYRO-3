@@ -24,7 +24,7 @@ import * as Icons from 'lucide-react';
 const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onConvertToDeal, onQuickFollowUp, onNextStepChange, onOpenConversation, companies = [], onUpdateField }) => {
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const { leadStatuses } = useData();
+  const { leadStatuses, journal } = useData();
   const [copied, setCopied] = React.useState(null);
 
   const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
@@ -147,20 +147,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
     { type: 'Cita', Icon: Calendar },
   ];
 
-  const getLastNote = () => {
-    if (!lead.notes) return null;
-    try {
-      const parsed = JSON.parse(lead.notes);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed[parsed.length - 1];
-      }
-      return { text: lead.notes, date: lead.last_activity };
-    } catch (e) {
-      return { text: lead.notes, date: lead.last_activity };
-    }
-  };
-
-  const lastNote = getLastNote();
+  const lastNote = journal.byClient.get('lead:' + lead.id)?.at(-1);
 
   return (
     <motion.div
@@ -187,7 +174,7 @@ const LeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange, onCon
                 </div>
               )}
             </div>
-            <LeadContactRow lead={lead} />
+            <LeadContactRow onOpenConversation={onOpenConversation} lead={lead} />
             <div className="flex items-center justify-between gap-2 mt-1">
               <LeadAnalysisDetails lead={lead} />
               {matchedCompany && (

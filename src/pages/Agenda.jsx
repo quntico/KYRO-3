@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import QuickAgendaNote from '@/components/leads/QuickAgendaNote';
-import {agendaNotes,noteText} from '@/lib/agendaCapture';
+import LeadConversationDialog from '@/components/leads/LeadConversationDialog';
+
 import GoogleCalendarConnect from '@/components/GoogleCalendarConnect';
 import { AGENDA_ZONE, dayKey, shiftDay, agendaRange, selectAgenda, pendingAgendaForDay, mexicoLocalToISO, readableDate } from '@/lib/agenda';
 
@@ -49,7 +49,7 @@ function TaskRow({ task, busy, onComplete, onEdit, googleLink }) {
 }
 
 export default function Agenda() {
-  const { tasks, leads, notes, lastAgendaEvent, addTask, updateTask, removeTask, fetchData, loading, dataError } = useData();
+  const { tasks, leads, journal, lastAgendaEvent, addTask, updateTask, removeTask, fetchData, loading, dataError } = useData();
   const [mode, setMode] = useState('day');
   const [day, setDay] = useState(dayKey());
   const [status, setStatus] = useState('pending');
@@ -59,6 +59,7 @@ export default function Agenda() {
   const [busy, setBusy] = useState(null);
   const [clock, setClock] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(() => new URLSearchParams(location.search).has('code') || new URLSearchParams(location.search).has('error'));
+  const [showJournal,setShowJournal] = useState(false);
   const [showYarvis, setShowYarvis] = useState(true);
   const [showMissing, setShowMissing] = useState(false);
   const [quality, setQuality] = useState('');
@@ -68,7 +69,7 @@ export default function Agenda() {
     return () => clearInterval(id);
   }, []);
 
-  const quickNotes = useMemo(() => agendaNotes(notes), [notes]);
+  const quickNotes = journal.entries;
   const today = dayKey(clock);
   const tomorrow = shiftDay(today, 1);
   const visible = useMemo(() => selectAgenda(tasks, { mode, day, status, query, now: clock }), [tasks, mode, day, status, query, clock]);
@@ -152,7 +153,8 @@ export default function Agenda() {
           <p className="mt-1 text-sm capitalize text-muted-foreground">{dateHeading}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <QuickAgendaNote/>
+          <button type="button" onClick={()=>setShowJournal(true)} className="rounded-lg border border-border px-3 py-2 text-sm font-semibold">Notas rápidas</button>
+          {showJournal && <LeadConversationDialog agenda isOpen onOpenChange={setShowJournal}/>}
           <Button variant="outline" className="min-h-11" onClick={() => setShowCalendar(open => !open)} aria-expanded={showCalendar}><CalendarDays className="mr-2 size-4" />Google Calendar</Button>
           <Button className="min-h-11" onClick={() => openNew()}><Plus className="mr-2 size-4" />Nueva actividad</Button>
         </div>
@@ -241,7 +243,7 @@ export default function Agenda() {
               </button></li>)}</ol> : <p className="py-3 text-sm text-muted-foreground">Tienes el día libre de actividades programadas en KYRO.</p>}
             {overdue.length > 0 && <button type="button" onClick={() => selectQuickView('overdue')} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-rose-400/25 px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-400/10"><Clock className="h-4 w-4" />Ver vencidos ({overdue.length})</button>}
             {lastAgendaEvent && <p aria-live="polite" className="mt-4 rounded-lg border border-violet-400/20 p-2 text-xs text-foreground">{lastAgendaEvent.message}</p>}
-            {quickNotes.length > 0 && <details open className="mt-4 border-t border-violet-400/20 pt-3"><summary className="cursor-pointer text-sm font-semibold">Notas para YARVIS</summary><ul className="mt-2 max-h-44 space-y-2 overflow-y-auto">{quickNotes.map(n=><li key={n.id} className="rounded-lg bg-background/70 p-2"><strong className="text-xs text-violet-300">{n.title}</strong><p className="whitespace-pre-wrap break-words text-sm">{noteText(n)}</p></li>)}</ul></details>}
+            {quickNotes.length > 0 && <details className="mt-4 border-t border-violet-400/20 pt-3"><summary className="cursor-pointer text-sm font-semibold">Seguimientos y notas ({quickNotes.length})</summary><ul className="mt-2 max-h-44 space-y-2 overflow-y-auto">{quickNotes.map(n=><li key={n.uid} className="rounded-lg bg-background/70 p-2"><strong className="text-xs text-violet-300">{n.name}</strong><p className="whitespace-pre-wrap break-words text-sm">{n.text}</p></li>)}</ul></details>}
           </>}
         </div>}
       </aside>
