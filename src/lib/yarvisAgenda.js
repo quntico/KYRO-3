@@ -1,8 +1,10 @@
-import { dayKey, pendingAgendaForDay, readableDate, shiftDay } from './agenda.js';
+import { AGENDA_ZONE, dayKey, pendingAgendaForDay, shiftDay } from './agenda.js';
 
 export function isTomorrowAgendaQuestion(text = '') {
   const normalized = String(text).toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return /(?:que|cuales|cuantos|dime|muestra|ver|pendientes?|agenda|actividades|tareas).*(?:manana|tomorrow)|(?:manana|tomorrow).*(?:pendientes?|agenda|actividades|tareas)/.test(normalized);
+  if (!/\b(?:manana|tomorrow)\b/.test(normalized) || /\bpasado manana\b|\b(?:por|de) la manana\b/.test(normalized) && !/\bmanana (?:por|en) la manana\b/.test(normalized)) return false;
+  return /\b(?:pendientes?|agenda|actividades?|tareas?|citas?|compromisos?|reuniones?|seguimientos?)\b/.test(normalized)
+    || /\bque (?:tengo|hay programado|me toca)(?: para)? manana\b/.test(normalized);
 }
 
 export function getTomorrowTasksForUser(tasks, userId, now = new Date()) {
@@ -18,8 +20,9 @@ export function formatTomorrowAgendaReply(tasks, now = new Date()) {
     timeZone: 'America/Mexico_City', weekday: 'long', day: 'numeric', month: 'long',
   }).format(new Date(`${tomorrow}T12:00:00Z`));
   if (!tasks.length) return `Mañana, ${dateLabel}, no tienes actividades pendientes registradas en tu agenda.`;
+  const clock = new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const rows = tasks.map(task => {
-    const time = readableDate(task.due, { hour: '2-digit', minute: '2-digit' });
+    const time = clock.format(new Date(task.due));
     const priority = ({ high: 'alta', urgent: 'urgente', medium: 'media', low: 'baja' })[task.priority] || 'sin prioridad indicada';
     return `• ${time} — ${task.title} · ${task.client || 'Actividad personal'} · prioridad ${priority}`;
   });

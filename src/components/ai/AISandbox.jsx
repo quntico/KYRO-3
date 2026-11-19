@@ -289,11 +289,11 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   useEffect(() => {
     if (messages.length > 0) {
       try {
-        const pruned = messages.length > 50 ? messages.slice(-50) : messages;
+        const pruned = messages.filter(message => !message.personalAgenda).slice(-50);
         localStorage.setItem('kyro_pandora_chat', JSON.stringify(pruned));
       } catch (e) {
         if (e.name === 'QuotaExceededError') {
-          localStorage.setItem('kyro_pandora_chat', JSON.stringify(messages.slice(-10)));
+          localStorage.setItem('kyro_pandora_chat', JSON.stringify(messages.filter(message => !message.personalAgenda).slice(-10)));
         }
       }
     }
@@ -562,10 +562,11 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   useEffect(() => {
     scrollToBottom();
     // Guardar en localStorage como fallback
-    if (messages.length > 0) {
-      localStorage.setItem('kyro_pandora_chat', JSON.stringify(messages));
+    if (messages.length > 0 && !messages.at(-1)?.personalAgenda) {
+      const history = messages.filter(message => !message.personalAgenda);
+      localStorage.setItem('kyro_pandora_chat', JSON.stringify(history));
       if (!isSyncingRef.current) {
-        saveToCloud(messages);
+        saveToCloud(history);
       }
     }
   }, [messages, open]);
@@ -640,6 +641,19 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   const handleSend = async (text = input) => {
     if (!text.trim()) return;
 
+    if (isTomorrowAgendaQuestion(text)) {
+      const now = new Date();
+      const content = !user?.id ? 'Inicia sesión para consultar tu agenda personal.'
+        : workspaceLoading || dataError ? 'La agenda está pendiente de actualización. Vuelve a consultar en un momento.'
+        : formatTomorrowAgendaReply(getTomorrowTasksForUser(tasks, user.id, now), now);
+      setMessages(prev => [...prev,
+        { role: 'user', content: text, timestamp: now, personalAgenda: true },
+        { role: 'assistant', content, timestamp: now, type: 'text', personalAgenda: true }
+      ]);
+      setInput('');
+      return;
+    }
+
     const lowerText = text.toLowerCase();
 
     // --- CAPA DE INTENCIÓN NEURAL: COMANDOS DE APERTURA ---
@@ -678,15 +692,6 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
     setIsTyping(true);
 
     try {
-      if (isTomorrowAgendaQuestion(text)) {
-        let content;
-        if (!user?.id) content = 'Inicia sesión para consultar tu agenda personal.';
-        else if (workspaceLoading || dataError) content = 'No puedo confirmar tus pendientes de mañana hasta que la agenda termine de cargar correctamente. Intenta de nuevo en un momento.';
-        else content = formatTomorrowAgendaReply(getTomorrowTasksForUser(tasks, user.id));
-        setMessages(prev => [...prev, { role: 'assistant', content, timestamp: new Date(), type: 'text' }]);
-        return;
-      }
-
       // --- RUTA 0: DETECCIÓN CONTEXTUAL DE NOMBRE ---
       // Si Pandora acaba de pedir el nombre y el usuario responde con una sola palabra, es su nombre
       const lastAIMsg = messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -811,7 +816,7 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
       ).join('\n\n---\n\n');
 
       // 3. Historial reciente (últimos 10 mensajes) para flujo conversacional
-      const historyCtx = messages.slice(-10)
+      const historyCtx = messages.filter(message => !message.personalAgenda).slice(-10)
         .filter(m => m.type !== 'image' && m.type !== 'chart')
         .map(m => `${m.role === 'user' ? 'USUARIO' : 'KYRO'}: ${m.content}`)
         .join('\n');

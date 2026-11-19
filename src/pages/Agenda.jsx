@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Plus, ChevronLeft, ChevronRight, Clock, Check, Search, BrainCircuit, ExternalLink, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, Clock, Check, Search, ChevronUp, ChevronDown, BrainCircuit, ExternalLink, RefreshCw, X, AlertCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -62,7 +62,7 @@ export default function Agenda() {
   const [busy, setBusy] = useState(null);
   const [clock, setClock] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(() => new URLSearchParams(location.search).has('code') || new URLSearchParams(location.search).has('error'));
-  const [showYarvis, setShowYarvis] = useState(false);
+  const [showYarvis, setShowYarvis] = useState(true);
   const [showMissing, setShowMissing] = useState(false);
   const [quality, setQuality] = useState('');
 
@@ -133,7 +133,6 @@ export default function Agenda() {
     } else setDay(shiftDay(day, amount * (mode === 'week' ? 7 : 1)));
   };
 
-  const range = agendaRange(mode, day);
   const gridStart = agendaRange('week', `${day.slice(0, 7)}-01`)[0];
   const selectedQuickView = mode === 'day' && day === today ? 'today' : mode === 'day' && day === tomorrow ? 'tomorrow' : mode;
   const dateHeading = new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${day}T12:00:00Z`));
@@ -149,7 +148,7 @@ export default function Agenda() {
       <Helmet><title>Mi agenda · KYRO</title></Helmet>
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Tu centro de trabajo · CDMX</p>
+          <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Hora de Ciudad de México</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Mi agenda</h1>
           <p className="mt-1 text-sm capitalize text-muted-foreground">{dateHeading}</p>
         </div>
@@ -167,7 +166,7 @@ export default function Agenda() {
             ['today', 'Hoy'], ['tomorrow', 'Mañana'], ['week', 'Semana'], ['overdue', 'Vencidos'], ['month', 'Mes'], ['all', 'Todos'],
           ].map(([key, label]) => (
             <button key={key} type="button" aria-pressed={selectedQuickView === key} onClick={() => selectQuickView(key)} className={`min-h-11 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedQuickView === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
-              {label}{key === 'tomorrow' && <span className="ml-1.5 text-xs opacity-75">{tomorrow.slice(5).replace('-', '/')}</span>}
+              {label}{key === 'tomorrow' && <span className="ml-1.5 text-xs opacity-75">{loading || dataError ? '…' : tomorrowTasks.length}</span>}
             </button>
           ))}
         </div>
@@ -204,10 +203,11 @@ export default function Agenda() {
         </div>
       )}
 
-      <section aria-labelledby="agenda-activities-title" className="flex flex-col gap-3">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.45fr)]">
+      <section aria-labelledby="agenda-activities-title" className="min-w-0 flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
-          <div><h2 id="agenda-activities-title" className="text-lg font-semibold">Actividades</h2><p className="text-sm capitalize text-muted-foreground">{mode === 'overdue' ? 'Pendientes vencidas' : mode === 'all' ? 'Todos tus compromisos' : dateHeading}</p></div>
-          <p aria-live="polite" className="text-sm text-muted-foreground">{loading && !tasks.length ? 'Cargando agenda…' : `${visible.length} ${visible.length === 1 ? 'actividad' : 'actividades'}`}{['day', 'week', 'month'].includes(mode) && ` · ${range[0]} al ${range[1]}`}</p>
+          <h2 id="agenda-activities-title" className="text-xl font-semibold tracking-tight">{({ today: 'Hoy', tomorrow: 'Mañana', week: 'Esta semana', month: 'Mes', overdue: 'Vencidos', all: 'Todas las actividades' })[selectedQuickView] || 'Actividades'}</h2>
+          <p aria-live="polite" className="text-sm text-muted-foreground">{loading && !tasks.length ? 'Cargando agenda…' : `${visible.length} ${visible.length === 1 ? 'actividad' : 'actividades'}`}</p>
         </div>
         {!visible.length && (
           <div className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center sm:py-10">
@@ -219,26 +219,31 @@ export default function Agenda() {
         )}
         {Object.entries(groups).map(([date, items]) => (
           <section key={date} aria-label={`Actividades ${date}`} className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-primary">{date === today ? 'Hoy · ' : date === tomorrow ? 'Mañana · ' : ''}{date}</h3>
+            {mode !== 'day' && <h3 className="text-sm font-semibold capitalize text-primary">{date === 'Sin fecha' ? date : new Intl.DateTimeFormat('es-MX', {weekday:'long',day:'numeric',month:'long',timeZone:AGENDA_ZONE}).format(new Date(`${date}T12:00:00Z`))}</h3>}
             {items.map(task => <TaskRow key={task.id} task={task} busy={busy === task.id} onComplete={item => complete(item).catch(() => {})} onEdit={openEdit} googleLink={googleLink} />)}
           </section>
         ))}
       </section>
 
-      <section className="rounded-2xl border border-violet-400/30 bg-violet-400/[0.04]">
-        <button type="button" onClick={() => setShowYarvis(open => !open)} aria-expanded={showYarvis} aria-controls="yarvis-tomorrow-panel" className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <BrainCircuit className="size-5 shrink-0 text-violet-300" />
-          <span className="min-w-0 flex-1"><strong className="text-sm">YARVIS · Preparar mañana</strong><span className="block text-xs text-muted-foreground">{new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${tomorrow}T12:00:00Z`))} · {tomorrowTasks.length} pendientes registrados</span></span>
-          <span className="text-xs font-medium text-violet-200">{showYarvis ? 'Plegar' : 'Ver agenda'}</span>
+      <aside className="min-w-0 overflow-hidden rounded-2xl border border-violet-400/35 bg-gradient-to-b from-violet-400/10 to-card">
+        <button type="button" onClick={() => setShowYarvis(open => !open)} aria-expanded={showYarvis} aria-controls="yarvis-tomorrow-panel" className="flex w-full items-center gap-3 p-4 text-left focus-visible:ring-2 focus-visible:ring-primary">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-400/15 text-violet-300"><BrainCircuit className="h-5 w-5" /></span>
+          <span className="flex-1"><span className="block text-xs font-semibold tracking-wider text-violet-300">YARVIS</span><strong className="text-lg tracking-tight">Preparar mañana</strong></span>
+          {showYarvis ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
-        {showYarvis && <div id="yarvis-tomorrow-panel" className="flex flex-col gap-4 border-t border-violet-400/20 p-4">
-          {dataError ? <p role="alert" className="text-sm text-rose-300">No se pudo confirmar la agenda de mañana. Reintenta la carga para actualizarla.</p> : loading && !tasks.length ? <p className="text-sm text-muted-foreground">Cargando tus actividades de mañana…</p> : <>
-            {tomorrowTasks.length ? <div><h3 className="text-sm font-semibold">Mañana · {tomorrowTasks.length} {tomorrowTasks.length === 1 ? 'pendiente' : 'pendientes'}</h3><div className="mt-2 flex flex-col gap-2">{tomorrowTasks.map(task => <button key={task.id} type="button" onClick={() => openEdit(task)} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="font-medium text-primary">{new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit' }).format(new Date(task.due))}</span><span className="min-w-0 flex-1 break-words">{task.title} · {task.client || 'Actividad personal'}</span><span className={`rounded-full border px-2 py-0.5 text-xs ${priorityTone[task.priority] || priorityTone.low}`}>{priorityLabel[task.priority] || 'Sin prioridad'}</span></button>)}</div></div> : <div className="rounded-xl border border-dashed border-violet-400/20 p-4"><p className="text-sm font-medium">No hay actividades pendientes registradas para mañana.</p><p className="mt-1 text-xs text-muted-foreground">Aquí solo aparecen compromisos guardados en tu agenda; no se infieren tareas desde prospectos.</p></div>}
-            {overdue.length > 0 && <div><h3 className="text-sm font-semibold text-rose-300">Vencidos · {overdue.length}</h3><div className="mt-2 flex flex-col gap-2">{overdue.map(task => <button key={task.id} type="button" onClick={() => openEdit(task)} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-rose-400/20 bg-background px-3 py-2 text-left text-sm hover:border-rose-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="text-rose-300">{readableDate(task.due)}</span><span className="min-w-0 flex-1 break-words">{task.title} · {task.client || 'Actividad personal'}</span><span className={`rounded-full border px-2 py-0.5 text-xs ${priorityTone[task.priority] || priorityTone.low}`}>{priorityLabel[task.priority] || 'Sin prioridad'}</span></button>)}</div></div>}
+        {showYarvis && <div id="yarvis-tomorrow-panel" className="border-t border-violet-400/20 p-4">
+          <p className="mb-3 text-sm font-semibold capitalize">{new Intl.DateTimeFormat('es-MX', {timeZone: AGENDA_ZONE, weekday:'long',day:'numeric',month:'long'}).format(new Date(`${tomorrow}T12:00:00Z`))}</p>
+          {dataError ? <p role="alert" className="text-sm text-rose-300">No se pudo actualizar la agenda. Usa el botón de actualizar para reintentar.</p> : loading ? <p className="text-sm text-muted-foreground">Consultando tus actividades…</p> : <>
+            {tomorrowTasks.length ? <ol className="max-h-96 overflow-y-auto divide-y divide-border/60">{tomorrowTasks.map(task => <li key={task.id}>
+              <button type="button" onClick={() => openEdit(task)} className="grid w-full grid-cols-[3.25rem_1fr] items-start gap-3 rounded-lg py-3 text-left hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-primary">
+                <time className="rounded-md bg-violet-400/10 py-1 text-center text-sm font-semibold tabular-nums text-violet-300">{new Intl.DateTimeFormat('es-MX', {timeZone:AGENDA_ZONE,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(task.due))}</time>
+                <span className="min-w-0"><strong className="block break-words text-sm">{task.title}</strong><span className="mt-1 block text-xs text-muted-foreground">{task.client || 'Actividad personal'} · {priorityLabel[task.priority] || 'Sin prioridad'}</span></span>
+              </button></li>)}</ol> : <p className="py-3 text-sm text-muted-foreground">Tienes el día libre de actividades programadas en KYRO.</p>}
+            {overdue.length > 0 && <button type="button" onClick={() => selectQuickView('overdue')} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-rose-400/25 px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-400/10"><Clock className="h-4 w-4" />Ver vencidos ({overdue.length})</button>}
           </>}
-          <p className="text-xs text-muted-foreground">Resumen privado de tu agenda de KYRO. Al guardar, completar o reprogramar una actividad, la lista se actualiza con los datos actuales.</p>
         </div>}
-      </section>
+      </aside>
+      </div>
 
       <section aria-label="Resumen de agenda" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {[

@@ -36,9 +36,10 @@ export function selectAgenda(tasks,{mode='day',day=dayKey(),status='pending',que
   return tasks.filter(t=> {
     if(t.status==='cancelled' && status!=='cancelled') return false;
     if(status==='cancelled' && t.status!=='cancelled') return false;
-    if(status==='pending'&&t.completed || status==='completed'&&!t.completed) return false;
+    const completed = t.completed || t.status === 'completed';
+    if(status==='pending'&&completed || status==='completed'&&!completed) return false;
     const key=dayKey(t.due);
-    const inRange=mode==='overdue' ? !t.completed&&key&&new Date(t.due)<now : mode==='all' ? true : key>=start&&key<=end;
+    const inRange=mode==='overdue' ? !completed&&key&&new Date(t.due)<now : mode==='all' ? true : key>=start&&key<=end;
     return inRange&&`${t.title||''} ${t.client||''} ${t.comments||''}`.toLocaleLowerCase('es').includes(q);
   }).sort((a,b)=>(Date.parse(a.due)||Infinity)-(Date.parse(b.due)||Infinity)||a.id-b.id);
 }
