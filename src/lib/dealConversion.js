@@ -22,11 +22,17 @@ export function buildDealFromLead(lead, now = new Date().toISOString()) {
     closing_status: { source_lead_id: lead.id, converted_at: now, source_lead: structuredClone(lead) },
   };
 }
+export function saleProjectTitle(deal) {
+  const title = deal.title?.trim();
+  const client = deal.client?.trim();
+  return title && title !== client && title !== `Venta - ${client}` ? title : undefined;
+}
 export function saleAsCard(deal) {
   const original = deal.closing_status?.source_lead || {};
   const lead = { ...original, id: deal.id, sourceLeadId: original.id,
+    projectTitle: saleProjectTitle(deal),
     name: deal.client || deal.title, contact: deal.contact, email: deal.contact_email, phone: deal.contact_phone,
-    machines: deal.machines || original.machines || [], quotations: deal.quotations || original.quotations || [],
+    machines: deal.machines?.length ? deal.machines : original.machines || [], quotations: deal.quotations || original.quotations || [],
     notes: deal.notes ?? original.notes, status: original.status || 'closing',
     created_at: original.created_at || deal.created_at,
   };

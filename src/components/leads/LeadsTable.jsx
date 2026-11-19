@@ -1,3 +1,4 @@
+import MachineProject from './MachineProject';
 import LeadContactRow from './LeadContactRow';
 import LeadAnalysisDetails from './LeadAnalysisDetails';
 import React from 'react';
@@ -264,7 +265,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`font-black text-base transition-colors ${getStatusTextColor(lead.status)}`}>
-                          {lead.name}
+                          {lead.name?.trim() || 'Sin registrar'}
                         </span>
                         {lead.activity_status?.client_code && (
                           <span className={`px-1.5 py-0.5 rounded-md text-[9.5px] font-black tracking-wider ${getClientCodeBadgeClass()}`}>
@@ -286,7 +287,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           </Tooltip>
                         )}
                       </div>
-                      <LeadContactRow lead={lead} />
+                      <LeadContactRow lead={lead} showProject={false} />
                       <div className="flex flex-col gap-1 mt-1.5 text-[11px] text-muted-foreground">
                         <div
                           className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group/copy"
@@ -377,25 +378,7 @@ const LeadsTable = ({ leads, onView, onEdit, onDelete, onOpenConversation, onCon
                           </DropdownMenu>
                         );
                       })()}
-                      {lead.machines && lead.machines.length > 0 ? (
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <div className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-[8px] font-black uppercase text-primary tracking-tighter shrink-0">
-                              EQUIPO
-                            </div>
-                            <span className="text-[13px] font-bold text-foreground line-clamp-2 leading-tight max-w-[185px] break-words">
-                              {lead.machines[0].name}
-                            </span>
-                          </div>
-                          {lead.machines.length > 1 && (
-                            <span className="text-[9px] text-muted-foreground/60 mt-0.5">
-                              + {lead.machines.length - 1} unidades adicionales
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-muted-foreground/40 italic">Sin equipo asignado</div>
-                      )}
+                      <MachineProject machines={lead.machines} project={lead.projectTitle} />
                     </div>
                   </TableCell>
                   <TableCell><LeadAnalysisDetails lead={lead} /></TableCell>

@@ -1,3 +1,5 @@
+import MachineProject from '@/components/leads/MachineProject';
+import { saleProjectTitle } from '@/lib/dealConversion';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
@@ -254,8 +256,11 @@ const Clients = () => {
                   {filteredClients.length > 0 ? filteredClients.map((deal) => (
                     <TableRow key={deal.id}>
                       <TableCell>
-                        <div className="font-medium">{deal.contact}</div>
-                        <div className="text-sm text-muted-foreground">{deal.client}</div>
+                        <div className="space-y-1.5">
+                          <div><span className="block text-[10px] font-semibold uppercase text-muted-foreground">Empresa</span><span className="font-semibold">{deal.client?.trim() || 'Sin registrar'}</span></div>
+                          <div><span className="block text-[10px] font-semibold uppercase text-muted-foreground">Cliente</span><span className="text-sm">{deal.contact?.trim() || deal.closing_status?.source_lead?.contact || 'Sin registrar'}</span></div>
+                          <MachineProject machines={deal.machines?.length ? deal.machines : deal.closing_status?.source_lead?.machines} project={saleProjectTitle(deal)} />
+                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="text-sm">{deal.contact_email || 'N/A'}</div>

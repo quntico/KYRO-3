@@ -3,7 +3,7 @@ import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarDays, Target, Banknote, Mail, Phone, Package, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
+import { CalendarDays, Target, Banknote, Mail, Phone, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -237,7 +237,8 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
              </span>
           </div>
           <h3 className={`col-span-2 row-start-2 min-w-0 text-lg leading-tight font-black tracking-tight uppercase whitespace-normal [overflow-wrap:anywhere] ${statusTextColor}`}>
-            {lead.name}
+            <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</span>
+            {lead.name?.trim() || 'Sin registrar'}
           </h3>
 
         </div>
@@ -379,12 +380,6 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
            <span className="uppercase">{lead.phone || 'NO_DATA'}</span>
         </div>
 
-        {(lead.machines && lead.machines.length > 0) && (
-          <div className="flex items-center text-primary px-3 py-2 bg-primary/5 border border-primary/20 rounded-full">
-             <Package className="w-4 h-4 mr-3" />
-             <span className="truncate uppercase">{lead.machines[0]?.name} {lead.machines.length > 1 ? `[+${lead.machines.length - 1}]` : ''}</span>
-          </div>
-        )}
 
         <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
           <div

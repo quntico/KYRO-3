@@ -14,7 +14,6 @@ import {
     Mail,
     MessageSquare,
     TrendingUp,
-    Package,
     ChevronDown,
     Check
 } from 'lucide-react';
@@ -29,7 +28,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], onUpdateField }) => {
-    const machineProjects = (lead.machines || []).filter(Boolean).map(m => m?.name || 'Máquina').join(', ');
     const matchedCompany = (companies || []).find(c => c.id === (lead.activity_status?.managingCompanyId || 'comp-1'));
 
     return (
@@ -42,7 +40,7 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
                 }`}
         >
             <div className="flex justify-between items-start gap-2 mb-2">
-                <h4 className="min-w-0 flex-1 font-bold text-base leading-snug whitespace-normal [overflow-wrap:anywhere]">{lead.name}</h4>
+                <h4 className="min-w-0 flex-1 font-bold text-base leading-snug whitespace-normal [overflow-wrap:anywhere]"><span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</span>{lead.name?.trim() || 'Sin registrar'}</h4>
                 <div className="flex shrink-0 space-x-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                         onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }}
@@ -115,12 +113,6 @@ const KanbanCard = ({ lead, onView, onOpenConversation, theme, companies = [], o
                 )}
             </div>
 
-            {machineProjects && (
-                <div className="flex items-center space-x-1 mb-3 text-[10px] bg-secondary/50 p-1.5 rounded-md">
-                    <Package className="w-3 h-3 text-muted-foreground" />
-                    <span className="font-medium truncate">{machineProjects}</span>
-                </div>
-            )}
 
             <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
                 <div className="flex items-center space-x-1.5">
