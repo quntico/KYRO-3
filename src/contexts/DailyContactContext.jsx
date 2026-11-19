@@ -96,6 +96,7 @@ export function DailyContactProvider({userId, children}) {
         return next;
       });
       setError(false);
+      return true;
     } catch {
       if (mounted.current) toast({title: 'No se pudo guardar el contacto', description: 'La marca no cambió. Revisa tu conexión e intenta de nuevo.', variant: 'destructive'});
     } finally {

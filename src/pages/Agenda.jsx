@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
+import QuickAgendaNote from '@/components/leads/QuickAgendaNote';
+import {agendaNotes,noteText} from '@/lib/agendaCapture';
 import GoogleCalendarConnect from '@/components/GoogleCalendarConnect';
 import { AGENDA_ZONE, dayKey, shiftDay, agendaRange, selectAgenda, pendingAgendaForDay, mexicoLocalToISO, readableDate } from '@/lib/agenda';
 
@@ -16,22 +18,17 @@ const priorityTone = { urgent: 'border-rose-400/40 bg-rose-400/10 text-rose-300'
 
 function TaskRow({ task, busy, onComplete, onEdit, googleLink }) {
   const time = new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit' }).format(new Date(task.due));
+  const done = !!task.completed || task.status === 'completed';
   const priority = priorityLabel[task.priority] || 'Sin prioridad';
   return (
     <article className="flex min-w-0 flex-wrap items-start gap-3 rounded-xl border border-border bg-card p-3 sm:items-center sm:p-4">
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => onComplete(task)}
-        aria-label={`${task.completed ? 'Marcar pendiente' : 'Completar'} ${task.title}`}
-        aria-pressed={!!task.completed}
-        className={`flex size-11 shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 ${task.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary'}`}
-      >
-        {task.completed ? <Check className="size-5" /> : <span className="size-4 rounded border border-muted-foreground" />}
-      </button>
+      <label className={`inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-xs font-semibold ${done?'border-emerald-400/60 bg-emerald-400/10 text-emerald-400':'border-border text-muted-foreground hover:border-primary'}`}>
+        <input type="checkbox" checked={done} disabled={busy || task.status === 'cancelled'} onChange={()=>onComplete(task)} aria-label={`${done?'Marcar pendiente':'Completar'} ${task.title}`} className="h-4 w-4 accent-emerald-500"/>
+        {task.status === 'cancelled' ? 'Cancelada' : done ? 'Hecha' : 'Hecho'}
+      </label>
       <div className="min-w-0 flex-1 basis-[calc(100%_-_3.5rem)] sm:basis-0">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h3 className={`min-w-0 break-words font-semibold ${task.completed ? 'text-muted-foreground line-through' : ''}`}>{task.title}</h3>
+          <h3 className={`min-w-0 break-words font-semibold ${done ? 'text-muted-foreground line-through' : ''}`}>{task.title}</h3>
           <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${priorityTone[task.priority] || priorityTone.low}`}>{priority}</span>
         </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
@@ -52,7 +49,7 @@ function TaskRow({ task, busy, onComplete, onEdit, googleLink }) {
 }
 
 export default function Agenda() {
-  const { tasks, leads, addTask, updateTask, removeTask, fetchData, loading, dataError } = useData();
+  const { tasks, leads, notes, lastAgendaEvent, addTask, updateTask, removeTask, fetchData, loading, dataError } = useData();
   const [mode, setMode] = useState('day');
   const [day, setDay] = useState(dayKey());
   const [status, setStatus] = useState('pending');
@@ -71,6 +68,7 @@ export default function Agenda() {
     return () => clearInterval(id);
   }, []);
 
+  const quickNotes = useMemo(() => agendaNotes(notes), [notes]);
   const today = dayKey(clock);
   const tomorrow = shiftDay(today, 1);
   const visible = useMemo(() => selectAgenda(tasks, { mode, day, status, query, now: clock }), [tasks, mode, day, status, query, clock]);
@@ -98,7 +96,7 @@ export default function Agenda() {
       if (task.id) await updateTask(task);
       else await addTask(task);
       setEditing(null);
-      toast({ title: 'Actividad guardada', description: 'Disponible al volver a abrir KYRO.' });
+
     } catch (error) {
       toast({ title: 'No se guardó', description: error.message, variant: 'destructive' });
     } finally {
@@ -109,7 +107,8 @@ export default function Agenda() {
   const complete = async task => {
     setBusy(task.id);
     try {
-      await updateTask({ ...task, completed: !task.completed, ...(task.status === 'cancelled' ? { status: 'pending' } : {}) });
+      const wasDone = task.completed || task.status === 'completed';
+      await updateTask({ ...task, completed: !wasDone, status: wasDone && task.status === 'completed' ? 'pending' : task.status });
     } finally {
       setBusy(null);
     }
@@ -153,6 +152,7 @@ export default function Agenda() {
           <p className="mt-1 text-sm capitalize text-muted-foreground">{dateHeading}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <QuickAgendaNote/>
           <Button variant="outline" className="min-h-11" onClick={() => setShowCalendar(open => !open)} aria-expanded={showCalendar}><CalendarDays className="mr-2 size-4" />Google Calendar</Button>
           <Button className="min-h-11" onClick={() => openNew()}><Plus className="mr-2 size-4" />Nueva actividad</Button>
         </div>
@@ -240,6 +240,8 @@ export default function Agenda() {
                 <span className="min-w-0"><strong className="block break-words text-sm">{task.title}</strong><span className="mt-1 block text-xs text-muted-foreground">{task.client || 'Actividad personal'} · {priorityLabel[task.priority] || 'Sin prioridad'}</span></span>
               </button></li>)}</ol> : <p className="py-3 text-sm text-muted-foreground">Tienes el día libre de actividades programadas en KYRO.</p>}
             {overdue.length > 0 && <button type="button" onClick={() => selectQuickView('overdue')} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-rose-400/25 px-3 py-2 text-left text-sm text-rose-300 hover:bg-rose-400/10"><Clock className="h-4 w-4" />Ver vencidos ({overdue.length})</button>}
+            {lastAgendaEvent && <p aria-live="polite" className="mt-4 rounded-lg border border-violet-400/20 p-2 text-xs text-foreground">{lastAgendaEvent.message}</p>}
+            {quickNotes.length > 0 && <details open className="mt-4 border-t border-violet-400/20 pt-3"><summary className="cursor-pointer text-sm font-semibold">Notas para YARVIS</summary><ul className="mt-2 max-h-44 space-y-2 overflow-y-auto">{quickNotes.map(n=><li key={n.id} className="rounded-lg bg-background/70 p-2"><strong className="text-xs text-violet-300">{n.title}</strong><p className="whitespace-pre-wrap break-words text-sm">{noteText(n)}</p></li>)}</ul></details>}
           </>}
         </div>}
       </aside>

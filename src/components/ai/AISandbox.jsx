@@ -61,10 +61,10 @@ import FullProjectReport from './FullProjectReport';
 import KyroImageEditor from './KyroImageEditor';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { getTomorrowTasksForUser, formatTomorrowAgendaReply, isTomorrowAgendaQuestion } from '@/lib/yarvisAgenda';
+import { agendaRequest, agendaReply } from '@/lib/yarvisAgenda';
 
 const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
-  const { leads, deals, logistics, tasks, loading: workspaceLoading, dataError } = useData();
+  const { leads, deals, logistics, tasks, notes, lastAgendaEvent, loading: workspaceLoading, dataError } = useData();
   const [messages, setMessages] = useState([]);
   const isSyncingRef = useRef(false);
   const [input, setInput] = useState('');
@@ -641,11 +641,12 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
   const handleSend = async (text = input) => {
     if (!text.trim()) return;
 
-    if (isTomorrowAgendaQuestion(text)) {
+    const agendaIntent = agendaRequest(text);
+    if (agendaIntent) {
       const now = new Date();
       const content = !user?.id ? 'Inicia sesión para consultar tu agenda personal.'
         : workspaceLoading || dataError ? 'La agenda está pendiente de actualización. Vuelve a consultar en un momento.'
-        : formatTomorrowAgendaReply(getTomorrowTasksForUser(tasks, user.id, now), now);
+        : agendaReply(agendaIntent,{tasks,notes,userId:user.id,lastChange:lastAgendaEvent,now,question:text});
       setMessages(prev => [...prev,
         { role: 'user', content: text, timestamp: now, personalAgenda: true },
         { role: 'assistant', content, timestamp: now, type: 'text', personalAgenda: true }
@@ -1384,6 +1385,7 @@ Historial reciente de chat:\n${historyCtx}`;
               {/* Footer de Entrada */}
               <div className="p-8 bg-black/40 border-t border-white/10 space-y-4">
                 <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar">
+                  <button type="button" onClick={()=>handleSend('Dame mi resumen de agenda')} className="flex-none rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 py-2 text-xs font-semibold text-violet-200">Mi resumen de agenda</button>
                   {[
                     { label: 'Informe Proyecto', icon: FileText, color: 'text-cyan-400 border-cyan-400/20 bg-cyan-400/5', action: 'parametric' },
                     { label: 'Calcular CAPEX', icon: DollarSign, color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', action: 'capex' },

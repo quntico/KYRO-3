@@ -47,3 +47,22 @@ test('YARVIS detects tomorrow agenda questions and reports every matching item',
 test('empty tomorrow response is explicit and honest', () => {
   assert.match(formatTomorrowAgendaReply([], now), /no tienes actividades pendientes registradas/);
 });
+
+import {agendaRequest,agendaReply} from '../src/lib/yarvisAgenda.js';
+import {quickNotePayload,callForCard,findCardCall} from '../src/lib/agendaCapture.js';
+test('card calls, quick notes, and the recap share user-scoped agenda data',()=>{
+  const call={...callForCard({name:'Empresa Demo'},'lead:83','2026-05-02'),user_id:userId,id:11};
+  const note={...quickNotePayload('Pedir plano <A>','Empresa Demo','lead:83'),id:10,user_id:userId,created_at:now.toISOString()};
+  const state={tasks:[call],notes:[note,{...note,user_id:'other',content:'privado'}],userId,now};
+  assert.equal(agendaRequest('¿A quién tengo que llamar mañana?'),'calls');
+  assert.equal(agendaRequest('Dame mi resumen de agenda'),'summary');
+  assert.equal(agendaRequest('¿Qué anoté de Empresa Demo?'),'notes');
+  assert.equal(findCardCall([call],call,'2026-05-02'),call);
+  assert.equal(findCardCall([{...call,status:'cancelled'}],call,'2026-05-02'),undefined);
+  assert.match(agendaReply('calls',state),/09:00.*Llamar a Empresa Demo/s);
+  assert.match(agendaReply('tomorrow',state),/Pedir plano <A>/);
+  assert.doesNotMatch(agendaReply('notes',state),/privado/);
+  const done={...state,tasks:[{...call,completed:true,status:'completed',updated_at:now.toISOString()}]};
+  assert.match(agendaReply('calls',done),/No tienes llamadas/);
+  assert.match(agendaReply('summary',done),/Completadas y actualizadas hoy: Llamar a Empresa Demo/);
+});

@@ -6,7 +6,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 
-import { taskPayload } from '@/lib/agenda';
+import { saveCardCall, QUICK_NOTE_TAG } from '@/lib/agendaCapture';
+import { pendingAgendaForDay, dayKey, shiftDay, taskPayload } from '@/lib/agenda';
 import { loadWorkspaceData, readArrayCache } from '@/lib/workspaceLoader';
 
 const DataContext = createContext(undefined);
@@ -24,6 +25,31 @@ export const DataProvider = ({ children }) => {
     const [deals, setDeals] = useState([]);
     const [deletedDeals, setDeletedDeals] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [agendaEvent, setAgendaEvent] = useState(null);
+    const notified = useRef(null);
+    useEffect(() => {
+        if (!user?.id) { setAgendaEvent(null); return; }
+        try {
+            const previous = JSON.parse(localStorage.getItem(`kyro-agenda-event-${user.id}`));
+            if (previous?.owner === user.id && previous.at && dayKey(previous.at) === dayKey()) {
+                notified.current = previous;
+                setAgendaEvent(previous);
+            } else setAgendaEvent(null);
+        } catch { setAgendaEvent(null); }
+    }, [user?.id]);
+    const reportAgenda = useCallback(message => {
+        if (!user?.id || currentUser.current !== user.id) return;
+        const event = {owner:user.id, message, at:new Date().toISOString()};
+        try { localStorage.setItem(`kyro-agenda-event-${user.id}`, JSON.stringify(event)); } catch { /* Keep the live summary available. */ }
+        setAgendaEvent(event);
+    }, [user?.id]);
+    const lastAgendaEvent = agendaEvent?.owner === user?.id ? agendaEvent : null;
+    useEffect(() => {
+        if (!lastAgendaEvent || notified.current === lastAgendaEvent) return;
+        notified.current = lastAgendaEvent;
+        const count = pendingAgendaForDay(tasks,shiftDay(dayKey(),1)).length;
+        toast({title:'YARVIS · Resumen de agenda',description:lastAgendaEvent.message + (loading || dataError ? '' : ` · Mañana: ${count} ${count===1?'pendiente':'pendientes'}.`),duration:6500});
+    }, [lastAgendaEvent,tasks,loading,dataError]);
     const [contacts, setContacts] = useState([]);
     const [notes, setNotes] = useState([]);
     const [logistics, setLogistics] = useState([]);
@@ -195,14 +221,30 @@ export const DataProvider = ({ children }) => {
         const query = existing ? supabase.from('tasks').update(payload).eq('id',task.id).eq('user_id',user.id) : supabase.from('tasks').insert(payload);
         const {data,error} = await query.select().single();
         if(error) {toast({title:'No se guardó la tarea',description:error.message,variant:'destructive'}); throw error;}
+        if (currentUser.current !== user.id) return data;
         setTasks(prev => {const next = [data,...prev.filter(t=>t.id!==data.id)]; saveToCache(`tasks-${user.id}`,next); return next;});
+        const action = data.completed ? 'Hecha' : existing ? 'Actualizada' : 'Agendada';
+        reportAgenda(`${action} · ${data.title}`);
         return data;
-    }, [user?.id]);
+    }, [user?.id,reportAgenda]);
     const addTask = useCallback(task => persistTask(task), [persistTask]);
     const updateTask = useCallback(task => persistTask(task,true), [persistTask]);
+    const toggleCardCall = useCallback(async (call,date,checked) => {
+        if (!user?.id) throw new Error('Inicia sesión para guardar la llamada.');
+        const rows = await saveCardCall(supabase,user.id,call,date,checked);
+        if (currentUser.current !== user.id) return;
+        const changed = new Map(rows.map(task=>[task.id,task]));
+        setTasks(prev => {
+            const next = [...changed.values(),...prev.filter(task=>!changed.has(task.id))];
+            saveToCache(`tasks-${user.id}`,next);
+            return next;
+        });
+        reportAgenda(checked ? `Llamada agendada · ${call.client}` : `Llamada retirada · ${call.client}`);
+    }, [user?.id,reportAgenda]);
     const updateTaskByLeadId = useCallback((_leadId, updatedTask) => {
         setTasks(prev => [updatedTask,...prev.filter(t=>t.id!==updatedTask.id)]);
-    }, []);
+        reportAgenda(`Agendada · ${updatedTask.title}`);
+    }, [reportAgenda]);
 
     const updateLogistics = useCallback((updatedLog) => {
         setLogistics(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
@@ -217,16 +259,20 @@ export const DataProvider = ({ children }) => {
     }, []);
 
     const removeTask = useCallback(async (taskId) => {
-        const {error} = await supabase.from('tasks').update({status:'cancelled',completed:true}).eq('id',taskId).eq('user_id',user.id).select('id').single();
+        const {data,error} = await supabase.from('tasks').update({status:'cancelled',completed:true}).eq('id',taskId).eq('user_id',user.id).select('id,title').single();
         if(error) {toast({title:'No se pudo cancelar',description:error.message,variant:'destructive'}); throw error;}
+        if (currentUser.current !== user.id) return;
         setTasks(prev => prev.map(t=>t.id===taskId ? {...t,status:'cancelled',completed:true} : t));
-    }, [user?.id]);
+        reportAgenda(`Cancelada · ${data.title}`);
+    }, [user?.id,reportAgenda]);
 
     const addNote = useCallback(async (note) => {
         try {
             const { data, error } = await supabase.from('notes').insert([{ ...note, user_id: user?.id }]).select();
             if (error) throw error;
+            if (currentUser.current !== user?.id) return data[0];
             setNotes(prev => [data[0], ...prev]);
+            if (note.tags?.includes(QUICK_NOTE_TAG)) reportAgenda(`Nota guardada · ${note.title}`);
             return data[0];
         } catch (error) {
             toast({title:'No se guardó la nota',description:error.message,variant:'destructive'}); throw error;
@@ -326,6 +372,7 @@ export const DataProvider = ({ children }) => {
         deletedDeals,
         setDealDeleted,
         tasks,
+        toggleCardCall, reportAgenda, lastAgendaEvent,
         contacts,
         notes,
         logistics,
@@ -357,7 +404,7 @@ export const DataProvider = ({ children }) => {
         addLeadStatus,
         updateLeadStatus,
         deleteLeadStatus
-    }), [leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, pipelineLoading, dataError, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
+    }), [toggleCardCall,reportAgenda,lastAgendaEvent,leads, deals, deletedDeals, setDealDeleted, tasks, contacts, notes, logistics, loading, pipelineLoading, dataError, fetchData, updateLead, removeLead, addLead, updateDeal, removeDeal, addDeal, convertLead, revertDeal, addTask, updateTask, updateTaskByLeadId, removeTask, updateLogistics, removeLogistics, addLogistics, addNote, updateNote, deleteNote, uploadMedia, leadStatuses]);
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
