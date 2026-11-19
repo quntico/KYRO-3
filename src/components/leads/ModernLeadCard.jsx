@@ -1,55 +1,21 @@
+import './lead-card.css';
 import LeadContactRow from './LeadContactRow';
 import { SALE_STAGES } from '@/lib/dealConversion';
 import { displayDate, money } from '@/lib/leadAnalysis';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarDays, Target, Banknote, Mail, Phone, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, Check, ChevronDown, Undo2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CalendarDays, Target, Banknote, Mail, Phone, Edit, Trash2, HeartHandshake, CalendarPlus, Flame, Sun, Snowflake, TrendingUp, TrendingDown, Clock, MessageSquare, ExternalLink, Zap, FileText, FileDown, MoreHorizontal, Check, ChevronDown, Undo2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from '@/contexts/ThemeContext.jsx';
-
-const getStatusColor = (status, isLightTheme) => {
-  switch (status) {
-    case 'hot': return 'from-red-500 to-orange-500';
-    case 'closing': return 'from-blue-600 to-cyan-500 dark:from-[#0047FF] dark:to-[#00D4FF]';
-    case 'warming': return 'from-emerald-500 to-teal-500';
-    case 'warm': return 'from-orange-500 to-amber-500';
-    case '2027': return 'from-yellow-300 to-yellow-500';
-    case 'cooling': return 'from-cyan-500 to-blue-500';
-    case 'cold': return 'from-blue-500 to-indigo-500';
-    case 'new': return 'from-purple-500 to-pink-500';
-    case 'declined': return 'from-[#8B4513] to-[#A0522D]';
-    default: return 'from-gray-500 to-slate-500';
-  }
-};
-
-const getHoverEffects = (status, isLightTheme) => {
-  if (isLightTheme) {
-    return {
-      glow: 'from-transparent',
-      shadow: 'hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:border-primary/30 border-border bg-card'
-    };
-  }
-  switch (status) {
-    case 'hot': return { glow: 'from-red-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(239,68,68,0.15)] border-transparent hover:border-red-500/50' };
-    case 'closing': return { glow: 'from-[#0047FF]/20', shadow: 'hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] border-transparent hover:border-[#00D4FF]/50' };
-    case 'warming': return { glow: 'from-emerald-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] border-transparent hover:border-emerald-500/50' };
-    case 'warm': return { glow: 'from-orange-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] border-transparent hover:border-orange-500/50' };
-    case '2027': return { glow: 'from-yellow-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(250,204,21,0.15)] border-transparent hover:border-yellow-500/50' };
-    case 'cooling': return { glow: 'from-cyan-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] border-transparent hover:border-cyan-500/50' };
-    case 'cold': return { glow: 'from-blue-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] border-transparent hover:border-blue-500/50' };
-    case 'new': return { glow: 'from-purple-500/20', shadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] border-transparent hover:border-purple-500/50' };
-    case 'declined': return { glow: 'from-[#8B4513]/20', shadow: 'hover:shadow-[0_0_30px_rgba(139,69,19,0.15)] border-transparent hover:border-[#8B4513]/50' };
-    default: return { glow: 'from-white/5', shadow: 'hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:border-white/20' };
-  }
-};
 
 const getStatusPill = (status, isLightTheme) => {
   if (isLightTheme) {
@@ -77,21 +43,6 @@ const getStatusPill = (status, isLightTheme) => {
     case 'new': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
     case 'declined': return 'border-[#8B4513]/30 bg-[#8B4513]/10 text-[#D2691E]';
     default: return 'border-gray-500/30 bg-gray-500/10 text-gray-400';
-  }
-};
-
-const getScoreGradient = (status) => {
-  switch (status) {
-    case 'hot': return 'from-red-400 to-red-600';
-    case 'closing': return 'from-[#00D4FF] to-[#0047FF]';
-    case 'warming': return 'from-emerald-400 to-emerald-600';
-    case 'warm': return 'from-orange-400 to-orange-600';
-    case '2027': return 'from-yellow-400 to-yellow-600';
-    case 'cooling': return 'from-cyan-400 to-cyan-600';
-    case 'cold': return 'from-blue-400 to-blue-600';
-    case 'new': return 'from-purple-400 to-purple-600';
-    case 'declined': return 'from-[#D2691E] to-[#8B4513]';
-    default: return 'from-gray-400 to-gray-600';
   }
 };
 
@@ -203,10 +154,7 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
     doc.save(`Generales_${(lead.name || 'Cliente').replace(/\s+/g, '_')}.pdf`);
   };
 
-  const statusGradient = getStatusColor(lead.status, isLightTheme);
   const statusPill = getStatusPill(lead.status, isLightTheme);
-  const scoreGradient = getScoreGradient(lead.status);
-  const hoverFx = getHoverEffects(lead.status, isLightTheme);
   const statusName = sale ? (SALE_STAGES.find(([id]) => id === sale.stage)?.[1] || sale.stage) : getStatusName(lead.status);
   const displayScore = getDerivedScore(lead.status, lead.score);
   const statusTextColor = getStatusTextColor(lead.status, isLightTheme);
@@ -220,38 +168,23 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
       animate={{ opacity: 1 }}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 280px' }}
       onClick={() => onView(lead)}
-      className={`relative p-3 cursor-pointer border border-border bg-card transition-all duration-300 group flex flex-col self-start rounded-2xl overflow-hidden ${hoverFx.shadow}`}
+      className="kyro-client-card"
     >
-      <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${statusGradient.split(' ')[0]} ${statusGradient.split(' ')[1]}`} />
-
-      {/* Glow effect on hover */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${hoverFx.glow} to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none mix-blend-screen`} />
-
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 mb-2 relative z-10">
-        <div className="contents">
-          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-x-3 gap-y-1 flex-wrap">
-             <span className="text-[10px] font-black text-muted-foreground/60 tracking-[0.15em] uppercase whitespace-nowrap">SYS.ID // <span className="text-primary">{String(lead.sourceLeadId || lead.id || '').substring(0,6)}</span></span>
-             <span className="w-1 h-1 rounded-full bg-border" />
-             <span className="text-[8px] font-black text-muted-foreground/40 tracking-[0.15em] uppercase whitespace-nowrap flex items-center gap-1">
-               <Clock className="w-2.5 h-2.5" /> Alta: {formattedDate}
-             </span>
-          </div>
-          <h3 className={`col-span-2 row-start-2 min-w-0 text-lg leading-tight font-black tracking-tight uppercase whitespace-normal [overflow-wrap:anywhere] ${statusTextColor}`}>
-            <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Empresa</span>
-            {lead.name?.trim() || 'Sin registrar'}
-          </h3>
-
+      <header className="client-heading">
+        <div className="client-heading-meta">
+          <span>Empresa</span>
+          <span className="client-record-id">#{lead.sourceLeadId || lead.id}</span>
         </div>
-
-        <div className="col-start-2 row-start-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <h3>{lead.name?.trim() || 'Sin registrar'}</h3>
+        <div className="client-status" onClick={event => event.stopPropagation()}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 onClick={(e) => e.stopPropagation()}
-                className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border cursor-pointer transition-all flex items-center gap-2 ${statusPill} hover:brightness-125`}
+                className={`client-status-button ${statusPill}`}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
                 {statusName}
               </button>
             </DropdownMenuTrigger>
@@ -294,22 +227,21 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      </header>
 
-      <LeadContactRow lead={lead} isSale={!!sale} />
-      <p className="mb-2 flex flex-wrap items-center gap-x-1 text-[11px] leading-snug text-muted-foreground">
-        <Clock className="h-3 w-3 shrink-0" />{lead.reportDateLabel || 'Fecha del documento'}:
-        <time dateTime={lead.reportDate || undefined} className="font-semibold text-foreground">{displayDate(lead.reportDate)}</time>
-      </p>
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 rounded-lg border border-border bg-secondary/20 px-2.5 py-2 relative z-10">
-        <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.reportBasis === 'document' ? 'Referencia documental' : 'Venta · USD'}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.value ?? null, lead.financial?.currency || 'USD')}</p></div>
+      <LeadContactRow lead={lead} isSale={!!sale} cardLayout>
+        <div className="client-financials">
+        <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.reportBasis === 'document' ? 'Referencia documental' : 'Venta'}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.value ?? null, lead.financial?.currency || 'USD')}</p></div>
         <div className="min-w-0"><p className="text-[9px] font-semibold text-muted-foreground">{lead.financial?.scenario ? 'Utilidad simulada' : 'Utilidad posible'}{lead.financial?.profit !== null && !lead.financial?.complete ? ' · parcial' : ''}</p><p className="text-sm leading-snug font-bold text-foreground [overflow-wrap:anywhere]">{money(lead.financial?.profit ?? null, lead.financial?.currency || 'USD')}</p></div>
         <div><p className="text-[9px] font-semibold text-muted-foreground">{sale ? 'Registro' : 'Conversión'}</p><p className={`text-sm leading-snug font-black ${statusTextColor}`}>{sale ? 'Venta' : `${displayScore}%`}</p></div>
       </div>
-      <details className="mt-2 relative z-10" onClick={e => e.stopPropagation()}>
+      </LeadContactRow>
+      <div className="client-footer">
+      <details className="client-details" onClick={e => e.stopPropagation()}>
         <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 text-[11px] font-semibold text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
           Contacto y cotización <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </summary>
+          <p className="mb-2 mt-3 text-xs text-muted-foreground">Alta en KYRO · {formattedDate}</p>
           <div className="min-w-0 text-[10px] font-black text-muted-foreground/80 uppercase tracking-[0.15em] flex flex-wrap items-center gap-2">
             {matchedCompany && (
               <DropdownMenu>
@@ -444,30 +376,21 @@ const ModernLeadCard = ({ lead, index, onView, onEdit, onDelete, onStatusChange,
 
       </details>
 
-      {/* Primary actions are available without expanding the contact details. */}
-      <div role="group" aria-label={`Acciones de ${lead.name}`} onClick={e => e.stopPropagation()} className="relative z-10 mt-2 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-2">
-         {sale ? <>
-           <Button size="sm" variant="outline" onClick={() => onView(lead)}>Ver venta</Button>
-           <Button size="sm" variant="outline" onClick={sale.onViewFile}>Expediente</Button>
-           <Button size="sm" variant="outline" className="border-cyan-400/40 bg-cyan-400/10 text-cyan-400" onClick={sale.onRevert}><Undo2 className="mr-1.5 h-4 w-4" />Regresar a Leads</Button>
-           <Button size="sm" variant="outline" className="border-red-400/40 bg-red-400/10 text-red-400 hover:bg-red-400/20" onClick={sale.onDelete}><Trash2 className="mr-1.5 h-4 w-4" />Borrar venta</Button>
-         </> : <>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-secondary border border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground shadow-lg" onClick={(e) => { e.stopPropagation(); onEdit(lead); }} title="Editar">
-           <Edit className="w-4 h-4" />
-         </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onConvertToDeal(lead); }} title="Convertir a Venta">
-           <HeartHandshake className="w-4 h-4" />
-         </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onQuickFollowUp(lead, 'Llamada'); }} title="Seguimiento">
-           <CalendarPlus className="w-4 h-4" />
-         </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary shadow-lg" onClick={(e) => { e.stopPropagation(); onOpenConversation(lead); }} title="Bitácora">
-           <MessageSquare className="w-4 h-4" />
-         </Button>
-         <Button size="icon" variant="ghost" className="rounded-full w-9 h-9 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-600 dark:text-red-400 shadow-lg" onClick={(e) => { e.stopPropagation(); onDelete(lead); }} title="Eliminar">
-           <Trash2 className="w-4 h-4" />
-         </Button>
-         </>}
+      <div role="group" aria-label={`Acciones de ${lead.name}`} className="client-tools" onClick={e=>e.stopPropagation()}>
+        <button type="button" title={sale ? 'Ver venta' : 'Editar'} aria-label={sale ? 'Ver venta' : 'Editar'} onClick={()=>sale ? onView(lead) : onEdit(lead)}>{sale ? <ExternalLink/> : <Edit/>}</button>
+        <button type="button" title={sale ? 'Expediente' : 'Bitácora'} aria-label={sale ? 'Expediente' : 'Bitácora'} onClick={()=>sale ? sale.onViewFile() : onOpenConversation(lead)}>{sale ? <FileText/> : <MessageSquare/>}</button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild><button type="button" aria-label="Más acciones" title="Más acciones"><MoreHorizontal/></button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={e=>e.stopPropagation()}>
+            {sale ? <DropdownMenuItem onSelect={sale.onRevert}><Undo2 className="mr-2 h-4 w-4"/>Regresar a Leads</DropdownMenuItem> : <>
+              <DropdownMenuItem onSelect={()=>onQuickFollowUp(lead,'Llamada')}><CalendarPlus className="mr-2 h-4 w-4"/>Agendar seguimiento</DropdownMenuItem>
+              <DropdownMenuItem onSelect={()=>onConvertToDeal(lead)}><HeartHandshake className="mr-2 h-4 w-4"/>Convertir a venta</DropdownMenuItem>
+            </>}
+            <DropdownMenuSeparator/>
+            <DropdownMenuItem className="text-red-500" onSelect={()=>sale ? sale.onDelete() : onDelete(lead)}><Trash2 className="mr-2 h-4 w-4"/>{sale ? 'Borrar venta' : 'Eliminar prospecto'}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       </div>
     </motion.div>
   );

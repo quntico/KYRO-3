@@ -8,7 +8,7 @@ export default function MachineProject({ machines, project }) {
     .map(name => name.trim());
   const description = [...new Set(names)].join(' · ') || project?.trim() || 'Sin registrar';
   return (
-    <div className="flex w-full min-w-0 items-start gap-1.5 text-left">
+    <div className="client-machine flex w-full min-w-0 items-start gap-1.5 text-left">
       <Package aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       <div className="min-w-0">
         <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Máquina o proyecto</span>
