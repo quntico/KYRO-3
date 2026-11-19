@@ -1,48 +1,277 @@
-import React,{useMemo,useState,useEffect} from 'react';
-import {Link} from 'react-router-dom';
-import {CalendarDays,Plus,ChevronLeft,ChevronRight,Clock,Check,Search,AlertCircle,BrainCircuit,ExternalLink,RefreshCw} from 'lucide-react';
-import {Helmet} from 'react-helmet';
-import {useData} from '@/contexts/DataContext';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog';
-import {toast} from '@/components/ui/use-toast';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, Clock, Check, Search, BrainCircuit, ExternalLink, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet';
+import { useData } from '@/contexts/DataContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { toast } from '@/components/ui/use-toast';
 import GoogleCalendarConnect from '@/components/GoogleCalendarConnect';
-import {dayKey,shiftDay,agendaRange,selectAgenda,mexicoLocalToISO,readableDate} from '@/lib/agenda';
-const field='w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary';
-export default function Agenda(){
- const {tasks,leads,addTask,updateTask,removeTask,fetchData,loading,dataError}=useData();
- const [mode,setMode]=useState('day'),[day,setDay]=useState(dayKey()),[status,setStatus]=useState('pending'),[query,setQuery]=useState(''),[editing,setEditing]=useState(null),[saving,setSaving]=useState(false),[busy,setBusy]=useState(null),[clock,setClock]=useState(new Date()),[showCalendar,setShowCalendar]=useState(()=>new URLSearchParams(location.search).has('code')||new URLSearchParams(location.search).has('error')),[showYarvis,setShowYarvis]=useState(false),[showMissing,setShowMissing]=useState(false),[quality,setQuality]=useState('');
- useEffect(()=>{const id=setInterval(()=>setClock(new Date()),30000);return()=>clearInterval(id);},[]);
- const visible=useMemo(()=>selectAgenda(tasks,{mode,day,status,query,now:clock}),[tasks,mode,day,status,query,clock]);
- const today=dayKey(clock),overdue=selectAgenda(tasks,{mode:'overdue',now:clock}),todayTasks=selectAgenda(tasks,{day:today});
- const missing=useMemo(()=>leads.filter(l=>!tasks.some(t=>String(t.lead_id)===String(l.id)&&!t.completed&&t.status!=='cancelled'&&t.due)&&!l.next_step?.date),[leads,tasks]);
- const incomplete=leads.filter(l=>quality&&!l[quality]?.trim?.()||quality&&['NA','N/A','SIN DATO'].includes(String(l[quality]||'').trim().toUpperCase()));
- const groups=useMemo(()=>visible.reduce((out,t)=>{const key=dayKey(t.due)||'Sin fecha';(out[key]??=[]).push(t);return out;},{}),[visible]);
- const openNew=lead=>setEditing({title:lead?`Seguimiento con ${lead.name}`:'',lead_id:lead?.id||'',client:lead?.name||'',date:day,time:'09:00',duration_minutes:30,comments:'',priority:'medium'});
- const openEdit=t=>setEditing({...t,date:dayKey(t.due),time:new Intl.DateTimeFormat('en-GB',{timeZone:'America/Mexico_City',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(t.due))});
- const save=async e=>{e.preventDefault();if(saving)return;setSaving(true);try{const {date,time,...rest}=editing;const task={...rest,lead_id:rest.lead_id?Number(rest.lead_id):null,due:mexicoLocalToISO(date,time),duration_minutes:Number(rest.duration_minutes),completed:rest.completed||false};if(task.id)await updateTask(task);else await addTask(task);setEditing(null);toast({title:'Actividad guardada',description:'Disponible al volver a abrir KYRO.'});}catch(e){toast({title:'No se guardó',description:e.message,variant:'destructive'});}finally{setSaving(false);}};
- const complete=async t=>{setBusy(t.id);try{await updateTask({...t,completed:!t.completed,...(t.status==='cancelled'?{status:'pending'}:{})});}finally{setBusy(null);}};
- const move=n=>{if(mode==='month'){const d=new Date(day.slice(0,7)+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+n);setDay(d.toISOString().slice(0,10));}else setDay(shiftDay(day,n*(mode==='week'?7:1)));};
- const range=agendaRange(mode,day),gridStart=agendaRange('week',day.slice(0,7)+'-01')[0];
- const googleLink=t=>{const start=new Date(t.due),end=new Date(start.getTime()+(t.duration_minutes||30)*60000),fmt=d=>d.toISOString().replace(/[-:]/g,'').replace('.000','');return 'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',text:t.title,dates:fmt(start)+'/'+fmt(end),ctz:'America/Mexico_City',details:`${t.client||''}\n${t.comments||''}\nhttps://www.kyro.com.mx/agenda`});};
- return <div className="mx-auto max-w-[1600px] p-4 md:p-6 space-y-5">
- <Helmet><title>Mi agenda · KYRO</title></Helmet>
- <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs uppercase tracking-[.25em] text-primary font-bold">Tu centro de trabajo</p><h1 className="mt-1 text-3xl font-bold">Mi agenda</h1><p className="mt-1 text-sm text-muted-foreground">Compromisos, pendientes y seguimientos · Hora de Ciudad de México</p></div><div className="flex gap-2"><Button variant="outline" onClick={()=>setShowCalendar(!showCalendar)}><CalendarDays className="mr-2 h-4 w-4"/>Google Calendar</Button><Button onClick={()=>openNew()}><Plus className="mr-2 h-4 w-4"/>Nueva actividad</Button></div></div>
- <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[{label:'Hoy',value:todayTasks.length,color:'text-cyan-300',click:()=>{setDay(today);setMode('day');setStatus('pending');}},{label:'Esta semana',value:selectAgenda(tasks,{mode:'week',day:today}).length,color:'text-blue-400',click:()=>{setDay(today);setMode('week');setStatus('pending');}},{label:'Vencidos',value:overdue.length,color:'text-rose-400',click:()=>{setMode('overdue');setStatus('pending');}},{label:'Sin próxima acción',value:missing.length,color:'text-amber-300',click:()=>setShowMissing(!showMissing)}].map(c=><button key={c.label} onClick={c.click} className="rounded-2xl border border-border bg-card p-4 text-left hover:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary"><span className="text-sm text-muted-foreground">{c.label}</span><p className={`mt-1 text-3xl font-bold ${c.color}`}>{c.value}</p></button>)}</div>
- {showCalendar&&<GoogleCalendarConnect onSync={()=>fetchData({force:true})}/>}
- <button onClick={()=>setShowYarvis(!showYarvis)} aria-expanded={showYarvis} className="flex w-full items-center gap-3 rounded-2xl border border-violet-400/30 bg-violet-400/5 p-4 text-left"><BrainCircuit className="h-5 w-5 text-violet-300"/><span className="flex-1"><strong className="text-sm">YARVIS · Preparar mi día</strong><span className="block text-xs text-muted-foreground">Resumen basado en tu agenda guardada</span></span><span className="text-sm">{showYarvis?'Plegar':'Ver resumen'}</span></button>
- {showYarvis&&<div className="rounded-2xl border border-violet-400/20 bg-card p-4 space-y-3 text-sm"><p>Tienes <strong>{todayTasks.length} actividades pendientes hoy</strong> y <strong>{overdue.length} vencidas</strong>. {missing.length} prospectos necesitan una próxima acción.</p>{todayTasks.slice(0,3).map(t=><button key={t.id} onClick={()=>openEdit(t)} className="block w-full rounded-xl bg-background p-3 text-left"><span className="text-primary">{readableDate(t.due)}</span> · {t.title}</button>)}<p className="text-xs text-muted-foreground">Este resumen no escribe en tus conversaciones ni cambia el estado de los prospectos.</p></div>}
- {showMissing&&<div className="rounded-2xl border border-amber-400/30 bg-card p-4"><div className="flex justify-between"><h2 className="font-semibold">Prospectos sin próxima acción</h2><button onClick={()=>setShowMissing(false)}>Cerrar</button></div><div className="mt-3 grid gap-2 md:grid-cols-3 max-h-72 overflow-auto">{missing.map(l=><button key={l.id} onClick={()=>openNew(l)} className="rounded-xl bg-background p-3 text-left text-sm"><strong>{l.name}</strong><span className="block text-primary mt-1">+ Agendar seguimiento</span></button>)}</div></div>}
- <div className="flex flex-wrap items-center gap-3"><label className="text-sm text-muted-foreground">Datos por completar <select aria-label="Datos por completar" className="ml-2 rounded-xl border border-border bg-card p-2" value={quality} onChange={e=>setQuality(e.target.value)}><option value="">Elegir campo</option><option value="contact">Sin contacto</option><option value="email">Sin correo</option><option value="phone">Sin teléfono</option></select></label>{quality&&<span className="text-sm text-amber-300">{incomplete.length} prospectos · Los datos se actualizan solo cuando tú los edites.</span>}</div>
- {quality&&<div className="grid gap-2 md:grid-cols-3 max-h-52 overflow-auto rounded-2xl border border-border bg-card p-3">{incomplete.map(l=><Link key={l.id} to={`/leads?q=${encodeURIComponent(l.name)}`} className="rounded-xl border border-border p-3 text-sm hover:text-primary">{l.name} →</Link>)}</div>}
- <div className="flex flex-wrap items-center gap-2"><div className="flex flex-wrap gap-1 rounded-xl bg-card p-1 border border-border">{[['day','Día'],['week','Semana'],['month','Mes'],['overdue','Vencidos'],['all','Todos']].map(([key,label])=><button key={key} aria-pressed={mode===key} onClick={()=>setMode(key)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${mode===key?'bg-primary text-primary-foreground':'text-muted-foreground hover:text-foreground'}`}>{label}</button>)}</div><Button variant="outline" onClick={()=>{setDay(today);setMode('day');}}>Hoy</Button><button aria-label="Periodo anterior" onClick={()=>move(-1)} className="p-3 rounded-xl hover:bg-card"><ChevronLeft className="h-4 w-4"/></button><input type="date" aria-label="Fecha a consultar" className="rounded-xl border border-border bg-card p-2 text-sm [color-scheme:dark]" value={day} onChange={e=>e.target.value&&setDay(e.target.value)}/><button aria-label="Periodo siguiente" onClick={()=>move(1)} className="p-3 rounded-xl hover:bg-card"><ChevronRight className="h-4 w-4"/></button><Button variant="ghost" disabled={loading} onClick={()=>fetchData({force:true})} aria-label="Actualizar agenda"><RefreshCw className={`h-4 w-4 ${loading?'animate-spin':''}`}/></Button></div>
- <div className="flex flex-wrap gap-3"><div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"/><Input aria-label="Buscar actividades" placeholder="Buscar actividad, empresa o pendiente…" className="pl-10" value={query} onChange={e=>setQuery(e.target.value)}/></div><select aria-label="Estado de actividades" className="rounded-xl border border-border bg-card px-4 py-2" value={status} onChange={e=>setStatus(e.target.value)}><option value="pending">Pendientes</option><option value="completed">Completadas</option><option value="all">Pendientes y completadas</option><option value="cancelled">Canceladas</option></select></div>
- {dataError&&<p role="alert" className="text-rose-400">{dataError}</p>}
- {mode==='month'&&<div className="grid grid-cols-7 gap-1 rounded-2xl border border-border bg-card p-2">{['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=><div key={d} className="p-2 text-center text-xs text-muted-foreground">{d}</div>)}{Array.from({length:42},(_,i)=>shiftDay(gridStart,i)).map(d=>{const count=selectAgenda(tasks,{day:d,status}).length;return <button key={d} onClick={()=>{setDay(d);setMode('day');}} aria-label={`${d}, ${count} actividades`} className={`min-h-16 rounded-xl p-2 text-left hover:bg-primary/10 ${d===today?'ring-1 ring-primary bg-primary/10':''} ${d.slice(0,7)!==day.slice(0,7)?'opacity-40':''}`}><span className="text-sm">{Number(d.slice(-2))}</span>{count>0&&<span className="mt-1 block text-xs font-semibold text-primary">{count}<span className="hidden sm:inline"> pendientes</span></span>}</button>;})}</div>}
- <div aria-live="polite" className="text-sm text-muted-foreground">{visible.length} actividades{['day','week','month'].includes(mode)&&` · ${range[0]} al ${range[1]}`}</div>
- {!visible.length&&<div className="rounded-2xl border border-dashed border-border p-10 text-center"><CalendarDays className="mx-auto h-9 w-9 text-primary mb-3"/><h2 className="font-semibold">{loading?'Cargando tu agenda…':'Sin actividades para esta selección'}</h2><p className="mt-2 text-sm text-muted-foreground">Puedes cambiar el periodo o programar una actividad.</p><Button className="mt-4" onClick={()=>openNew()}>Crear actividad</Button></div>}
- {Object.entries(groups).map(([date,items])=><section key={date} className="space-y-2"><h2 className="text-sm font-bold text-primary">{date===today?'Hoy · ':''}{date}</h2>{items.map(t=><article key={t.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3" style={{contentVisibility:'auto',containIntrinsicSize:'auto 100px'}}><button disabled={busy===t.id} onClick={()=>complete(t).catch(()=>{})} aria-label={`${t.completed?'Marcar pendiente':'Completar'} ${t.title}`} aria-pressed={!!t.completed} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${t.completed?'bg-primary text-primary-foreground border-primary':'border-border hover:border-primary'}`}>{t.completed?<Check className="h-5 w-5"/>:<span className="h-4 w-4 rounded border border-muted-foreground"/>}</button><div className="min-w-0 flex-1"><h3 className={`font-semibold break-words ${t.completed?'line-through text-muted-foreground':''}`}>{t.title}</h3><p className="text-sm text-muted-foreground">{t.client||'Actividad personal'} · {readableDate(t.due)} · {t.duration_minutes||30} min</p>{t.comments&&<p className="mt-1 text-sm whitespace-pre-wrap break-words">{t.comments}</p>}{t.google_conflict&&<p role="alert" className="text-amber-300 text-sm">Cambio simultáneo en Google: revisión pendiente. Tus datos se conservan.</p>}{t.google_sync_error&&<p className="text-amber-300 text-xs">Calendar: {t.google_sync_error}</p>}</div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={()=>openEdit(t)}>Editar</Button>{t.lead_id&&<Link className="rounded-xl border border-border px-3 py-2 text-sm" to={`/leads?q=${encodeURIComponent(t.client||'')}`}>Ficha</Link>}<a href={googleLink(t)} target="_blank" rel="noreferrer" title="Preparar evento en Google Calendar" aria-label={`Preparar ${t.title} en Google Calendar`} className="flex items-center rounded-xl border border-border p-2"><ExternalLink className="h-4 w-4"/></a></div></article>)}</section>)}
- <Dialog open={!!editing} onOpenChange={v=>!saving&&!v&&setEditing(null)}><DialogContent className="max-h-[90vh] overflow-auto"><DialogHeader><DialogTitle>{editing?.id?'Editar actividad':'Nueva actividad'}</DialogTitle><DialogDescription>Se guarda en tu agenda. Los datos del prospecto se conservan.</DialogDescription></DialogHeader>{editing&&<form onSubmit={save} className="space-y-4"><label className="block text-sm">Actividad<input required maxLength={200} className={field+' mt-1'} value={editing.title} onChange={e=>setEditing({...editing,title:e.target.value})}/></label><label className="block text-sm">Prospecto<select className={field+' mt-1'} value={editing.lead_id||''} onChange={e=>{const l=leads.find(l=>String(l.id)===e.target.value);setEditing({...editing,lead_id:e.target.value,client:l?.name||''});}}><option value="">Actividad personal / sin prospecto</option>{leads.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></label><div className="grid grid-cols-2 gap-3"><label className="text-sm">Fecha<input required type="date" className={field+' mt-1 [color-scheme:dark]'} value={editing.date} onChange={e=>setEditing({...editing,date:e.target.value})}/></label><label className="text-sm">Hora · CDMX<input required type="time" className={field+' mt-1 [color-scheme:dark]'} value={editing.time} onChange={e=>setEditing({...editing,time:e.target.value})}/></label></div><label className="block text-sm">Duración en minutos<input type="number" required min="5" max="1440" step="5" className={field+' mt-1'} value={editing.duration_minutes} onChange={e=>setEditing({...editing,duration_minutes:e.target.value})}/></label><label className="block text-sm">Notas de la actividad<textarea className={field+' mt-1'} rows="3" value={editing.comments||''} onChange={e=>setEditing({...editing,comments:e.target.value})}/></label>{editing.id&&<Button type="button" variant="outline" disabled={saving} onClick={async()=>{if(!window.confirm('¿Cancelar esta actividad? El historial y el prospecto se conservan.'))return;setSaving(true);try{await removeTask(editing.id);setEditing(null);}catch{}finally{setSaving(false);}}}>Cancelar actividad</Button>}<Button type="submit" disabled={saving} className="w-full">{saving?'Guardando…':'Guardar actividad'}</Button></form>}</DialogContent></Dialog>
- </div>;
+import { AGENDA_ZONE, dayKey, shiftDay, agendaRange, selectAgenda, pendingAgendaForDay, mexicoLocalToISO, readableDate } from '@/lib/agenda';
+
+const field = 'mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
+const priorityLabel = { urgent: 'Urgente', high: 'Alta', medium: 'Media', low: 'Baja' };
+const priorityTone = { urgent: 'border-rose-400/40 bg-rose-400/10 text-rose-300', high: 'border-orange-400/40 bg-orange-400/10 text-orange-300', medium: 'border-sky-400/40 bg-sky-400/10 text-sky-300', low: 'border-border bg-secondary text-muted-foreground' };
+
+function TaskRow({ task, busy, onComplete, onEdit, googleLink }) {
+  const time = new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit' }).format(new Date(task.due));
+  const priority = priorityLabel[task.priority] || 'Sin prioridad';
+  return (
+    <article className="flex min-w-0 flex-wrap items-start gap-3 rounded-xl border border-border bg-card p-3 sm:items-center sm:p-4">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onComplete(task)}
+        aria-label={`${task.completed ? 'Marcar pendiente' : 'Completar'} ${task.title}`}
+        aria-pressed={!!task.completed}
+        className={`flex size-11 shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 ${task.completed ? 'border-primary bg-primary text-primary-foreground' : 'border-border hover:border-primary'}`}
+      >
+        {task.completed ? <Check className="size-5" /> : <span className="size-4 rounded border border-muted-foreground" />}
+      </button>
+      <div className="min-w-0 flex-1 basis-[calc(100%_-_3.5rem)] sm:basis-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h3 className={`min-w-0 break-words font-semibold ${task.completed ? 'text-muted-foreground line-through' : ''}`}>{task.title}</h3>
+          <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${priorityTone[task.priority] || priorityTone.low}`}>{priority}</span>
+        </div>
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+          <span>{task.client || 'Actividad personal'}</span><span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1"><Clock className="size-3.5" />{time} · {task.duration_minutes || 30} min</span>
+        </p>
+        {task.comments && <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/80">{task.comments}</p>}
+        {task.google_conflict && <p role="alert" className="mt-1 text-sm text-amber-300">Cambio simultáneo en Google: revisión pendiente. Tus datos se conservan.</p>}
+        {task.google_sync_error && <p className="mt-1 text-xs text-amber-300">Calendar: {task.google_sync_error}</p>}
+      </div>
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+        <Button size="sm" variant="outline" className="min-h-11 sm:min-h-9" onClick={() => onEdit(task)}>Editar / reprogramar</Button>
+        {task.lead_id && <Link className="inline-flex min-h-11 items-center rounded-xl border border-border px-3 text-sm hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-h-9" to={`/leads?q=${encodeURIComponent(task.client || '')}`}>Ficha</Link>}
+        <a href={googleLink(task)} target="_blank" rel="noreferrer" title="Preparar evento en Google Calendar" aria-label={`Preparar ${task.title} en Google Calendar`} className="inline-flex size-11 items-center justify-center rounded-xl border border-border hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-9"><ExternalLink className="size-4" /></a>
+      </div>
+    </article>
+  );
+}
+
+export default function Agenda() {
+  const { tasks, leads, addTask, updateTask, removeTask, fetchData, loading, dataError } = useData();
+  const [mode, setMode] = useState('day');
+  const [day, setDay] = useState(dayKey());
+  const [status, setStatus] = useState('pending');
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState(null);
+  const [clock, setClock] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(() => new URLSearchParams(location.search).has('code') || new URLSearchParams(location.search).has('error'));
+  const [showYarvis, setShowYarvis] = useState(false);
+  const [showMissing, setShowMissing] = useState(false);
+  const [quality, setQuality] = useState('');
+
+  useEffect(() => {
+    const id = setInterval(() => setClock(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const today = dayKey(clock);
+  const tomorrow = shiftDay(today, 1);
+  const visible = useMemo(() => selectAgenda(tasks, { mode, day, status, query, now: clock }), [tasks, mode, day, status, query, clock]);
+  const tomorrowTasks = useMemo(() => pendingAgendaForDay(tasks, tomorrow), [tasks, tomorrow]);
+  const overdue = useMemo(() => selectAgenda(tasks, { mode: 'overdue', now: clock }), [tasks, clock]);
+  const todayTasks = useMemo(() => pendingAgendaForDay(tasks, today), [tasks, today]);
+  const missing = useMemo(() => leads.filter(lead => !tasks.some(task => String(task.lead_id) === String(lead.id) && !task.completed && task.status !== 'cancelled' && task.due) && !lead.next_step?.date), [leads, tasks]);
+  const incomplete = useMemo(() => leads.filter(lead => quality && (!lead[quality]?.trim?.() || ['NA', 'N/A', 'SIN DATO'].includes(String(lead[quality] || '').trim().toUpperCase()))), [leads, quality]);
+  const groups = useMemo(() => visible.reduce((out, task) => {
+    const key = dayKey(task.due) || 'Sin fecha';
+    (out[key] ??= []).push(task);
+    return out;
+  }, {}), [visible]);
+
+  const openNew = lead => setEditing({ title: lead ? `Seguimiento con ${lead.name}` : '', lead_id: lead?.id || '', client: lead?.name || '', date: day, time: '09:00', duration_minutes: 30, comments: '', priority: 'medium' });
+  const openEdit = task => setEditing({ ...task, date: dayKey(task.due), time: new Intl.DateTimeFormat('en-GB', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(task.due)) });
+
+  const save = async event => {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { date, time, ...rest } = editing;
+      const task = { ...rest, lead_id: rest.lead_id ? Number(rest.lead_id) : null, due: mexicoLocalToISO(date, time), duration_minutes: Number(rest.duration_minutes), completed: rest.completed || false };
+      if (task.id) await updateTask(task);
+      else await addTask(task);
+      setEditing(null);
+      toast({ title: 'Actividad guardada', description: 'Disponible al volver a abrir KYRO.' });
+    } catch (error) {
+      toast({ title: 'No se guardó', description: error.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const complete = async task => {
+    setBusy(task.id);
+    try {
+      await updateTask({ ...task, completed: !task.completed, ...(task.status === 'cancelled' ? { status: 'pending' } : {}) });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const selectQuickView = key => {
+    setStatus('pending');
+    if (key === 'today') { setDay(today); setMode('day'); }
+    else if (key === 'tomorrow') { setDay(tomorrow); setMode('day'); }
+    else if (key === 'week') { setDay(today); setMode('week'); }
+    else if (key === 'overdue') setMode('overdue');
+    else if (key === 'month') setMode('month');
+    else setMode('all');
+  };
+
+  const move = amount => {
+    if (mode === 'month') {
+      const date = new Date(`${day.slice(0, 7)}-01T12:00:00Z`);
+      date.setUTCMonth(date.getUTCMonth() + amount);
+      setDay(date.toISOString().slice(0, 10));
+    } else setDay(shiftDay(day, amount * (mode === 'week' ? 7 : 1)));
+  };
+
+  const range = agendaRange(mode, day);
+  const gridStart = agendaRange('week', `${day.slice(0, 7)}-01`)[0];
+  const selectedQuickView = mode === 'day' && day === today ? 'today' : mode === 'day' && day === tomorrow ? 'tomorrow' : mode;
+  const dateHeading = new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${day}T12:00:00Z`));
+  const googleLink = task => {
+    const start = new Date(task.due);
+    const end = new Date(start.getTime() + (task.duration_minutes || 30) * 60000);
+    const format = date => date.toISOString().replace(/[-:]/g, '').replace('.000', '');
+    return `https://calendar.google.com/calendar/render?${new URLSearchParams({ action: 'TEMPLATE', text: task.title, dates: `${format(start)}/${format(end)}`, ctz: AGENDA_ZONE, details: `${task.client || ''}\n${task.comments || ''}\nhttps://www.kyro.com.mx/agenda` })}`;
+  };
+
+  return (
+    <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-5 md:px-6">
+      <Helmet><title>Mi agenda · KYRO</title></Helmet>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[.22em] text-primary">Tu centro de trabajo · CDMX</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Mi agenda</h1>
+          <p className="mt-1 text-sm capitalize text-muted-foreground">{dateHeading}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="min-h-11" onClick={() => setShowCalendar(open => !open)} aria-expanded={showCalendar}><CalendarDays className="mr-2 size-4" />Google Calendar</Button>
+          <Button className="min-h-11" onClick={() => openNew()}><Plus className="mr-2 size-4" />Nueva actividad</Button>
+        </div>
+      </header>
+
+      {showCalendar && <GoogleCalendarConnect onSync={() => fetchData({ force: true })} />}
+
+      <section aria-label="Filtrar agenda" className="flex flex-col gap-3 rounded-2xl border border-border bg-card/70 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-background p-1">
+          {[
+            ['today', 'Hoy'], ['tomorrow', 'Mañana'], ['week', 'Semana'], ['overdue', 'Vencidos'], ['month', 'Mes'], ['all', 'Todos'],
+          ].map(([key, label]) => (
+            <button key={key} type="button" aria-pressed={selectedQuickView === key} onClick={() => selectQuickView(key)} className={`min-h-11 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedQuickView === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
+              {label}{key === 'tomorrow' && <span className="ml-1.5 text-xs opacity-75">{tomorrow.slice(5).replace('-', '/')}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1 basis-full sm:basis-64">
+            <Search aria-hidden="true" className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input aria-label="Buscar actividades" placeholder="Buscar actividad, cliente o nota…" className="h-11 pl-10 pr-10" value={query} onChange={event => setQuery(event.target.value)} />
+            {query && <button type="button" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" onClick={() => setQuery('')} className="absolute right-2 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><X className="size-4" /></button>}
+          </div>
+          <label className="sr-only" htmlFor="agenda-status">Estado de actividades</label>
+          <select id="agenda-status" aria-label="Estado de actividades" className="h-11 min-w-44 rounded-xl border border-border bg-background px-3 text-sm" value={status} onChange={event => setStatus(event.target.value)}>
+            <option value="pending">Pendientes</option><option value="completed">Completadas</option><option value="all">Pendientes y completadas</option><option value="cancelled">Canceladas</option>
+          </select>
+          <div className="flex items-center gap-1">
+            <button type="button" aria-label="Periodo anterior" onClick={() => move(-1)} className="inline-flex size-11 items-center justify-center rounded-xl border border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><ChevronLeft className="size-4" /></button>
+            <input type="date" aria-label="Fecha a consultar" className="h-11 min-w-0 rounded-xl border border-border bg-background px-2 text-sm [color-scheme:dark]" value={day} onChange={event => event.target.value && setDay(event.target.value)} />
+            <button type="button" aria-label="Periodo siguiente" onClick={() => move(1)} className="inline-flex size-11 items-center justify-center rounded-xl border border-border hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><ChevronRight className="size-4" /></button>
+            <Button variant="ghost" className="size-11 shrink-0" disabled={loading} onClick={() => fetchData({ force: true })} aria-label="Actualizar agenda" title="Actualizar agenda"><RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} /></Button>
+          </div>
+        </div>
+      </section>
+
+      {dataError && <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-400/5 p-3 text-sm text-rose-300"><AlertCircle className="mt-0.5 size-4 shrink-0" />{dataError}</p>}
+
+      {mode === 'month' && (
+        <div className="grid grid-cols-7 gap-1 rounded-2xl border border-border bg-card p-2">
+          {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(label => <div key={label} className="p-2 text-center text-xs text-muted-foreground">{label}</div>)}
+          {Array.from({ length: 42 }, (_, index) => shiftDay(gridStart, index)).map(date => {
+            const count = selectAgenda(tasks, { day: date, status }).length;
+            return <button key={date} type="button" onClick={() => { setDay(date); setMode('day'); }} aria-label={`${date}, ${count} actividades`} className={`min-h-16 rounded-xl p-2 text-left hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${date === today ? 'bg-primary/10 ring-1 ring-primary' : ''} ${date.slice(0, 7) !== day.slice(0, 7) ? 'opacity-40' : ''}`}>
+              <span className="text-sm">{Number(date.slice(-2))}</span>{count > 0 && <span className="mt-1 block text-xs font-semibold text-primary">{count}<span className="hidden sm:inline"> actividades</span></span>}
+            </button>;
+          })}
+        </div>
+      )}
+
+      <section aria-labelledby="agenda-activities-title" className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div><h2 id="agenda-activities-title" className="text-lg font-semibold">Actividades</h2><p className="text-sm capitalize text-muted-foreground">{mode === 'overdue' ? 'Pendientes vencidas' : mode === 'all' ? 'Todos tus compromisos' : dateHeading}</p></div>
+          <p aria-live="polite" className="text-sm text-muted-foreground">{loading && !tasks.length ? 'Cargando agenda…' : `${visible.length} ${visible.length === 1 ? 'actividad' : 'actividades'}`}{['day', 'week', 'month'].includes(mode) && ` · ${range[0]} al ${range[1]}`}</p>
+        </div>
+        {!visible.length && (
+          <div className="rounded-2xl border border-dashed border-border bg-card/40 px-5 py-8 text-center sm:py-10">
+            <CalendarDays className="mx-auto mb-3 size-9 text-primary" />
+            <h3 className="font-semibold">{loading ? 'Cargando tu agenda…' : dataError ? 'No se pudo confirmar esta selección' : 'Sin actividades para esta selección'}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{dataError ? 'Reintenta la carga para confirmar tus actividades.' : 'Puedes cambiar el periodo o programar una actividad.'}</p>
+            {!dataError && <Button className="mt-4 min-h-11" onClick={() => openNew()}>Crear actividad</Button>}
+          </div>
+        )}
+        {Object.entries(groups).map(([date, items]) => (
+          <section key={date} aria-label={`Actividades ${date}`} className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-primary">{date === today ? 'Hoy · ' : date === tomorrow ? 'Mañana · ' : ''}{date}</h3>
+            {items.map(task => <TaskRow key={task.id} task={task} busy={busy === task.id} onComplete={item => complete(item).catch(() => {})} onEdit={openEdit} googleLink={googleLink} />)}
+          </section>
+        ))}
+      </section>
+
+      <section className="rounded-2xl border border-violet-400/30 bg-violet-400/[0.04]">
+        <button type="button" onClick={() => setShowYarvis(open => !open)} aria-expanded={showYarvis} aria-controls="yarvis-tomorrow-panel" className="flex min-h-14 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <BrainCircuit className="size-5 shrink-0 text-violet-300" />
+          <span className="min-w-0 flex-1"><strong className="text-sm">YARVIS · Preparar mañana</strong><span className="block text-xs text-muted-foreground">{new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(`${tomorrow}T12:00:00Z`))} · {tomorrowTasks.length} pendientes registrados</span></span>
+          <span className="text-xs font-medium text-violet-200">{showYarvis ? 'Plegar' : 'Ver agenda'}</span>
+        </button>
+        {showYarvis && <div id="yarvis-tomorrow-panel" className="flex flex-col gap-4 border-t border-violet-400/20 p-4">
+          {dataError ? <p role="alert" className="text-sm text-rose-300">No se pudo confirmar la agenda de mañana. Reintenta la carga para actualizarla.</p> : loading && !tasks.length ? <p className="text-sm text-muted-foreground">Cargando tus actividades de mañana…</p> : <>
+            {tomorrowTasks.length ? <div><h3 className="text-sm font-semibold">Mañana · {tomorrowTasks.length} {tomorrowTasks.length === 1 ? 'pendiente' : 'pendientes'}</h3><div className="mt-2 flex flex-col gap-2">{tomorrowTasks.map(task => <button key={task.id} type="button" onClick={() => openEdit(task)} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="font-medium text-primary">{new Intl.DateTimeFormat('es-MX', { timeZone: AGENDA_ZONE, hour: '2-digit', minute: '2-digit' }).format(new Date(task.due))}</span><span className="min-w-0 flex-1 break-words">{task.title} · {task.client || 'Actividad personal'}</span><span className={`rounded-full border px-2 py-0.5 text-xs ${priorityTone[task.priority] || priorityTone.low}`}>{priorityLabel[task.priority] || 'Sin prioridad'}</span></button>)}</div></div> : <div className="rounded-xl border border-dashed border-violet-400/20 p-4"><p className="text-sm font-medium">No hay actividades pendientes registradas para mañana.</p><p className="mt-1 text-xs text-muted-foreground">Aquí solo aparecen compromisos guardados en tu agenda; no se infieren tareas desde prospectos.</p></div>}
+            {overdue.length > 0 && <div><h3 className="text-sm font-semibold text-rose-300">Vencidos · {overdue.length}</h3><div className="mt-2 flex flex-col gap-2">{overdue.map(task => <button key={task.id} type="button" onClick={() => openEdit(task)} className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-rose-400/20 bg-background px-3 py-2 text-left text-sm hover:border-rose-400/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="text-rose-300">{readableDate(task.due)}</span><span className="min-w-0 flex-1 break-words">{task.title} · {task.client || 'Actividad personal'}</span><span className={`rounded-full border px-2 py-0.5 text-xs ${priorityTone[task.priority] || priorityTone.low}`}>{priorityLabel[task.priority] || 'Sin prioridad'}</span></button>)}</div></div>}
+          </>}
+          <p className="text-xs text-muted-foreground">Resumen privado de tu agenda de KYRO. Al guardar, completar o reprogramar una actividad, la lista se actualiza con los datos actuales.</p>
+        </div>}
+      </section>
+
+      <section aria-label="Resumen de agenda" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          { label: 'Hoy', value: todayTasks.length, color: 'text-cyan-300', click: () => selectQuickView('today') },
+          { label: 'Esta semana', value: selectAgenda(tasks, { mode: 'week', day: today }).length, color: 'text-blue-400', click: () => selectQuickView('week') },
+          { label: 'Vencidos', value: overdue.length, color: 'text-rose-400', click: () => selectQuickView('overdue') },
+          { label: 'Sin próxima acción', value: missing.length, color: 'text-amber-300', click: () => setShowMissing(open => !open) },
+        ].map(card => <button key={card.label} type="button" onClick={card.click} className="rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><span className="text-xs text-muted-foreground">{card.label}</span><span className={`mt-1 block text-xl font-bold ${card.color}`}>{card.value}</span></button>)}
+      </section>
+
+      {showMissing && <section className="rounded-2xl border border-amber-400/30 bg-card p-4"><div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Prospectos sin próxima acción</h2><Button variant="ghost" className="min-h-11" onClick={() => setShowMissing(false)}>Cerrar</Button></div>{dataError ? <p role="alert" className="text-sm text-rose-300">No se pudieron confirmar los datos de agenda.</p> : <div className="mt-3 grid max-h-72 gap-2 overflow-auto md:grid-cols-3">{missing.map(lead => <button key={lead.id} type="button" onClick={() => openNew(lead)} className="min-h-11 rounded-xl bg-background p-3 text-left text-sm"><strong>{lead.name}</strong><span className="mt-1 block text-primary">+ Agendar seguimiento</span></button>)}</div>}</section>}
+
+      <section className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+        <label className="text-sm text-muted-foreground">Datos por completar <select aria-label="Datos por completar" className="ml-2 min-h-11 rounded-xl border border-border bg-card px-3" value={quality} onChange={event => setQuality(event.target.value)}><option value="">Elegir campo</option><option value="contact">Sin contacto</option><option value="email">Sin correo</option><option value="phone">Sin teléfono</option></select></label>
+        {quality && <span className="text-sm text-amber-300">{incomplete.length} prospectos · Los datos se actualizan solo cuando tú los edites.</span>}
+      </section>
+      {quality && <div className="grid max-h-52 gap-2 overflow-auto rounded-2xl border border-border bg-card p-3 md:grid-cols-3">{incomplete.map(lead => <Link key={lead.id} to={`/leads?q=${encodeURIComponent(lead.name)}`} className="rounded-xl border border-border p-3 text-sm hover:text-primary">{lead.name} →</Link>)}</div>}
+
+      <Dialog open={!!editing} onOpenChange={open => !saving && !open && setEditing(null)}>
+        <DialogContent className="max-h-[90vh] overflow-auto">
+          <DialogHeader><DialogTitle>{editing?.id ? 'Editar actividad' : 'Nueva actividad'}</DialogTitle><DialogDescription>Se guarda en tu agenda. Los datos del prospecto se conservan.</DialogDescription></DialogHeader>
+          {editing && <form onSubmit={save} className="flex flex-col gap-4">
+            <label className="block text-sm">Actividad<input required maxLength={200} className={field} value={editing.title} onChange={event => setEditing({ ...editing, title: event.target.value })} /></label>
+            <label className="block text-sm">Prospecto<select className={field} value={editing.lead_id || ''} onChange={event => { const lead = leads.find(item => String(item.id) === event.target.value); setEditing({ ...editing, lead_id: event.target.value, client: lead?.name || '' }); }}><option value="">Actividad personal / sin prospecto</option>{leads.map(lead => <option key={lead.id} value={lead.id}>{lead.name}</option>)}</select></label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-sm">Fecha<input required type="date" className={`${field} [color-scheme:dark]`} value={editing.date} onChange={event => setEditing({ ...editing, date: event.target.value })} /></label><label className="text-sm">Hora · CDMX<input required type="time" className={`${field} [color-scheme:dark]`} value={editing.time} onChange={event => setEditing({ ...editing, time: event.target.value })} /></label></div>
+            <label className="block text-sm">Prioridad<select className={field} value={editing.priority || 'medium'} onChange={event => setEditing({ ...editing, priority: event.target.value })}><option value="urgent">Urgente</option><option value="high">Alta</option><option value="medium">Media</option><option value="low">Baja</option></select></label>
+            <label className="block text-sm">Duración en minutos<input type="number" required min="5" max="1440" step="5" className={field} value={editing.duration_minutes} onChange={event => setEditing({ ...editing, duration_minutes: event.target.value })} /></label>
+            <label className="block text-sm">Notas de la actividad<textarea className={`${field} min-h-24`} rows="3" value={editing.comments || ''} onChange={event => setEditing({ ...editing, comments: event.target.value })} /></label>
+            {editing.id && <Button type="button" variant="outline" className="min-h-11" disabled={saving} onClick={async () => { if (!window.confirm('¿Cancelar esta actividad? El historial y el prospecto se conservan.')) return; setSaving(true); try { await removeTask(editing.id); setEditing(null); } catch {} finally { setSaving(false); } }}>Cancelar actividad</Button>}
+            <Button type="submit" disabled={saving} className="min-h-11 w-full">{saving ? 'Guardando…' : 'Guardar actividad'}</Button>
+          </form>}
+        </DialogContent>
+      </Dialog>
+    </main>
+  );
 }

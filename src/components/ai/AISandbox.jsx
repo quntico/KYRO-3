@@ -61,9 +61,10 @@ import FullProjectReport from './FullProjectReport';
 import KyroImageEditor from './KyroImageEditor';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { getTomorrowTasksForUser, formatTomorrowAgendaReply, isTomorrowAgendaQuestion } from '@/lib/yarvisAgenda';
 
 const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
-  const { leads, deals, logistics } = useData();
+  const { leads, deals, logistics, tasks, loading: workspaceLoading, dataError } = useData();
   const [messages, setMessages] = useState([]);
   const isSyncingRef = useRef(false);
   const [input, setInput] = useState('');
@@ -677,6 +678,15 @@ const AISandbox = ({ open, onOpenChange, initialPrompt }) => {
     setIsTyping(true);
 
     try {
+      if (isTomorrowAgendaQuestion(text)) {
+        let content;
+        if (!user?.id) content = 'Inicia sesión para consultar tu agenda personal.';
+        else if (workspaceLoading || dataError) content = 'No puedo confirmar tus pendientes de mañana hasta que la agenda termine de cargar correctamente. Intenta de nuevo en un momento.';
+        else content = formatTomorrowAgendaReply(getTomorrowTasksForUser(tasks, user.id));
+        setMessages(prev => [...prev, { role: 'assistant', content, timestamp: new Date(), type: 'text' }]);
+        return;
+      }
+
       // --- RUTA 0: DETECCIÓN CONTEXTUAL DE NOMBRE ---
       // Si Pandora acaba de pedir el nombre y el usuario responde con una sola palabra, es su nombre
       const lastAIMsg = messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';

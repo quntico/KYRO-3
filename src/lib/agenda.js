@@ -26,6 +26,11 @@ export function agendaRange(mode, day=dayKey()) {
   if(mode==='month') {const start=day.slice(0,7)+'-01';const d=new Date(start+'T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+1);return [start,shiftDay(d.toISOString().slice(0,10),-1)];}
   return [day,day];
 }
+export function pendingAgendaForDay(tasks,day) {
+  if(!Array.isArray(tasks)||!day) return [];
+  return tasks.filter(task=>task&&!task.completed&&task.status!=='completed'&&task.status!=='cancelled'&&dayKey(task.due)===day)
+    .sort((a,b)=>(Date.parse(a.due)||Infinity)-(Date.parse(b.due)||Infinity)||String(a.id).localeCompare(String(b.id)));
+}
 export function selectAgenda(tasks,{mode='day',day=dayKey(),status='pending',query='',now=new Date()}={}) {
   const [start,end]=agendaRange(mode,day);const q=query.toLocaleLowerCase('es');
   return tasks.filter(t=> {
